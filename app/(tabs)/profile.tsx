@@ -1,21 +1,31 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, signOut } = useAuth();
-  const { coupleId } = useCouple();
+  const { coupleId, clearCouple } = useCouple();
 
   const handleSignOut = () => {
-    Alert.alert('Sair da conta', 'Tem certeza que deseja sair?', [
+    Alert.alert('Sair da conta', 'Tem certeza de que deseja sair?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: signOut },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: async () => {
+          clearCouple();
+          await signOut();
+          router.replace('/(auth)/login');
+        },
+      },
     ]);
   };
 
-  const displayName = user?.user_metadata?.display_name || 'Utilizador';
+  const displayName = user?.user_metadata?.display_name || 'Você';
   const email = user?.email || '';
 
   return (

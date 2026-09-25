@@ -23,7 +23,7 @@ type OnboardingStep = 'select' | 'create' | 'join';
 export default function OnboardingScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { refreshCoupleStatus } = useCouple();
+  const { refreshCoupleStatus, clearCouple } = useCouple();
 
   const [step, setStep] = useState<OnboardingStep>('select');
   const [loading, setLoading] = useState(false);
@@ -166,7 +166,11 @@ export default function OnboardingScreen() {
 
           <TouchableOpacity
             style={styles.signOutButton}
-            onPress={signOut}
+            onPress={async () => {
+              clearCouple();
+              await signOut();
+              router.replace('/(auth)/login');
+            }}
             disabled={loading}
           >
             <Ionicons name="log-out-outline" size={18} color="#686578" />

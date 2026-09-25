@@ -7,6 +7,7 @@ interface CoupleContextData {
   hasCouple: boolean;
   isLoadingCouple: boolean;
   refreshCoupleStatus: () => Promise<string | null>;
+  clearCouple: () => void;
 }
 
 const CoupleContext = createContext<CoupleContextData>({} as CoupleContextData);
@@ -49,14 +50,18 @@ export function CoupleProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  const clearCouple = useCallback(() => {
+    setCoupleId(null);
+    setIsLoadingCouple(false);
+  }, []);
+
   useEffect(() => {
     if (user) {
       refreshCoupleStatus();
     } else {
-      setCoupleId(null);
-      setIsLoadingCouple(false);
+      clearCouple();
     }
-  }, [user, refreshCoupleStatus]);
+  }, [user, refreshCoupleStatus, clearCouple]);
 
   return (
     <CoupleContext.Provider
@@ -65,6 +70,7 @@ export function CoupleProvider({ children }: { children: React.ReactNode }) {
         hasCouple: !!coupleId,
         isLoadingCouple,
         refreshCoupleStatus,
+        clearCouple,
       }}
     >
       {children}
