@@ -3,16 +3,30 @@ import { Platform, StyleSheet, View, Pressable } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
-const AnimatedIcon = ({ name, focused, color }: { name: any; focused: boolean; color: any }) => {
+interface AnimatedIconProps {
+  name: keyof typeof Ionicons.glyphMap;
+  focusedName: keyof typeof Ionicons.glyphMap;
+  focused: boolean;
+  color?: any;
+}
+
+const AnimatedTabIcon = ({ name, focusedName, focused }: AnimatedIconProps) => {
   const scale = useSharedValue(1);
-  const opacity = useSharedValue(0);
+  const pillOpacity = useSharedValue(0);
+  const dotScale = useSharedValue(0);
 
   useEffect(() => {
-    scale.value = withSpring(focused ? 1.15 : 1, { damping: 12, stiffness: 200 });
-    opacity.value = withTiming(focused ? 1 : 0, { duration: 200 });
+    scale.value = withSpring(focused ? 1.15 : 1, { damping: 12, stiffness: 260 });
+    pillOpacity.value = withTiming(focused ? 1 : 0, { duration: 180 });
+    dotScale.value = withSpring(focused ? 1 : 0, { damping: 14, stiffness: 300 });
   }, [focused]);
 
   const animatedIconStyle = useAnimatedStyle(() => ({
@@ -20,15 +34,31 @@ const AnimatedIcon = ({ name, focused, color }: { name: any; focused: boolean; c
   }));
 
   const animatedPillStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+    opacity: pillOpacity.value,
+    transform: [{ scale: withSpring(focused ? 1 : 0.85, { damping: 12 }) }],
+  }));
+
+  const animatedDotStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: dotScale.value }],
+    opacity: dotScale.value,
   }));
 
   return (
     <View style={styles.iconContainer}>
-      <Animated.View style={[styles.focusPill, animatedPillStyle]} />
+      {/* Frosted glowing glass pill behind active icon */}
+      <Animated.View style={[styles.activeGlassPill, animatedPillStyle]} />
+
+      {/* Animated icon */}
       <Animated.View style={animatedIconStyle}>
-        <Ionicons name={name} size={22} color={focused ? '#fff' : color} />
+        <Ionicons
+          name={focused ? focusedName : name}
+          size={22}
+          color={focused ? '#8E7CE8' : '#8A879A'}
+        />
       </Animated.View>
+
+      {/* Subtle indicator dot below icon */}
+      <Animated.View style={[styles.activeDot, animatedDotStyle]} />
     </View>
   );
 };
@@ -38,13 +68,12 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#8E7CE8',
-        tabBarInactiveTintColor: '#686578',
-        tabBarStyle: styles.dockContainer,
         tabBarShowLabel: false,
+        tabBarStyle: styles.dockContainer,
         tabBarBackground: () => (
-          <View style={styles.blurContainer}>
-            <BlurView intensity={85} tint="light" style={StyleSheet.absoluteFill} />
+          <View style={styles.blurWrapper}>
+            <View style={styles.glassBackgroundTint} />
+            <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
           </View>
         ),
       }}
@@ -54,7 +83,12 @@ export default function TabsLayout() {
         options={{
           title: 'Início',
           tabBarIcon: ({ color, focused }) => (
-            <AnimatedIcon name={focused ? 'home' : 'home-outline'} focused={focused} color={color} />
+            <AnimatedTabIcon
+              name="home-outline"
+              focusedName="home"
+              focused={focused}
+              color={color}
+            />
           ),
           tabBarButton: (props) => (
             <Pressable
@@ -72,7 +106,12 @@ export default function TabsLayout() {
         options={{
           title: 'Mensagens',
           tabBarIcon: ({ color, focused }) => (
-            <AnimatedIcon name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} focused={focused} color={color} />
+            <AnimatedTabIcon
+              name="chatbubble-ellipses-outline"
+              focusedName="chatbubble-ellipses"
+              focused={focused}
+              color={color}
+            />
           ),
           tabBarButton: (props) => (
             <Pressable
@@ -90,7 +129,12 @@ export default function TabsLayout() {
         options={{
           title: 'Memórias',
           tabBarIcon: ({ color, focused }) => (
-            <AnimatedIcon name={focused ? 'camera' : 'camera-outline'} focused={focused} color={color} />
+            <AnimatedTabIcon
+              name="camera-outline"
+              focusedName="camera"
+              focused={focused}
+              color={color}
+            />
           ),
           tabBarButton: (props) => (
             <Pressable
@@ -108,7 +152,12 @@ export default function TabsLayout() {
         options={{
           title: 'Datas',
           tabBarIcon: ({ color, focused }) => (
-            <AnimatedIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} color={color} />
+            <AnimatedTabIcon
+              name="calendar-outline"
+              focusedName="calendar"
+              focused={focused}
+              color={color}
+            />
           ),
           tabBarButton: (props) => (
             <Pressable
@@ -126,7 +175,12 @@ export default function TabsLayout() {
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color, focused }) => (
-            <AnimatedIcon name={focused ? 'person' : 'person-outline'} focused={focused} color={color} />
+            <AnimatedTabIcon
+              name="person-outline"
+              focusedName="person"
+              focused={focused}
+              color={color}
+            />
           ),
           tabBarButton: (props) => (
             <Pressable
@@ -146,37 +200,54 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   dockContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 30 : 18,
-    left: 20,
-    right: 20,
+    bottom: Platform.OS === 'ios' ? 28 : 18,
+    left: 18,
+    right: 18,
     height: 68,
     borderRadius: 34,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.55)',
-    shadowColor: '#635380',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
-    borderTopWidth: 1, // override default React Navigation top border
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.85)',
+    borderTopWidth: 1.5,
+    borderTopColor: 'rgba(255, 255, 255, 0.85)',
     backgroundColor: 'transparent',
+    shadowColor: '#7C67B8',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    elevation: 14,
+    paddingHorizontal: 6,
   },
-  blurContainer: {
+  blurWrapper: {
     ...StyleSheet.absoluteFill,
     borderRadius: 34,
     overflow: 'hidden',
+  },
+  glassBackgroundTint: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
   },
   iconContainer: {
     width: 48,
     height: 48,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
-  focusPill: {
+  activeGlassPill: {
     position: 'absolute',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(142, 124, 232, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(142, 124, 232, 0.32)',
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: 2,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: '#8E7CE8',
   },
 });

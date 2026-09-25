@@ -13,6 +13,8 @@ import {
   Modal,
  } from 'react-native';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
+import { LiquidGlassBackground } from '../../components/LiquidGlassBackground';
+import { AppHeader } from '../../components/AppHeader';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -379,15 +381,15 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Cabeçalho Fixo */}
-      <View style={styles.header}>
-        <View style={styles.headerBadge}>
-          <Ionicons name="sparkles" size={20} color="#8E7CE8" />
-        </View>
-        <View>
-          <Text style={styles.headerTitle}>nós • perfil</Text>
-          <Text style={styles.headerSubtitle}>Identidade e segurança do casal</Text>
-        </View>
+      {/* Background Liquid Glass */}
+      <LiquidGlassBackground />
+
+      {/* Cabeçalho Apple Liquid Glass */}
+      <View style={{ paddingHorizontal: 20 }}>
+        <AppHeader
+          sectionTitle="perfil"
+          coupleSubtitle="Identidade e configurações do casal"
+        />
       </View>
 
       <ScrollView

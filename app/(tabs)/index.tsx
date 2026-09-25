@@ -14,10 +14,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, withRepeat, withTiming, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
+import { LiquidGlassBackground } from '../../components/LiquidGlassBackground';
+import { AppHeader } from '../../components/AppHeader';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
@@ -410,30 +410,10 @@ export default function HomeScreen() {
     return calculateAccumulatedTime(tempDateStr);
   }, [tempDateStr]);
 
-  // Animação do pulse verde
-  const pulseScale = useSharedValue(1);
-  const pulseOpacity = useSharedValue(1);
-  useEffect(() => {
-    pulseScale.value = withRepeat(withTiming(1.5, { duration: 1500 }), -1, true);
-    pulseOpacity.value = withRepeat(withTiming(0.4, { duration: 1500 }), -1, true);
-  }, []);
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
-    opacity: pulseOpacity.value,
-  }));
-
   return (
     <View style={styles.container}>
-      {/* Background Atmosphere */}
-      <View style={StyleSheet.absoluteFill}>
-        <LinearGradient
-          colors={['#FCE7F3', '#EDE9FE', '#F8F9FC']}
-          style={StyleSheet.absoluteFill}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-        <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
-      </View>
+      {/* Background Atmosphere Liquid Glass */}
+      <LiquidGlassBackground />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -447,24 +427,15 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Cabeçalho Superior - Liquid Glass */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.brandTitle}>nós<Text style={styles.brandDot}>.</Text></Text>
-            
-            <View style={styles.connectedPill}>
-              <View style={styles.pulseDotContainer}>
-                <Animated.View style={[styles.pulseDotRing, pulseStyle]} />
-                <View style={styles.pulseDotCore} />
-              </View>
-              <Text style={styles.connectedText}>Conectados</Text>
-            </View>
-          </View>
-
-          <AnimatedTouchable style={styles.notificationButton} activeOpacity={0.8}>
-            <Ionicons name="notifications-outline" size={20} color="#16151E" />
-          </AnimatedTouchable>
-        </View>
+        {/* Cabeçalho Superior Apple Liquid Glass */}
+        <AppHeader
+          coupleSubtitle={coupleTitle}
+          rightAction={
+            <AnimatedTouchable style={styles.notificationButton}>
+              <Ionicons name="notifications-outline" size={20} color="#16151E" />
+            </AnimatedTouchable>
+          }
+        />
 
         {/* Card Principal: Nossa Jornada (Interativo) */}
         <AnimatedTouchable

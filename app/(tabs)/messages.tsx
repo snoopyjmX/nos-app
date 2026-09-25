@@ -14,6 +14,8 @@ import {
   TouchableWithoutFeedback,
  } from 'react-native';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
+import { LiquidGlassBackground } from '../../components/LiquidGlassBackground';
+import { AppHeader } from '../../components/AppHeader';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -279,20 +281,17 @@ export default function MessagesScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
-      {/* Cabeçalho Superior da Aba com Botão de Voltar */}
-      <View style={styles.header}>
-        <AnimatedTouchable
-          style={styles.backButton}
-          onPress={handleGoBack}
-          activeOpacity={0.75}
-        >
-          <Ionicons name="arrow-back" size={20} color="#16151E" />
-        </AnimatedTouchable>
+      {/* Background Liquid Glass */}
+      <LiquidGlassBackground />
 
-        <View style={styles.headerTitleWrapper}>
-          <Text style={styles.headerTitle}>nós • recados</Text>
-          <Text style={styles.headerSubtitle}>Bilhetes carinhosos do casal</Text>
-        </View>
+      {/* Cabeçalho Superior Apple Liquid Glass */}
+      <View style={{ paddingHorizontal: 20 }}>
+        <AppHeader
+          sectionTitle="recados"
+          coupleSubtitle="Bilhetes carinhosos do casal"
+          showBack
+          onBack={handleGoBack}
+        />
       </View>
 
       {/* Área de Visualização das Mensagens */}

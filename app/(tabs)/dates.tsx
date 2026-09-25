@@ -14,6 +14,8 @@ import {
   KeyboardAvoidingView,
  } from 'react-native';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
+import { LiquidGlassBackground } from '../../components/LiquidGlassBackground';
+import { AppHeader } from '../../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { useAuth } from '../../context/AuthContext';
@@ -316,26 +318,24 @@ export default function DatesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Cabeçalho */}
-      <View style={styles.header}>
-        <View style={styles.headerInfo}>
-          <View style={styles.headerBadge}>
-            <Ionicons name="calendar" size={20} color="#8E7CE8" />
-          </View>
-          <View>
-            <Text style={styles.headerTitle}>nós • datas</Text>
-            <Text style={styles.headerSubtitle}>Marcos e momentos que virão</Text>
-          </View>
-        </View>
+      {/* Background Liquid Glass */}
+      <LiquidGlassBackground />
 
-        <AnimatedTouchable
-          style={styles.headerAddBtn}
-          onPress={() => setIsAddModalVisible(true)}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="add" size={18} color="#FFFFFF" />
-          <Text style={styles.headerAddBtnText}>Nova Data</Text>
-        </AnimatedTouchable>
+      {/* Cabeçalho Apple Liquid Glass */}
+      <View style={{ paddingHorizontal: 20 }}>
+        <AppHeader
+          sectionTitle="datas"
+          coupleSubtitle="Marcos e celebrações do casal"
+          rightAction={
+            <AnimatedTouchable
+              style={styles.headerAddBtn}
+              onPress={() => setIsAddModalVisible(true)}
+            >
+              <Ionicons name="add" size={18} color="#FFFFFF" />
+              <Text style={styles.headerAddBtnText}>Nova Data</Text>
+            </AnimatedTouchable>
+          }
+        />
       </View>
 
       <ScrollView

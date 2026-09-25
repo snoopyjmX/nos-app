@@ -16,6 +16,8 @@ import {
   KeyboardAvoidingView,
  } from 'react-native';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
+import { LiquidGlassBackground } from '../../components/LiquidGlassBackground';
+import { AppHeader } from '../../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
@@ -332,15 +334,15 @@ export default function MemoriesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Cabeçalho */}
-      <View style={styles.header}>
-        <View style={styles.headerBadge}>
-          <Ionicons name="camera" size={20} color="#8E7CE8" />
-        </View>
-        <View>
-          <Text style={styles.headerTitle}>nós • memórias</Text>
-          <Text style={styles.headerSubtitle}>Nossos momentos eternizados</Text>
-        </View>
+      {/* Background Liquid Glass */}
+      <LiquidGlassBackground />
+
+      {/* Cabeçalho Apple Liquid Glass */}
+      <View style={{ paddingHorizontal: 20 }}>
+        <AppHeader
+          sectionTitle="memórias"
+          coupleSubtitle="Nossos momentos eternizados"
+        />
       </View>
 
       {/* Conteúdo Principal */}
