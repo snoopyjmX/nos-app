@@ -1,7 +1,37 @@
-import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { Platform, StyleSheet, View, Pressable } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+
+const AnimatedIcon = ({ name, focused, color }: { name: any; focused: boolean; color: any }) => {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withSpring(focused ? 1.15 : 1, { damping: 12, stiffness: 200 });
+    opacity.value = withTiming(focused ? 1 : 0, { duration: 200 });
+  }, [focused]);
+
+  const animatedIconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const animatedPillStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  return (
+    <View style={styles.iconContainer}>
+      <Animated.View style={[styles.focusPill, animatedPillStyle]} />
+      <Animated.View style={animatedIconStyle}>
+        <Ionicons name={name} size={22} color={focused ? '#fff' : color} />
+      </Animated.View>
+    </View>
+  );
+};
 
 export default function TabsLayout() {
   return (
@@ -11,8 +41,12 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#8E7CE8',
         tabBarInactiveTintColor: '#686578',
         tabBarStyle: styles.dockContainer,
-        tabBarLabelStyle: styles.tabBarLabel,
-        tabBarItemStyle: styles.tabBarItem,
+        tabBarShowLabel: false,
+        tabBarBackground: () => (
+          <View style={styles.blurContainer}>
+            <BlurView intensity={85} tint="light" style={StyleSheet.absoluteFill} />
+          </View>
+        ),
       }}
     >
       <Tabs.Screen
@@ -20,7 +54,16 @@ export default function TabsLayout() {
         options={{
           title: 'Início',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
+            <AnimatedIcon name={focused ? 'home' : 'home-outline'} focused={focused} color={color} />
+          ),
+          tabBarButton: (props) => (
+            <Pressable
+              {...(props as any)}
+              onPress={(e) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                props.onPress?.(e);
+              }}
+            />
           ),
         }}
       />
@@ -29,10 +72,15 @@ export default function TabsLayout() {
         options={{
           title: 'Mensagens',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'}
-              size={22}
-              color={color}
+            <AnimatedIcon name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} focused={focused} color={color} />
+          ),
+          tabBarButton: (props) => (
+            <Pressable
+              {...(props as any)}
+              onPress={(e) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                props.onPress?.(e);
+              }}
             />
           ),
         }}
@@ -42,7 +90,16 @@ export default function TabsLayout() {
         options={{
           title: 'Memórias',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'camera' : 'camera-outline'} size={22} color={color} />
+            <AnimatedIcon name={focused ? 'camera' : 'camera-outline'} focused={focused} color={color} />
+          ),
+          tabBarButton: (props) => (
+            <Pressable
+              {...(props as any)}
+              onPress={(e) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                props.onPress?.(e);
+              }}
+            />
           ),
         }}
       />
@@ -51,7 +108,16 @@ export default function TabsLayout() {
         options={{
           title: 'Datas',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={22} color={color} />
+            <AnimatedIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} color={color} />
+          ),
+          tabBarButton: (props) => (
+            <Pressable
+              {...(props as any)}
+              onPress={(e) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                props.onPress?.(e);
+              }}
+            />
           ),
         }}
       />
@@ -60,7 +126,16 @@ export default function TabsLayout() {
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} />
+            <AnimatedIcon name={focused ? 'person' : 'person-outline'} focused={focused} color={color} />
+          ),
+          tabBarButton: (props) => (
+            <Pressable
+              {...(props as any)}
+              onPress={(e) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                props.onPress?.(e);
+              }}
+            />
           ),
         }}
       />
@@ -71,29 +146,37 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   dockContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 28 : 20,
+    bottom: Platform.OS === 'ios' ? 30 : 18,
     left: 20,
     right: 20,
-    height: 64,
+    height: 68,
     borderRadius: 34,
-    backgroundColor: 'rgba(255, 255, 255, 0.88)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 8,
-    paddingBottom: 6,
-    paddingTop: 6,
+    borderColor: 'rgba(255, 255, 255, 0.55)',
+    shadowColor: '#635380',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 12,
+    borderTopWidth: 1, // override default React Navigation top border
+    backgroundColor: 'transparent',
   },
-  tabBarLabel: {
-    fontSize: 10,
-    fontWeight: '500',
-    marginTop: -2,
+  blurContainer: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: 34,
+    overflow: 'hidden',
   },
-  tabBarItem: {
+  iconContainer: {
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  focusPill: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#8E7CE8',
   },
 });

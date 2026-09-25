@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
+import { 
   View,
   Text,
   StyleSheet,
@@ -14,7 +14,8 @@ import {
   Alert,
   ScrollView,
   KeyboardAvoidingView,
-} from 'react-native';
+ } from 'react-native';
+import { AnimatedTouchable } from '../../components/AnimatedTouchable';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
@@ -302,7 +303,7 @@ export default function MemoriesScreen() {
     const imageUrl = item.displayUrl || item.image_url;
 
     return (
-      <TouchableOpacity
+      <AnimatedTouchable
         style={styles.memoryCard}
         onPress={() => setPreviewMemory(item)}
         activeOpacity={0.9}
@@ -325,7 +326,7 @@ export default function MemoriesScreen() {
             {item.title}
           </Text>
         </View>
-      </TouchableOpacity>
+      </AnimatedTouchable>
     );
   };
 
@@ -374,7 +375,7 @@ export default function MemoriesScreen() {
           data={memories}
           keyExtractor={(item) => item.id}
           renderItem={renderMemoryCard}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 130 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -388,14 +389,14 @@ export default function MemoriesScreen() {
       )}
 
       {/* Botão Flutuante de Adicionar Memória */}
-      <TouchableOpacity
+      <AnimatedTouchable
         style={styles.floatingButton}
         onPress={handlePickImage}
         activeOpacity={0.85}
       >
         <Ionicons name="add" size={20} color="#FFFFFF" />
         <Text style={styles.floatingButtonText}>Adicionar Memória</Text>
-      </TouchableOpacity>
+      </AnimatedTouchable>
 
       {/* Modal para Adicionar Memória */}
       <Modal
@@ -443,7 +444,7 @@ export default function MemoriesScreen() {
               {/* Botão de Escolha de Data */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>Quando aconteceu?</Text>
-                <TouchableOpacity
+                <AnimatedTouchable
                   style={styles.dateSelectorButton}
                   onPress={() => setShowDatePicker(true)}
                   activeOpacity={0.8}
@@ -453,7 +454,7 @@ export default function MemoriesScreen() {
                     {formatFullDatePTBR(memoryDate.toISOString())}
                   </Text>
                   <Ionicons name="chevron-down" size={16} color="#686578" />
-                </TouchableOpacity>
+                </AnimatedTouchable>
               </View>
 
               {/* DateTimePicker no iOS ou quando ativado */}
@@ -473,15 +474,15 @@ export default function MemoriesScreen() {
 
               {/* Botões de Ação */}
               <View style={styles.modalActionsRow}>
-                <TouchableOpacity
+                <AnimatedTouchable
                   style={styles.modalCancelButton}
                   onPress={() => setIsAddModalVisible(false)}
                   disabled={uploading}
                 >
                   <Text style={styles.modalCancelText}>Cancelar</Text>
-                </TouchableOpacity>
+                </AnimatedTouchable>
 
-                <TouchableOpacity
+                <AnimatedTouchable
                   style={[styles.modalSaveButton, uploading && styles.buttonDisabled]}
                   onPress={handleSaveMemory}
                   disabled={uploading}
@@ -494,7 +495,7 @@ export default function MemoriesScreen() {
                       <Ionicons name="sparkles" size={16} color="#FFFFFF" />
                     </>
                   )}
-                </TouchableOpacity>
+                </AnimatedTouchable>
               </View>
             </ScrollView>
           </View>
@@ -509,12 +510,12 @@ export default function MemoriesScreen() {
         onRequestClose={() => setPreviewMemory(null)}
       >
         <View style={styles.previewOverlay}>
-          <TouchableOpacity
+          <AnimatedTouchable
             style={styles.previewCloseButton}
             onPress={() => setPreviewMemory(null)}
           >
             <Ionicons name="close" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+          </AnimatedTouchable>
 
           {previewMemory && (
             <View style={styles.previewCard}>

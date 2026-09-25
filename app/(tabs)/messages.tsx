@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import {
+import { 
   View,
   Text,
   StyleSheet,
@@ -12,7 +12,8 @@ import {
   Alert,
   Keyboard,
   TouchableWithoutFeedback,
-} from 'react-native';
+ } from 'react-native';
+import { AnimatedTouchable } from '../../components/AnimatedTouchable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -280,13 +281,13 @@ export default function MessagesScreen() {
     >
       {/* Cabeçalho Superior da Aba com Botão de Voltar */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <AnimatedTouchable
           style={styles.backButton}
           onPress={handleGoBack}
           activeOpacity={0.75}
         >
           <Ionicons name="arrow-back" size={20} color="#16151E" />
-        </TouchableOpacity>
+        </AnimatedTouchable>
 
         <View style={styles.headerTitleWrapper}>
           <Text style={styles.headerTitle}>nós • recados</Text>
@@ -320,7 +321,7 @@ export default function MessagesScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             renderItem={renderMessageItem}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingBottom: 130 }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -353,7 +354,7 @@ export default function MessagesScreen() {
             maxLength={1000}
           />
 
-          <TouchableOpacity
+          <AnimatedTouchable
             style={[
               styles.sendButton,
               (!inputText.trim() || sending) && styles.sendButtonDisabled,
@@ -367,7 +368,7 @@ export default function MessagesScreen() {
             ) : (
               <Ionicons name="send" size={17} color="#FFFFFF" />
             )}
-          </TouchableOpacity>
+          </AnimatedTouchable>
         </View>
       </View>
     </KeyboardAvoidingView>

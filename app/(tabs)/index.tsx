@@ -14,6 +14,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown, withRepeat, withTiming, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { AnimatedTouchable } from '../../components/AnimatedTouchable';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
@@ -31,6 +35,7 @@ interface AccumulatedTime {
   months: number;
   days: number;
   hours: number;
+  minutes: number;
 }
 
 const getFirstName = (name?: string | null): string => {
@@ -43,7 +48,7 @@ const getFirstName = (name?: string | null): string => {
 // Calcula os totais acumulados absolutos de toda a história
 const calculateAccumulatedTime = (startDateString?: string | null): AccumulatedTime => {
   if (!startDateString) {
-    return { months: 0, days: 0, hours: 0 };
+    return { months: 0, days: 0, hours: 0, minutes: 0 };
   }
 
   const cleanDateStr = startDateString.split('T')[0];
@@ -61,25 +66,28 @@ const calculateAccumulatedTime = (startDateString?: string | null): AccumulatedT
 
   const now = new Date();
   if (isNaN(start.getTime()) || start > now) {
-    return { months: 0, days: 0, hours: 0 };
+    return { months: 0, days: 0, hours: 0, minutes: 0 };
   }
 
   const diffMs = now.getTime() - start.getTime();
 
-  // 1. Total absoluto de horas (integer limpo)
+  // 1. Total absoluto de minutos
+  const minutes = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+
+  // 2. Total absoluto de horas (integer limpo)
   const hours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
 
-  // 2. Total absoluto de dias
+  // 3. Total absoluto de dias
   const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 
-  // 3. Total absoluto de meses de calendário
+  // 4. Total absoluto de meses de calendário
   let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
   if (now.getDate() < start.getDate()) {
     months--;
   }
   months = Math.max(0, months);
 
-  return { months, days, hours };
+  return { months, days, hours, minutes };
 };
 
 const formatMemoryDate = (dateString?: string | null): string => {
@@ -402,8 +410,31 @@ export default function HomeScreen() {
     return calculateAccumulatedTime(tempDateStr);
   }, [tempDateStr]);
 
+  // Animação do pulse verde
+  const pulseScale = useSharedValue(1);
+  const pulseOpacity = useSharedValue(1);
+  useEffect(() => {
+    pulseScale.value = withRepeat(withTiming(1.5, { duration: 1500 }), -1, true);
+    pulseOpacity.value = withRepeat(withTiming(0.4, { duration: 1500 }), -1, true);
+  }, []);
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+    opacity: pulseOpacity.value,
+  }));
+
   return (
     <View style={styles.container}>
+      {/* Background Atmosphere */}
+      <View style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={['#FCE7F3', '#EDE9FE', '#F8F9FC']}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+        <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -416,25 +447,27 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Cabeçalho Superior */}
+        {/* Cabeçalho Superior - Liquid Glass */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.appIconBadge}>
-              <Ionicons name="infinite" size={24} color="#8E7CE8" />
-            </View>
-            <View style={styles.titleWrapper}>
-              <Text style={styles.brandTitle}>nós</Text>
-              <Text style={styles.coupleNames}>{coupleTitle}</Text>
+            <Text style={styles.brandTitle}>nós<Text style={styles.brandDot}>.</Text></Text>
+            
+            <View style={styles.connectedPill}>
+              <View style={styles.pulseDotContainer}>
+                <Animated.View style={[styles.pulseDotRing, pulseStyle]} />
+                <View style={styles.pulseDotCore} />
+              </View>
+              <Text style={styles.connectedText}>Conectados</Text>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.notificationButton} activeOpacity={0.8}>
+          <AnimatedTouchable style={styles.notificationButton} activeOpacity={0.8}>
             <Ionicons name="notifications-outline" size={20} color="#16151E" />
-          </TouchableOpacity>
+          </AnimatedTouchable>
         </View>
 
         {/* Card Principal: Nossa Jornada (Interativo) */}
-        <TouchableOpacity
+        <AnimatedTouchable
           style={styles.heroGlassCard}
           onPress={handleOpenDatePicker}
           activeOpacity={0.88}
@@ -455,28 +488,35 @@ export default function HomeScreen() {
           <View style={styles.journeyContent}>
             <Text style={styles.journeyLabel}>NOSSA JORNADA</Text>
 
-            {/* 3 Quadrinhos de Vidro: MESES, DIAS, HORAS */}
+            {/* 4 Quadrinhos de Vidro: MESES, DIAS, HORAS, MINUTOS */}
             <View style={styles.capsulesRow}>
-              <View style={styles.capsule}>
+              <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.capsule}>
                 <Text style={styles.capsuleLabel}>MESES</Text>
                 <Text style={styles.capsuleValue} numberOfLines={1} adjustsFontSizeToFit>
                   {timeTotals.months}
                 </Text>
-              </View>
+              </Animated.View>
 
-              <View style={styles.capsule}>
+              <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.capsule}>
                 <Text style={styles.capsuleLabel}>DIAS</Text>
                 <Text style={styles.capsuleValue} numberOfLines={1} adjustsFontSizeToFit>
                   {timeTotals.days}
                 </Text>
-              </View>
+              </Animated.View>
 
-              <View style={styles.capsule}>
+              <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.capsule}>
                 <Text style={styles.capsuleLabel}>HORAS</Text>
                 <Text style={styles.capsuleValue} numberOfLines={1} adjustsFontSizeToFit>
                   {timeTotals.hours}
                 </Text>
-              </View>
+              </Animated.View>
+
+              <Animated.View entering={FadeInDown.delay(400).springify()} style={styles.capsule}>
+                <Text style={styles.capsuleLabel}>MINS</Text>
+                <Text style={styles.capsuleValue} numberOfLines={1} adjustsFontSizeToFit>
+                  {timeTotals.minutes}
+                </Text>
+              </Animated.View>
             </View>
 
             {!hasCustomAnniversary && (
@@ -488,7 +528,7 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-        </TouchableOpacity>
+        </AnimatedTouchable>
 
         {/* Seção: Memória Recente */}
         <View style={styles.sectionHeader}>
@@ -496,7 +536,7 @@ export default function HomeScreen() {
         </View>
 
         {recentMemory ? (
-          <TouchableOpacity
+          <AnimatedTouchable
             style={styles.memoryCard}
             onPress={() => router.push('/(tabs)/memories')}
             activeOpacity={0.85}
@@ -523,9 +563,9 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#686578" />
-          </TouchableOpacity>
+          </AnimatedTouchable>
         ) : (
-          <TouchableOpacity
+          <AnimatedTouchable
             style={styles.emptyMemoryCard}
             onPress={() => router.push('/(tabs)/memories')}
             activeOpacity={0.85}
@@ -542,7 +582,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Ionicons name="add-circle-outline" size={22} color="#8E7CE8" />
-          </TouchableOpacity>
+          </AnimatedTouchable>
         )}
       </ScrollView>
 
@@ -598,15 +638,15 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.modalButtonsRow}>
-              <TouchableOpacity
+              <AnimatedTouchable
                 style={styles.modalCancelButton}
                 onPress={() => setIsModalVisible(false)}
                 disabled={savingDate}
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
+              </AnimatedTouchable>
 
-              <TouchableOpacity
+              <AnimatedTouchable
                 style={[styles.modalSaveButton, savingDate && styles.buttonDisabled]}
                 onPress={() => handleSaveDate(tempDate)}
                 disabled={savingDate}
@@ -616,7 +656,7 @@ export default function HomeScreen() {
                 ) : (
                   <Text style={styles.modalSaveText}>Salvar Data</Text>
                 )}
-              </TouchableOpacity>
+              </AnimatedTouchable>
             </View>
           </View>
         </View>
@@ -633,7 +673,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 56 : 36,
-    paddingBottom: 110,
+    paddingBottom: 130,
   },
   header: {
     flexDirection: 'row',
@@ -660,26 +700,64 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#8E7CE8',
-    letterSpacing: 1,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#16151E',
+    letterSpacing: -1.5,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
-  coupleNames: {
-    fontSize: 14,
+  brandDot: {
+    color: '#8E7CE8',
+  },
+  connectedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
+    shadowColor: '#16151E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  pulseDotContainer: {
+    width: 12,
+    height: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  pulseDotRing: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#34C759',
+  },
+  pulseDotCore: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#34C759',
+  },
+  connectedText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: '#686578',
-    fontWeight: '500',
-    marginTop: 1,
   },
   notificationButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderColor: 'rgba(255, 255, 255, 0.9)',
     shadowColor: '#16151E',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -755,15 +833,15 @@ const styles = StyleSheet.create({
   capsulesRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 10,
+    gap: 6,
     marginBottom: 6,
   },
   capsule: {
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.82)',
-    borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 4,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 2,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -775,17 +853,17 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   capsuleLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: '#686578',
-    letterSpacing: 1,
-    marginBottom: 6,
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   capsuleValue: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#8E7CE8',
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
   hintContainer: {
     flexDirection: 'row',
