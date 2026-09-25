@@ -39,9 +39,11 @@ export default function RegisterScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erro no registo', error.message);
+      Alert.alert('Erro no cadastro', error.message);
     } else {
-      Alert.alert('Sucesso', 'Conta criada com sucesso!');
+      Alert.alert('Sucesso', 'Conta criada com sucesso!', [
+        { text: 'Continuar', onPress: () => router.replace('/') },
+      ]);
     }
   };
 
@@ -52,16 +54,16 @@ export default function RegisterScreen() {
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.brandTitle}>NÓS</Text>
-          <Text style={styles.brandSubtitle}>Crie o seu perfil</Text>
+          <Text style={styles.brandTitle}>nós</Text>
+          <Text style={styles.brandSubtitle}>Crie seu perfil</Text>
         </View>
 
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Registo</Text>
+          <Text style={styles.formTitle}>Cadastro</Text>
 
           <TextInput
             style={styles.input}
-            placeholder="O seu nome"
+            placeholder="Seu nome"
             placeholderTextColor="#686578"
             value={name}
             onChangeText={setName}
@@ -79,7 +81,7 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Palavra-passe (mínimo 6 carateres)"
+            placeholder="Senha (mínimo 6 caracteres)"
             placeholderTextColor="#686578"
             secureTextEntry
             autoCapitalize="none"

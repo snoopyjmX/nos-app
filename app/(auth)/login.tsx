@@ -21,7 +21,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Atenção', 'Por favor, preencha o e-mail e a palavra-passe.');
+      Alert.alert('Atenção', 'Por favor, preencha o e-mail e a senha.');
       return;
     }
 
@@ -34,6 +34,8 @@ export default function LoginScreen() {
 
     if (error) {
       Alert.alert('Erro ao entrar', error.message);
+    } else {
+      router.replace('/');
     }
   };
 
@@ -44,7 +46,7 @@ export default function LoginScreen() {
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.brandTitle}>NÓS</Text>
+          <Text style={styles.brandTitle}>nós</Text>
           <Text style={styles.brandSubtitle}>Um espaço só nosso.</Text>
         </View>
 
@@ -63,7 +65,7 @@ export default function LoginScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Palavra-passe"
+            placeholder="Senha"
             placeholderTextColor="#686578"
             secureTextEntry
             autoCapitalize="none"
