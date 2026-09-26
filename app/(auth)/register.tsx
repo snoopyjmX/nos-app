@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Image,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -11,10 +11,23 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import { supabase } from '../../lib/supabase';
+import { useAppTheme } from '../../context/ThemeContext';
+import { getThemeTokens } from '../../constants/theme';
+import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
+import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
+import { AnimatedTouchable } from '../../components/AnimatedTouchable';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
+  const themeTokens = getThemeTokens(isDark);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,77 +61,109 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.brandTitle}>nós</Text>
-          <Text style={styles.brandSubtitle}>Crie seu perfil</Text>
-        </View>
+    <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
+      <AtmosphereBackground />
 
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Cadastro</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoid}
+      >
+        <Animated.View 
+          style={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 20 }]}
+          entering={FadeInDown.duration(600).springify().damping(18)}
+        >
+                    {/* Header Brand */}
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../../assets/favicon.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={[styles.brandTitle, { color: themeTokens.primary }]}>nós.</Text>
+            <Text style={[styles.brandSubtitle, { color: themeTokens.textSecondary }]}>Crie seu perfil</Text>
+          </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Seu nome"
-            placeholderTextColor="#686578"
-            value={name}
-            onChangeText={setName}
-          />
+          {/* Form Card */}
+          <LiquidGlassView variant="hero" style={styles.formCard} borderRadius={32}>
+            <Text style={[styles.formTitle, { color: themeTokens.textPrimary }]}>Cadastro</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="E-mail"
-            placeholderTextColor="#686578"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
+            <LiquidGlassView variant="control" style={styles.inputWrapper} borderRadius={16}>
+              <TextInput
+                style={[styles.input, { color: themeTokens.textPrimary }]}
+                placeholder="Seu nome"
+                placeholderTextColor={themeTokens.textMuted}
+                value={name}
+                onChangeText={setName}
+              />
+            </LiquidGlassView>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Senha (mínimo 6 caracteres)"
-            placeholderTextColor="#686578"
-            secureTextEntry
-            autoCapitalize="none"
-            value={password}
-            onChangeText={setPassword}
-          />
+            <LiquidGlassView variant="control" style={styles.inputWrapper} borderRadius={16}>
+              <TextInput
+                style={[styles.input, { color: themeTokens.textPrimary }]}
+                placeholder="E-mail"
+                placeholderTextColor={themeTokens.textMuted}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </LiquidGlassView>
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleRegister}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Criar Conta</Text>
-            )}
-          </TouchableOpacity>
+            <LiquidGlassView variant="control" style={styles.inputWrapper} borderRadius={16}>
+              <TextInput
+                style={[styles.input, { color: themeTokens.textPrimary }]}
+                placeholder="Senha (mínimo 6 caracteres)"
+                placeholderTextColor={themeTokens.textMuted}
+                secureTextEntry
+                autoCapitalize="none"
+                value={password}
+                onChangeText={setPassword}
+              />
+            </LiquidGlassView>
 
-          <TouchableOpacity
-            style={styles.switchButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.switchText}>
-              Já tem uma conta? <Text style={styles.switchHighlight}>Entrar</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+            <AnimatedTouchable
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={loading}
+              scaleTo={0.96}
+            >
+              <LinearGradient
+                colors={isDark ? ['#A797FF', '#8B5CF6'] : ['#8E7CE8', '#7C3AED']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Criar Conta</Text>
+              )}
+            </AnimatedTouchable>
+
+            <AnimatedTouchable
+              style={styles.switchButton}
+              onPress={() => router.back()}
+              scaleTo={0.98}
+            >
+              <Text style={[styles.switchText, { color: themeTokens.textSecondary }]}>
+                Já tem uma conta? <Text style={[styles.switchHighlight, { color: themeTokens.primary }]}>Entrar</Text>
+              </Text>
+            </AnimatedTouchable>
+          </LiquidGlassView>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FC',
+  },
+  keyboardAvoid: {
+    flex: 1,
   },
   content: {
     flex: 1,
@@ -129,51 +174,59 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
+  logoContainer: {
+    marginBottom: 16,
+    shadowColor: '#5B4294',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
+  },
   brandTitle: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#16151E',
-    letterSpacing: 4,
+    fontSize: 48,
+    fontWeight: '800',
+    letterSpacing: -1.5,
   },
   brandSubtitle: {
     fontSize: 16,
-    color: '#686578',
-    marginTop: 8,
+    fontWeight: '500',
+    marginTop: 4,
   },
   formCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    borderRadius: 24,
     padding: 24,
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 3,
+    width: '100%',
   },
   formTitle: {
     fontSize: 22,
-    fontWeight: '600',
-    color: '#16151E',
-    marginBottom: 20,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginBottom: 24,
   },
-  input: {
-    height: 52,
-    backgroundColor: '#F8F9FC',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#16151E',
+  inputWrapper: {
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.15)',
+  },
+  input: {
+    height: 56,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    fontWeight: '500',
   },
   button: {
-    height: 52,
-    backgroundColor: '#8E7CE8',
-    borderRadius: 999,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: 12,
+    overflow: 'hidden',
+    shadowColor: '#5B4294',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -181,18 +234,19 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   switchButton: {
-    marginTop: 20,
+    marginTop: 24,
     alignItems: 'center',
+    paddingVertical: 8,
   },
   switchText: {
-    color: '#686578',
     fontSize: 14,
+    fontWeight: '500',
   },
   switchHighlight: {
-    color: '#8E7CE8',
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

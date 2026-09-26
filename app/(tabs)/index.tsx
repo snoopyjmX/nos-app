@@ -4,24 +4,37 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Platform,
   Image,
   RefreshControl,
-  Modal,
-  Alert,
-  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
-import { LiquidGlassBackground } from '../../components/LiquidGlassBackground';
+import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
+import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
 import { AppHeader } from '../../components/AppHeader';
-import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
 import { supabase } from '../../lib/supabase';
+import { THEME } from '../../constants/theme';
+import { useAppTheme } from '../../context/ThemeContext';
+import { getThemeTokens } from '../../constants/theme';
+import { useScrollNavbar } from '../../hooks/useScrollNavbar';
+
+const { width } = Dimensions.get('window');
 
 interface RecentMemory {
   id: string;
@@ -31,11 +44,32 @@ interface RecentMemory {
   displayUrl?: string | null;
 }
 
+interface LatestMessage {
+  id: string;
+  content: string;
+  created_at: string;
+  created_by: string;
+  isMe: boolean;
+  authorName: string;
+  authorAvatarUrl: string | null;
+}
+
+interface NextMilestone {
+  id: string;
+  title: string;
+  category: string;
+  event_date: string;
+  daysRemaining: number;
+}
+
 interface AccumulatedTime {
   months: number;
   days: number;
   hours: number;
   minutes: number;
+  breakdownMonths: number;
+  breakdownDays: number;
+  breakdownHours: number;
 }
 
 const getFirstName = (name?: string | null): string => {
@@ -45,10 +79,28 @@ const getFirstName = (name?: string | null): string => {
   return trimmed.split(/\s+/)[0];
 };
 
-// Calcula os totais acumulados absolutos de toda a história
+const formatMessageTime = (dateString?: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+// Calcula os totais acumulados absolutos de toda a história e o detalhamento em meses, dias e horas
 const calculateAccumulatedTime = (startDateString?: string | null): AccumulatedTime => {
   if (!startDateString) {
-    return { months: 0, days: 0, hours: 0, minutes: 0 };
+    return {
+      months: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      breakdownMonths: 0,
+      breakdownDays: 0,
+      breakdownHours: 0,
+    };
   }
 
   const cleanDateStr = startDateString.split('T')[0];
@@ -66,7 +118,15 @@ const calculateAccumulatedTime = (startDateString?: string | null): AccumulatedT
 
   const now = new Date();
   if (isNaN(start.getTime()) || start > now) {
-    return { months: 0, days: 0, hours: 0, minutes: 0 };
+    return {
+      months: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      breakdownMonths: 0,
+      breakdownDays: 0,
+      breakdownHours: 0,
+    };
   }
 
   const diffMs = now.getTime() - start.getTime();
@@ -77,7 +137,7 @@ const calculateAccumulatedTime = (startDateString?: string | null): AccumulatedT
   // 2. Total absoluto de horas (integer limpo)
   const hours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
 
-  // 3. Total absoluto de dias
+  // 3. Total absoluto de dias (integer limpo)
   const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 
   // 4. Total absoluto de meses de calendário
@@ -87,7 +147,25 @@ const calculateAccumulatedTime = (startDateString?: string | null): AccumulatedT
   }
   months = Math.max(0, months);
 
-  return { months, days, hours, minutes };
+  // Decomposição harmônica: Meses + Dias restantes + Horas restantes
+  const cursorDate = new Date(start.getTime());
+  cursorDate.setMonth(cursorDate.getMonth() + months);
+  if (cursorDate > now) {
+    cursorDate.setMonth(cursorDate.getMonth() - 1);
+  }
+  const remainingMs = Math.max(0, now.getTime() - cursorDate.getTime());
+  const breakdownDays = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
+  const breakdownHours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+  return {
+    months,
+    days,
+    hours,
+    minutes,
+    breakdownMonths: months,
+    breakdownDays,
+    breakdownHours,
+  };
 };
 
 const formatMemoryDate = (dateString?: string | null): string => {
@@ -102,25 +180,38 @@ const formatMemoryDate = (dateString?: string | null): string => {
 };
 
 export default function HomeScreen() {
+  const { isDark } = useAppTheme();
+  const themeTokens = getThemeTokens(isDark);
   const router = useRouter();
   const { user } = useAuth();
   const { coupleId } = useCouple();
+  const insets = useSafeAreaInsets();
+  const { onScroll } = useScrollNavbar();
 
   const [coupleTitle, setCoupleTitle] = useState<string>('Você & Meu Amor');
   const [effectiveStartDateStr, setEffectiveStartDateStr] = useState<string | null>(null);
-  const [hasCustomAnniversary, setHasCustomAnniversary] = useState<boolean>(false);
-  const [anniversaryDate, setAnniversaryDate] = useState<Date>(new Date());
   const [recentMemory, setRecentMemory] = useState<RecentMemory | null>(null);
+  const [latestMessage, setLatestMessage] = useState<LatestMessage | null>(null);
+  const [nextMilestone, setNextMilestone] = useState<NextMilestone | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [, setCurrentTick] = useState<number>(Date.now());
 
-  // Estados do Modal e Seletor de Data
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [tempDate, setTempDate] = useState<Date>(new Date());
-  const [showAndroidPicker, setShowAndroidPicker] = useState(false);
-  const [savingDate, setSavingDate] = useState(false);
+  // Shimmer pulse animation para skeleton loading
+  const shimmerOpacity = useSharedValue(0.4);
+  useEffect(() => {
+    shimmerOpacity.value = withRepeat(
+      withTiming(0.85, { duration: 1000 }),
+      -1,
+      true
+    );
+  }, []);
 
-  // Intervalo a cada 60s para manter horas e minutos vivos
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: shimmerOpacity.value,
+  }));
+
+  // Intervalo a cada 60s para manter horas vivas
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTick(Date.now());
@@ -140,56 +231,48 @@ export default function HomeScreen() {
         .eq('couple_id', coupleId);
 
       if (membersError) {
-        console.warn('Erro ao buscar couple_members:', membersError.message);
         return;
       }
 
       const userIds = (members || []).map((m) => m.user_id);
       if (userIds.length === 0) return;
 
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, display_name')
+        .select('id, display_name, avatar_url')
         .in('id', userIds);
 
-      if (profilesError) {
-        console.warn('Erro ao buscar profiles:', profilesError.message);
-      }
-
-      const profileMap = new Map<string, string>();
+      const profileMap = new Map<string, { name: string; avatar: string | null }>();
       profiles?.forEach((p) => {
-        if (p.id && p.display_name) {
-          profileMap.set(p.id, p.display_name);
+        if (p.id) {
+          profileMap.set(p.id, {
+            name: p.display_name || '',
+            avatar: p.avatar_url || null,
+          });
         }
       });
 
+      const myProfile = profileMap.get(user.id);
       const myDisplayName =
-        profileMap.get(user.id) ||
+        myProfile?.name ||
         user.user_metadata?.display_name ||
         user.email?.split('@')[0] ||
         'Você';
       const myFirstName = getFirstName(myDisplayName) || 'Você';
 
-      if (!profileMap.has(user.id) && user.user_metadata?.display_name) {
-        supabase
-          .from('profiles')
-          .upsert({ id: user.id, display_name: user.user_metadata.display_name })
-          .then();
-      }
-
       const otherMember = members?.find((m) => m.user_id !== user.id);
       let partnerFirstName = 'Meu Amor';
 
       if (otherMember) {
-        const partnerDisplayName = profileMap.get(otherMember.user_id);
-        if (partnerDisplayName) {
-          partnerFirstName = getFirstName(partnerDisplayName) || 'Meu Amor';
+        const partnerProfile = profileMap.get(otherMember.user_id);
+        if (partnerProfile?.name) {
+          partnerFirstName = getFirstName(partnerProfile.name) || 'Meu Amor';
         }
       }
 
       setCoupleTitle(`${myFirstName} & ${partnerFirstName}`);
-    } catch (err) {
-      console.warn('Erro ao carregar detalhes do casal:', err);
+    } catch {
+      // Ignora silenciosamente
     }
   }, [user, coupleId]);
 
@@ -205,41 +288,29 @@ export default function HomeScreen() {
         .single();
 
       if (error) {
-        console.warn('Erro ao carregar dados do casal:', error.message);
         return;
       }
 
       const customDateStr = coupleData?.anniversary_date;
-      const isCustom = !!customDateStr;
       const effectiveDate = customDateStr || coupleData?.created_at;
-
-      const parsedDate = effectiveDate ? new Date(effectiveDate) : new Date();
-      setAnniversaryDate(parsedDate);
-      setTempDate(parsedDate);
-      setHasCustomAnniversary(isCustom);
       setEffectiveStartDateStr(effectiveDate || null);
-    } catch (err) {
-      console.warn('Erro ao carregar dados do relacionamento:', err);
+    } catch {
+      // Ignora silenciosamente
     }
   }, [coupleId]);
 
-  // 3. Busca a memória mais recente
+  // 3. Busca a memória mais recente com URL assinada
   const loadRecentMemory = useCallback(async () => {
     if (!coupleId) return;
 
     try {
-      const { data: memoryData, error } = await supabase
+      const { data: memoryData } = await supabase
         .from('memories')
         .select('id, title, memory_date, image_url')
         .eq('couple_id', coupleId)
         .order('memory_date', { ascending: false })
         .limit(1)
         .maybeSingle();
-
-      if (error) {
-        console.warn('Erro ao carregar memória recente:', error.message);
-        return;
-      }
 
       if (!memoryData) {
         setRecentMemory(null);
@@ -252,17 +323,18 @@ export default function HomeScreen() {
         if (cleanPath.includes('/memories/')) {
           cleanPath = cleanPath.split('/memories/')[1].split('?')[0];
         }
+        cleanPath = cleanPath.replace(/^\/+/, '');
 
         try {
           const { data: signedData } = await supabase.storage
             .from('memories')
-            .createSignedUrl(cleanPath, 60 * 60 * 24); // 24 horas de validade
+            .createSignedUrl(cleanPath, 60 * 60 * 24);
 
           if (signedData?.signedUrl) {
             displayUrl = signedData.signedUrl;
           }
-        } catch (signErr) {
-          console.warn('Erro ao assinar URL da memória recente:', signErr);
+        } catch {
+          // Ignora e usa a url original
         }
       }
 
@@ -270,15 +342,120 @@ export default function HomeScreen() {
         ...memoryData,
         displayUrl,
       });
-    } catch (err) {
-      console.warn('Erro ao buscar memória recente:', err);
+    } catch {
+      // Ignora silenciosamente
+    }
+  }, [coupleId]);
+
+  // 4. Busca o último recado carinhoso trocado
+  const loadLatestMessage = useCallback(async () => {
+    if (!coupleId || !user) return;
+
+    try {
+      const { data: msg } = await supabase
+        .from('messages')
+        .select('id, content, created_at, created_by')
+        .eq('couple_id', coupleId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!msg) {
+        setLatestMessage(null);
+        return;
+      }
+
+      const isMe = msg.created_by === user.id;
+
+      // Busca avatar e nome do autor
+      let authorName = isMe ? 'Você' : 'Meu Amor';
+      let authorAvatarUrl: string | null = null;
+
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name, avatar_url')
+          .eq('id', msg.created_by)
+          .maybeSingle();
+
+        if (profile) {
+          authorName = isMe ? 'Você' : getFirstName(profile.display_name) || 'Meu Amor';
+          if (profile.avatar_url) {
+            let cleanPath = profile.avatar_url.trim();
+            if (cleanPath.includes('/avatars/')) {
+              cleanPath = cleanPath.split('/avatars/')[1].split('?')[0];
+            }
+            cleanPath = cleanPath.replace(/^\/+/, '');
+            const { data: signedAvatar } = await supabase.storage
+              .from('avatars')
+              .createSignedUrl(cleanPath, 60 * 60 * 24);
+            authorAvatarUrl = signedAvatar?.signedUrl || profile.avatar_url;
+          }
+        }
+      } catch {
+        // Fallback silencioso
+      }
+
+      setLatestMessage({
+        id: msg.id,
+        content: msg.content,
+        created_at: msg.created_at,
+        created_by: msg.created_by,
+        isMe,
+        authorName,
+        authorAvatarUrl,
+      });
+    } catch {
+      // Ignora silenciosamente
+    }
+  }, [coupleId, user]);
+
+  // 5. Busca o próximo marco / comemoração agendada
+  const loadNextMilestone = useCallback(async () => {
+    if (!coupleId) return;
+
+    try {
+      const nowIso = new Date().toISOString();
+      const { data: nextDate } = await supabase
+        .from('special_dates')
+        .select('id, title, category, event_date')
+        .eq('couple_id', coupleId)
+        .gte('event_date', nowIso)
+        .order('event_date', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (nextDate) {
+        const targetTime = new Date(nextDate.event_date).getTime();
+        const diffMs = Math.max(0, targetTime - Date.now());
+        const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        setNextMilestone({
+          ...nextDate,
+          daysRemaining,
+        });
+      } else {
+        setNextMilestone(null);
+      }
+    } catch {
+      // Ignora silenciosamente
     }
   }, [coupleId]);
 
   // Carrega todos os dados simultaneamente
   const loadAllData = useCallback(async () => {
-    await Promise.all([loadCoupleDetails(), loadCoupleDays(), loadRecentMemory()]);
-  }, [loadCoupleDetails, loadCoupleDays, loadRecentMemory]);
+    try {
+      await Promise.all([
+        loadCoupleDetails(),
+        loadCoupleDays(),
+        loadRecentMemory(),
+        loadLatestMessage(),
+        loadNextMilestone(),
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadCoupleDetails, loadCoupleDays, loadRecentMemory, loadLatestMessage, loadNextMilestone]);
 
   useEffect(() => {
     if (!user || !coupleId) return;
@@ -290,46 +467,35 @@ export default function HomeScreen() {
       .channel(`home_channel_${coupleId}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'couple_members',
-          filter: `couple_id=eq.${coupleId}`,
-        },
-        () => {
-          loadCoupleDetails();
-        }
+        { event: '*', schema: 'public', table: 'couple_members', filter: `couple_id=eq.${coupleId}` },
+        () => loadCoupleDetails()
       )
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'couples',
-          filter: `id=eq.${coupleId}`,
-        },
-        () => {
-          loadCoupleDays();
-        }
+        { event: '*', schema: 'public', table: 'couples', filter: `id=eq.${coupleId}` },
+        () => loadCoupleDays()
       )
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'memories',
-          filter: `couple_id=eq.${coupleId}`,
-        },
-        () => {
-          loadRecentMemory();
-        }
+        { event: '*', schema: 'public', table: 'memories', filter: `couple_id=eq.${coupleId}` },
+        () => loadRecentMemory()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'messages', filter: `couple_id=eq.${coupleId}` },
+        () => loadLatestMessage()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'special_dates', filter: `couple_id=eq.${coupleId}` },
+        () => loadNextMilestone()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, coupleId, loadAllData, loadCoupleDetails, loadCoupleDays, loadRecentMemory]);
+  }, [user, coupleId, loadAllData, loadCoupleDetails, loadCoupleDays, loadRecentMemory, loadLatestMessage, loadNextMilestone]);
 
   // Ação de Pull-to-Refresh
   const onRefresh = async () => {
@@ -338,300 +504,432 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  // Abre o seletor de data conforme a plataforma
-  const handleOpenDatePicker = () => {
-    setTempDate(anniversaryDate);
-    if (Platform.OS === 'android') {
-      setShowAndroidPicker(true);
-    } else {
-      setIsModalVisible(true);
-    }
-  };
-
-  // Salva a data de aniversário no Supabase com persistência garantida
-  const handleSaveDate = async (dateToSave: Date) => {
-    if (!coupleId) return;
-
-    setSavingDate(true);
-    try {
-      const year = dateToSave.getFullYear();
-      const month = String(dateToSave.getMonth() + 1).padStart(2, '0');
-      const day = String(dateToSave.getDate()).padStart(2, '0');
-      const isoDate = `${year}-${month}-${day}`;
-
-      const { error } = await supabase
-        .from('couples')
-        .update({ anniversary_date: isoDate })
-        .eq('id', coupleId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setAnniversaryDate(dateToSave);
-      setHasCustomAnniversary(true);
-      setEffectiveStartDateStr(isoDate);
-      setIsModalVisible(false);
-
-      // Recarrega os dados para confirmar a persistência
-      await loadCoupleDays();
-
-      Alert.alert(
-        'Data definida com amor!',
-        `A jornada de vocês agora conta desde ${day}/${month}/${year}.`
-      );
-    } catch (err: any) {
-      Alert.alert('Erro ao salvar data', err.message || 'Não foi possível atualizar a data.');
-    } finally {
-      setSavingDate(false);
-    }
-  };
-
-  // Tratamento de mudança de data no Android
-  const onAndroidDateChange = (_event: DateTimePickerChangeEvent, selectedDate?: Date) => {
-    setShowAndroidPicker(false);
-    if (selectedDate) {
-      handleSaveDate(selectedDate);
-    }
-  };
-
-  const onDatePickerDismiss = () => {
-    setShowAndroidPicker(false);
-  };
-
   // Totais acumulados calculados dinamicamente
   const timeTotals = useMemo(() => {
     return calculateAccumulatedTime(effectiveStartDateStr);
   }, [effectiveStartDateStr]);
 
-  // Prévia no Modal de edição
-  const tempDateStr = `${tempDate.getFullYear()}-${String(tempDate.getMonth() + 1).padStart(2, '0')}-${String(tempDate.getDate()).padStart(2, '0')}`;
-  const tempTotals = useMemo(() => {
-    return calculateAccumulatedTime(tempDateStr);
-  }, [tempDateStr]);
+  const handleOpenMemories = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/(tabs)/memories');
+  };
+
+  const handleOpenMessages = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/(tabs)/messages');
+  };
+
+  const handleOpenDates = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/(tabs)/dates');
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Background Atmosphere Liquid Glass */}
-      <LiquidGlassBackground />
+    <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
+      <AtmosphereBackground />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <Animated.ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 10, paddingBottom: 130 },
+        ]}
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#8E7CE8"
-            colors={['#8E7CE8']}
+            tintColor={themeTokens.primary}
+            colors={[themeTokens.primary]}
           />
         }
       >
-        {/* Cabeçalho Superior Apple Liquid Glass */}
-        <AppHeader
-          coupleSubtitle={coupleTitle}
-          rightAction={
-            <AnimatedTouchable style={styles.notificationButton}>
-              <Ionicons name="notifications-outline" size={20} color="#16151E" />
-            </AnimatedTouchable>
-          }
-        />
+        {/* Header */}
+        <AppHeader coupleSubtitle={coupleTitle} showNotification={true} />
 
-        {/* Card Principal: Nossa Jornada (Interativo) */}
-        <AnimatedTouchable
-          style={styles.heroGlassCard}
-          onPress={handleOpenDatePicker}
-          activeOpacity={0.88}
-        >
-          {/* Badge sutil de ação no topo do card */}
-          <View style={styles.dateActionBadge}>
-            <Ionicons name="calendar-outline" size={14} color="#8E7CE8" />
-            <Text style={styles.dateActionText}>
-              {hasCustomAnniversary ? 'Editar data' : 'Definir dia de início'}
-            </Text>
-          </View>
-
-          <View style={styles.imagePlaceholder}>
-            <Ionicons name="heart" size={48} color="#8E7CE8" />
-            <Text style={styles.imagePlaceholderText}>O nosso espaço a dois</Text>
-          </View>
-
-          <View style={styles.journeyContent}>
-            <Text style={styles.journeyLabel}>NOSSA JORNADA</Text>
-
-            {/* 4 Quadrinhos de Vidro: MESES, DIAS, HORAS, MINUTOS */}
-            <View style={styles.capsulesRow}>
-              <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.capsule}>
-                <Text style={styles.capsuleLabel}>MESES</Text>
-                <Text style={styles.capsuleValue} numberOfLines={1} adjustsFontSizeToFit>
-                  {timeTotals.months}
-                </Text>
-              </Animated.View>
-
-              <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.capsule}>
-                <Text style={styles.capsuleLabel}>DIAS</Text>
-                <Text style={styles.capsuleValue} numberOfLines={1} adjustsFontSizeToFit>
-                  {timeTotals.days}
-                </Text>
-              </Animated.View>
-
-              <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.capsule}>
-                <Text style={styles.capsuleLabel}>HORAS</Text>
-                <Text style={styles.capsuleValue} numberOfLines={1} adjustsFontSizeToFit>
-                  {timeTotals.hours}
-                </Text>
-              </Animated.View>
-
-              <Animated.View entering={FadeInDown.delay(400).springify()} style={styles.capsule}>
-                <Text style={styles.capsuleLabel}>MINS</Text>
-                <Text style={styles.capsuleValue} numberOfLines={1} adjustsFontSizeToFit>
-                  {timeTotals.minutes}
-                </Text>
-              </Animated.View>
-            </View>
-
-            {!hasCustomAnniversary && (
-              <View style={styles.hintContainer}>
-                <Ionicons name="sparkles" size={13} color="#8E7CE8" />
-                <Text style={styles.hintText}>
-                  Toque para definir o dia em que começamos
-                </Text>
-              </View>
-            )}
-          </View>
-        </AnimatedTouchable>
-
-        {/* Seção: Memória Recente */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionSubtitle}>MEMÓRIA RECENTE</Text>
-        </View>
-
-        {recentMemory ? (
-          <AnimatedTouchable
-            style={styles.memoryCard}
-            onPress={() => router.push('/(tabs)/memories')}
-            activeOpacity={0.85}
-          >
-            <View style={styles.memoryThumbnail}>
-              {recentMemory.displayUrl || recentMemory.image_url ? (
-                <Image
-                  source={{
-                    uri: (recentMemory.displayUrl || recentMemory.image_url) as string,
-                  }}
-                  style={styles.memoryThumbnailImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <Ionicons name="images-outline" size={22} color="#8E7CE8" />
-              )}
-            </View>
-            <View style={styles.memoryInfo}>
-              <Text style={styles.memoryDate}>
-                {formatMemoryDate(recentMemory.memory_date)}
-              </Text>
-              <Text style={styles.memoryTitle} numberOfLines={1}>
-                {recentMemory.title}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#686578" />
-          </AnimatedTouchable>
-        ) : (
-          <AnimatedTouchable
-            style={styles.emptyMemoryCard}
-            onPress={() => router.push('/(tabs)/memories')}
-            activeOpacity={0.85}
-          >
-            <View style={styles.emptyMemoryThumbnail}>
-              <Ionicons name="sparkles-outline" size={22} color="#8E7CE8" />
-            </View>
-            <View style={styles.memoryInfo}>
-              <Text style={styles.emptyMemoryTitle}>
-                Toque para guardar sua primeira memória
-              </Text>
-              <Text style={styles.emptyMemorySubtitle}>
-                Eternize os melhores momentos de vocês dois
-              </Text>
-            </View>
-            <Ionicons name="add-circle-outline" size={22} color="#8E7CE8" />
-          </AnimatedTouchable>
-        )}
-      </ScrollView>
-
-      {/* Seletor Nativo Android */}
-      {showAndroidPicker && (
-        <DateTimePicker
-          value={tempDate}
-          mode="date"
-          display="default"
-          onValueChange={onAndroidDateChange}
-          onDismiss={onDatePickerDismiss}
-        />
-      )}
-
-      {/* Modal Estilo Apple Liquid Glass para iOS / Outras plataformas */}
-      <Modal
-        visible={isModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalGlassCard}>
-            <View style={styles.modalHandleBar} />
-
-            <View style={styles.modalIconWrapper}>
-              <Ionicons name="heart-circle" size={44} color="#8E7CE8" />
-            </View>
-
-            <Text style={styles.modalTitle}>O início de tudo</Text>
-            <Text style={styles.modalSubtitle}>
-              Quando começou essa história de amor?
-            </Text>
-
-            {/* Badge de prévia dinâmica */}
-            <View style={styles.previewPill}>
-              <Text style={styles.previewPillText}>
-                {tempTotals.days.toLocaleString('pt-BR')} dias • {tempTotals.months} meses
-              </Text>
-            </View>
-
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={tempDate}
-                mode="date"
-                display="spinner"
-                maximumDate={new Date()}
-                onValueChange={(_event: DateTimePickerChangeEvent, date?: Date) => {
-                  if (date) setTempDate(date);
-                }}
-                textColor="#16151E"
+        {loading ? (
+          <View style={styles.skeletonContainer}>
+            <Animated.View
+              style={[
+                styles.skeletonHeroCard,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(255,255,255,0.6)',
+                  borderColor: isDark
+                    ? themeTokens.glassBorder
+                    : 'rgba(255,255,255,0.8)',
+                },
+                shimmerStyle,
+              ]}
+            >
+              <View
+                style={[
+                  styles.skeletonImage,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(167,151,255,0.08)'
+                      : 'rgba(142,124,232,0.1)',
+                  },
+                ]}
               />
-            </View>
-
-            <View style={styles.modalButtonsRow}>
-              <AnimatedTouchable
-                style={styles.modalCancelButton}
-                onPress={() => setIsModalVisible(false)}
-                disabled={savingDate}
-              >
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </AnimatedTouchable>
-
-              <AnimatedTouchable
-                style={[styles.modalSaveButton, savingDate && styles.buttonDisabled]}
-                onPress={() => handleSaveDate(tempDate)}
-                disabled={savingDate}
-              >
-                {savingDate ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.modalSaveText}>Salvar Data</Text>
-                )}
-              </AnimatedTouchable>
-            </View>
+              <View
+                style={[
+                  styles.skeletonPill,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(167,151,255,0.1)'
+                      : 'rgba(142,124,232,0.12)',
+                  },
+                ]}
+              />
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.skeletonRowCard,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(255,255,255,0.6)',
+                  borderColor: isDark
+                    ? themeTokens.glassBorder
+                    : 'rgba(255,255,255,0.8)',
+                },
+                shimmerStyle,
+              ]}
+            />
           </View>
-        </View>
-      </Modal>
+        ) : (
+          <Animated.View entering={FadeInDown.duration(400).springify().damping(18)}>
+            {/* ── Hero Card: Photo + Journey Counter ── */}
+            <LiquidGlassView variant="hero" style={styles.heroGlassCard} borderRadius={28}>
+              <AnimatedTouchable
+                style={styles.heroImageContainer}
+                onPress={handleOpenMemories}
+                scaleTo={0.97}
+              >
+                {recentMemory?.displayUrl || recentMemory?.image_url ? (
+                  <Image
+                    source={{
+                      uri: (recentMemory.displayUrl || recentMemory.image_url) as string,
+                    }}
+                    style={styles.heroImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <LinearGradient
+                    colors={
+                      isDark
+                        ? [themeTokens.orbLavender, themeTokens.orbPink]
+                        : ['#EDE9FE', '#DDD6FE', '#FCE7F3']
+                    }
+                    style={styles.heroImagePlaceholder}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <View
+                      style={[
+                        styles.placeholderIconCircle,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(167,151,255,0.2)'
+                            : 'rgba(255,255,255,0.7)',
+                          borderColor: isDark
+                            ? 'rgba(167,151,255,0.3)'
+                            : 'rgba(255,255,255,0.9)',
+                        },
+                      ]}
+                    >
+                      <Ionicons name="camera" size={28} color={themeTokens.primary} />
+                    </View>
+                    <Text
+                      style={[styles.placeholderTitle, { color: isDark ? themeTokens.textPrimary : '#1E1B4B' }]}
+                    >
+                      Eternize sua primeira memória
+                    </Text>
+                    <Text style={[styles.placeholderSub, { color: themeTokens.textSecondary }]}>
+                      Toque para adicionar uma foto de vocês
+                    </Text>
+                  </LinearGradient>
+                )}
+
+                {/* Floating badge */}
+                <View
+                  style={[
+                    styles.photoBadge,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(167,151,255,0.55)'
+                        : 'rgba(124,58,237,0.6)',
+                      borderColor: isDark
+                        ? 'rgba(255,255,255,0.2)'
+                        : 'rgba(255,255,255,0.5)',
+                    },
+                  ]}
+                >
+                  <Ionicons name="heart" size={12} color="#FFFFFF" />
+                  <Text style={styles.photoBadgeText}>Nós</Text>
+                </View>
+              </AnimatedTouchable>
+
+              {/* Journey Counter */}
+              <View style={styles.journeySection}>
+                <Text style={[styles.journeyLabel, { color: themeTokens.textSecondary }]}>
+                  NOSSA JORNADA
+                </Text>
+
+                <View
+                  style={[
+                    styles.journeyPill,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(167,151,255,0.1)'
+                        : 'rgba(142,124,232,0.06)',
+                      borderColor: isDark
+                        ? 'rgba(167,151,255,0.2)'
+                        : 'rgba(142,124,232,0.15)',
+                    },
+                  ]}
+                >
+                  <Text style={[styles.journeyDays, { color: themeTokens.primary }]}>
+                    Juntos há {timeTotals.days} dias
+                  </Text>
+                  <Text style={[styles.journeyBreakdown, { color: isDark ? themeTokens.primary : '#8E7CE8' }]}>
+                    {timeTotals.breakdownMonths}{' '}
+                    {timeTotals.breakdownMonths === 1 ? 'mês' : 'meses'} •{' '}
+                    {timeTotals.breakdownDays}{' '}
+                    {timeTotals.breakdownDays === 1 ? 'dia' : 'dias'} •{' '}
+                    {timeTotals.breakdownHours}h
+                  </Text>
+                </View>
+              </View>
+            </LiquidGlassView>
+
+            {/* ── Quick Actions ── */}
+            <View style={styles.quickActionsRow}>
+              {[
+                { icon: 'chatbubble-ellipses' as const, label: 'Recado', onPress: handleOpenMessages },
+                { icon: 'camera' as const, label: 'Memória', onPress: handleOpenMemories },
+                { icon: 'calendar' as const, label: 'Datas', onPress: handleOpenDates },
+              ].map((action) => (
+                <AnimatedTouchable
+                  key={action.label}
+                  style={styles.quickActionTouch}
+                  onPress={action.onPress}
+                  scaleTo={0.95}
+                >
+                  <LiquidGlassView variant="pill" style={styles.quickActionPill} borderRadius={16}>
+                    <Ionicons name={action.icon} size={15} color={themeTokens.primary} />
+                    <Text style={[styles.quickActionText, { color: themeTokens.primary }]}>
+                      {action.label}
+                    </Text>
+                  </LiquidGlassView>
+                </AnimatedTouchable>
+              ))}
+            </View>
+
+            {/* ── Next Milestone ── */}
+            {nextMilestone && (
+              <AnimatedTouchable onPress={handleOpenDates} scaleTo={0.97}>
+                <LiquidGlassView variant="card" style={styles.milestoneCard} borderRadius={20}>
+                  <View
+                    style={[
+                      styles.milestoneIcon,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(167,151,255,0.15)'
+                          : 'rgba(142,124,232,0.1)',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="sparkles" size={17} color={themeTokens.primary} />
+                  </View>
+                  <View style={styles.milestoneInfo}>
+                    <Text style={[styles.milestoneLabel, { color: themeTokens.textSecondary }]}>
+                      PRÓXIMO MOMENTO
+                    </Text>
+                    <Text
+                      style={[styles.milestoneTitle, { color: themeTokens.textPrimary }]}
+                      numberOfLines={1}
+                    >
+                      {nextMilestone.title}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.milestoneBadge,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(167,151,255,0.15)'
+                          : '#EDE9FE',
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.milestoneBadgeText, { color: themeTokens.primary }]}>
+                      {nextMilestone.daysRemaining === 0
+                        ? 'É hoje!'
+                        : `em ${nextMilestone.daysRemaining}d`}
+                    </Text>
+                  </View>
+                </LiquidGlassView>
+              </AnimatedTouchable>
+            )}
+
+            {/* ── Recent Memory ── */}
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionLabel, { color: themeTokens.textSecondary }]}>
+                MEMÓRIA RECENTE
+              </Text>
+              <AnimatedTouchable onPress={handleOpenMemories} scaleTo={0.95}>
+                <Text style={[styles.sectionLink, { color: themeTokens.primary }]}>Ver todas</Text>
+              </AnimatedTouchable>
+            </View>
+
+            {recentMemory ? (
+              <AnimatedTouchable onPress={handleOpenMemories} scaleTo={0.97}>
+                <LiquidGlassView variant="card" style={styles.memoryCard} borderRadius={20}>
+                  <View
+                    style={[
+                      styles.memoryThumb,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(167,151,255,0.12)'
+                          : '#EDE9FE',
+                        borderColor: isDark
+                          ? themeTokens.glassBorder
+                          : 'rgba(255,255,255,0.9)',
+                      },
+                    ]}
+                  >
+                    {recentMemory.displayUrl || recentMemory.image_url ? (
+                      <Image
+                        source={{
+                          uri: (recentMemory.displayUrl || recentMemory.image_url) as string,
+                        }}
+                        style={styles.memoryThumbImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Ionicons name="images-outline" size={22} color={themeTokens.primary} />
+                    )}
+                  </View>
+                  <View style={styles.memoryMeta}>
+                    <Text style={[styles.memoryDate, { color: themeTokens.textSecondary }]}>
+                      {formatMemoryDate(recentMemory.memory_date)}
+                    </Text>
+                    <Text
+                      style={[styles.memoryTitle, { color: themeTokens.textPrimary }]}
+                      numberOfLines={1}
+                    >
+                      {recentMemory.title}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.chevron,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(167,151,255,0.12)'
+                          : 'rgba(142,124,232,0.08)',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="chevron-forward" size={15} color={themeTokens.primary} />
+                  </View>
+                </LiquidGlassView>
+              </AnimatedTouchable>
+            ) : (
+              <AnimatedTouchable onPress={handleOpenMemories} scaleTo={0.97}>
+                <LiquidGlassView variant="card" style={styles.memoryCard} borderRadius={20}>
+                  <View
+                    style={[
+                      styles.memoryThumb,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(167,151,255,0.12)'
+                          : 'rgba(142,124,232,0.08)',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="sparkles-outline" size={22} color={themeTokens.primary} />
+                  </View>
+                  <View style={styles.memoryMeta}>
+                    <Text style={[styles.emptyTitle, { color: themeTokens.textPrimary }]}>
+                      Guarde sua primeira memória
+                    </Text>
+                    <Text style={[styles.emptySub, { color: themeTokens.textSecondary }]}>
+                      Eternize os melhores momentos de vocês
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.chevron,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(167,151,255,0.12)'
+                          : 'rgba(142,124,232,0.08)',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="add" size={17} color={themeTokens.primary} />
+                  </View>
+                </LiquidGlassView>
+              </AnimatedTouchable>
+            )}
+
+            {/* ── Latest Message ── */}
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionLabel, { color: themeTokens.textSecondary }]}>
+                RECADO DO CASAL
+              </Text>
+              <AnimatedTouchable onPress={handleOpenMessages} scaleTo={0.95}>
+                <Text style={[styles.sectionLink, { color: themeTokens.primary }]}>Abrir chat</Text>
+              </AnimatedTouchable>
+            </View>
+
+            <AnimatedTouchable onPress={handleOpenMessages} scaleTo={0.97}>
+              <LiquidGlassView variant="card" style={styles.noteCard} borderRadius={20}>
+                <View style={styles.noteHeader}>
+                  <View
+                    style={[
+                      styles.noteAuthorBadge,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(167,151,255,0.12)'
+                          : 'rgba(142,124,232,0.08)',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="chatbubble-ellipses" size={13} color={themeTokens.primary} />
+                    <Text style={[styles.noteAuthorText, { color: themeTokens.primary }]}>
+                      {latestMessage ? latestMessage.authorName : 'Deixe um bilhete'}
+                    </Text>
+                  </View>
+                  {latestMessage && (
+                    <Text style={[styles.noteTime, { color: themeTokens.textSecondary }]}>
+                      {formatMessageTime(latestMessage.created_at)}
+                    </Text>
+                  )}
+                </View>
+
+                <Text
+                  style={[
+                    styles.noteContent,
+                    { color: latestMessage ? themeTokens.textPrimary : themeTokens.textSecondary },
+                    !latestMessage && styles.noteContentEmpty,
+                  ]}
+                  numberOfLines={2}
+                >
+                  {latestMessage
+                    ? `"${latestMessage.content}"`
+                    : 'Surpreenda seu amor com um bilhete carinhoso hoje ❤️'}
+                </Text>
+              </LiquidGlassView>
+            </AnimatedTouchable>
+          </Animated.View>
+        )}
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -639,396 +937,304 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FC',
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 56 : 36,
-    paddingBottom: 130,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
+
+  /* ── Skeleton ── */
+  skeletonContainer: {
+    paddingTop: 10,
+    gap: 16,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  appIconBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.25)',
-  },
-  titleWrapper: {
-    justifyContent: 'center',
-  },
-  brandTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#16151E',
-    letterSpacing: -1.5,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  brandDot: {
-    color: '#8E7CE8',
-  },
-  connectedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  pulseDotContainer: {
-    width: 12,
-    height: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 6,
-  },
-  pulseDotRing: {
-    position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#34C759',
-  },
-  pulseDotCore: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#34C759',
-  },
-  connectedText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#686578',
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  heroGlassCard: {
-    position: 'relative',
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
-    borderRadius: 28,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 3,
-    marginBottom: 24,
-  },
-  dateActionBadge: {
-    position: 'absolute',
-    top: 24,
-    right: 24,
-    zIndex: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.25)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  dateActionText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#8E7CE8',
-  },
-  imagePlaceholder: {
-    height: 200,
-    borderRadius: 20,
-    backgroundColor: 'rgba(142, 124, 232, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.15)',
-  },
-  imagePlaceholderText: {
-    fontSize: 14,
-    color: '#686578',
-    marginTop: 8,
-    fontWeight: '500',
-  },
-  journeyContent: {
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  journeyLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#686578',
-    letterSpacing: 1.5,
-    marginBottom: 14,
-  },
-  capsulesRow: {
-    flexDirection: 'row',
+  skeletonHeroCard: {
     width: '100%',
-    gap: 6,
-    marginBottom: 6,
-  },
-  capsule: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    height: 340,
+    borderRadius: 28,
+    padding: 16,
+    justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.2)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
   },
-  capsuleLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#686578',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+  skeletonImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 20,
   },
-  capsuleValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#8E7CE8',
-    letterSpacing: 0,
-  },
-  hintContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-  },
-  hintText: {
-    fontSize: 12,
-    color: '#8E7CE8',
-    fontWeight: '600',
-  },
-  sectionHeader: {
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#686578',
-    letterSpacing: 1.2,
-  },
-  memoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+  skeletonPill: {
+    width: '65%',
+    height: 44,
     borderRadius: 22,
-    padding: 14,
+    alignSelf: 'center',
+  },
+  skeletonRowCard: {
+    width: '100%',
+    height: 80,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 14,
-    elevation: 2,
   },
-  memoryThumbnail: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: 'rgba(142, 124, 232, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
+
+  /* ── Hero Card ── */
+  heroGlassCard: {
+    padding: 12,
+    marginBottom: 12,
+  },
+  heroImageContainer: {
+    width: '100%',
+    height: width > 400 ? 240 : 210,
+    borderRadius: 20,
     overflow: 'hidden',
+    position: 'relative',
   },
-  memoryThumbnailImage: {
+  heroImage: {
     width: '100%',
     height: '100%',
   },
-  memoryInfo: {
+  heroImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  placeholderIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  placeholderTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+  placeholderSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  photoBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  photoBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+
+  /* ── Journey Counter ── */
+  journeySection: {
+    alignItems: 'center',
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  journeyLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    marginBottom: 8,
+  },
+  journeyPill: {
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  journeyDays: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    fontVariant: ['tabular-nums'],
+  },
+  journeyBreakdown: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+    letterSpacing: 0.1,
+    fontVariant: ['tabular-nums'],
+  },
+
+  /* ── Quick Actions ── */
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+  },
+  quickActionTouch: {
+    flex: 1,
+  },
+  quickActionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    gap: 5,
+  },
+  quickActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+
+  /* ── Milestone ── */
+  milestoneCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    marginBottom: 20,
+    gap: 12,
+  },
+  milestoneIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  milestoneInfo: {
+    flex: 1,
+  },
+  milestoneLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  milestoneTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 1,
+  },
+  milestoneBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  milestoneBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+
+  /* ── Section Headers ── */
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+  },
+  sectionLink: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  /* ── Memory Card ── */
+  memoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    marginBottom: 20,
+    gap: 12,
+  },
+  memoryThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+  },
+  memoryThumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  memoryMeta: {
     flex: 1,
   },
   memoryDate: {
-    fontSize: 12,
-    color: '#686578',
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: 2,
   },
   memoryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#16151E',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
-  emptyMemoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
-    borderRadius: 22,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.2)',
-    borderStyle: 'dashed',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.03,
-    shadowRadius: 14,
-    elevation: 2,
+  emptyTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 1,
   },
-  emptyMemoryThumbnail: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: 'rgba(142, 124, 232, 0.08)',
+  emptySub: {
+    fontSize: 11,
+  },
+  chevron: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
   },
-  emptyMemoryTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#16151E',
-    marginBottom: 2,
+
+  /* ── Note Card ── */
+  noteCard: {
+    padding: 14,
   },
-  emptyMemorySubtitle: {
-    fontSize: 12,
-    color: '#686578',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(22, 21, 30, 0.45)',
-    justifyContent: 'flex-end',
-  },
-  modalGlassCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
-    paddingTop: 14,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
-    paddingHorizontal: 24,
+  noteHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  modalHandleBar: {
-    width: 40,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(104, 101, 120, 0.2)',
-    marginBottom: 16,
-  },
-  modalIconWrapper: {
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#16151E',
-    marginBottom: 4,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#686578',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  previewPill: {
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginBottom: 10,
-  },
-  previewPillText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#8E7CE8',
-  },
-  datePickerContainer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 10,
-  },
-  modalButtonsRow: {
+  noteAuthorBadge: {
     flexDirection: 'row',
-    width: '100%',
-    gap: 12,
-    marginTop: 16,
-  },
-  modalCancelButton: {
-    flex: 1,
-    height: 50,
-    borderRadius: 999,
-    backgroundColor: 'rgba(104, 101, 120, 0.1)',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
-  modalCancelText: {
-    fontSize: 15,
+  noteAuthorText: {
+    fontSize: 11,
     fontWeight: '600',
-    color: '#686578',
   },
-  modalSaveButton: {
-    flex: 2,
-    height: 50,
-    borderRadius: 999,
-    backgroundColor: '#8E7CE8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#8E7CE8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
+  noteTime: {
+    fontSize: 11,
+    fontWeight: '500',
   },
-  modalSaveText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
+  noteContent: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+    fontStyle: 'italic',
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  noteContentEmpty: {
+    fontStyle: 'normal',
   },
 });
+

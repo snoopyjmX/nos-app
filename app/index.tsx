@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { useCouple } from '../context/CoupleContext';
+import { AtmosphereBackground } from '../components/ui/AtmosphereBackground';
+import { LiquidGlassView } from '../components/ui/LiquidGlassView';
 
 export default function IndexScreen() {
   const { session, isLoading: isLoadingAuth } = useAuth();
@@ -12,18 +14,19 @@ export default function IndexScreen() {
   if (isLoadingAuth || (session && isLoadingCouple)) {
     return (
       <View style={styles.container}>
-        <View style={styles.glassCard}>
-          <Text style={styles.brandTitle}>nós</Text>
+        <AtmosphereBackground />
+        <LiquidGlassView variant="hero" style={styles.glassCard} borderRadius={30}>
+          <Text style={styles.brandTitle}>nós.</Text>
           <Text style={styles.brandSubtitle}>Um espaço só nosso.</Text>
           <ActivityIndicator color="#8E7CE8" size="small" style={styles.spinner} />
-        </View>
+        </LiquidGlassView>
       </View>
     );
   }
 
-  // 1. Se não houver sessão ativa -> tela de login
+  // 1. Se não houver sessão ativa -> tela de boas-vindas
   if (!session) {
-    return <Redirect href="/(auth)/login" />;
+    return <Redirect href="/(auth)/welcome" />;
   }
 
   // 2. Se houver sessão mas ainda não possui casal -> onboarding

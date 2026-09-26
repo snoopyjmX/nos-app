@@ -29,6 +29,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (_event, currentSession) => {
         setSession(currentSession);
         setIsLoading(false);
+        if (currentSession?.user) {
+          import('../lib/pushNotifications')
+            .then(({ registerForPushNotificationsAsync }) => {
+              registerForPushNotificationsAsync(currentSession.user.id).catch(() => {});
+            })
+            .catch(() => {});
+        }
       }
     );
 

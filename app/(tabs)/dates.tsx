@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Platform,
   RefreshControl,
   Modal,
@@ -12,15 +12,29 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
- } from 'react-native';
+} from 'react-native';
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
-import { LiquidGlassBackground } from '../../components/LiquidGlassBackground';
+import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
+import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
 import { AppHeader } from '../../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
 import { supabase } from '../../lib/supabase';
+import { THEME } from '../../constants/theme';
+import { useAppTheme } from '../../context/ThemeContext';
+import { getThemeTokens } from '../../constants/theme';
+import { useScrollNavbar } from '../../hooks/useScrollNavbar';
 
 export interface SpecialDate {
   id: string;
@@ -84,8 +98,13 @@ const formatTimePTBR = (dateString?: string): string => {
 };
 
 export default function DatesScreen() {
+  const { isDark } = useAppTheme();
+  const themeTokens = getThemeTokens(isDark);
+  const styles = getStyles(themeTokens, isDark);
   const { user } = useAuth();
   const { coupleId } = useCouple();
+  const insets = useSafeAreaInsets();
+  const { onScroll } = useScrollNavbar();
 
   const [dates, setDates] = useState<SpecialDate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,6 +131,20 @@ export default function DatesScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Shimmer pulse animation para skeleton loading
+  const shimmerOpacity = useSharedValue(0.4);
+  useEffect(() => {
+    shimmerOpacity.value = withRepeat(
+      withTiming(0.85, { duration: 1000 }),
+      -1,
+      true
+    );
+  }, []);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: shimmerOpacity.value,
+  }));
+
   // 1. Atualizador do relógio para o countdown hero
   useEffect(() => {
     const interval = setInterval(() => {
@@ -134,8 +167,8 @@ export default function DatesScreen() {
 
       if (error) throw error;
       setDates(data || []);
-    } catch (err: any) {
-      console.warn('Erro ao carregar datas especiais:', err.message);
+    } catch {
+      // Ignora silenciosamente
     } finally {
       setLoading(false);
     }
@@ -189,12 +222,10 @@ export default function DatesScreen() {
       }
     });
 
-    // Próximos em ordem cronológica (mais perto primeiro)
     upcoming.sort(
       (a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
     );
 
-    // Histórico em ordem decrescente (mais recente primeiro)
     past.sort(
       (a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
     );
@@ -245,6 +276,7 @@ export default function DatesScreen() {
 
       if (error) throw error;
 
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsAddModalVisible(false);
       setNewTitle('');
       setNewCategory('Comemoração');
@@ -254,7 +286,6 @@ export default function DatesScreen() {
       setSelectedDate(resetD);
 
       await loadDates();
-      Alert.alert('Sucesso!', 'Data especial marcada no calendário do casal.');
     } catch (err: any) {
       Alert.alert('Erro ao salvar data', err.message || 'Tente novamente.');
     } finally {
@@ -264,6 +295,7 @@ export default function DatesScreen() {
 
   // 4. Excluir data
   const handleDeleteDate = (id: string, title: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       'Remover data especial',
       `Tem certeza que deseja excluir "${title}"?`,
@@ -290,7 +322,6 @@ export default function DatesScreen() {
     );
   };
 
-  // Tratadores de DateTimePicker
   const onDateChange = (_event: DateTimePickerChangeEvent, date?: Date) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
@@ -318,216 +349,299 @@ export default function DatesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Background Liquid Glass */}
-      <LiquidGlassBackground />
+      {/* 1. Fundo Atmosférico Vivo preenchendo 100% da viewport física */}
+      <AtmosphereBackground />
 
-      {/* Cabeçalho Apple Liquid Glass */}
-      <View style={{ paddingHorizontal: 20 }}>
+      {/* Cabeçalho Apple Liquid Glass com safe area protegida */}
+      <View style={[styles.headerWrapper, { paddingTop: insets.top + 8 }]}>
         <AppHeader
           sectionTitle="datas"
-          coupleSubtitle="Marcos e celebrações do casal"
+          coupleSubtitle="Marcos e celebrações"
           rightAction={
             <AnimatedTouchable
               style={styles.headerAddBtn}
-              onPress={() => setIsAddModalVisible(true)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsAddModalVisible(true);
+              }}
             >
-              <Ionicons name="add" size={18} color="#FFFFFF" />
-              <Text style={styles.headerAddBtnText}>Nova Data</Text>
+              <Ionicons name="add" size={17} color="#FFFFFF" />
+              <Text style={styles.headerAddBtnText}>Adicionar</Text>
             </AnimatedTouchable>
           }
         />
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 130 }]}
+        contentContainerStyle={{ paddingBottom: 130, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#8E7CE8"
-            colors={['#8E7CE8']}
+            tintColor={themeTokens.primary}
+            colors={[themeTokens.primary]}
           />
         }
       >
         {/* 1. Card de Destaque (Countdown Hero) */}
         {nextHeroEvent && countdown ? (
-          <View style={styles.heroCard}>
-            <View style={styles.heroGlowCircle} />
-
-            <View style={styles.heroTopRow}>
-              <View
-                style={[
-                  styles.categoryPill,
-                  { backgroundColor: getCategoryMeta(nextHeroEvent.category).bg },
-                ]}
-              >
-                <Ionicons
-                  name={getCategoryMeta(nextHeroEvent.category).icon}
-                  size={13}
-                  color={getCategoryMeta(nextHeroEvent.category).color}
-                />
-                <Text
+          <Animated.View entering={FadeInDown.springify().damping(15)}>
+            <LiquidGlassView variant="hero" style={styles.heroCard} borderRadius={30}>
+              <View style={styles.heroTopRow}>
+                <View
                   style={[
-                    styles.categoryPillText,
-                    { color: getCategoryMeta(nextHeroEvent.category).color },
+                    styles.categoryPill,
+                    { backgroundColor: getCategoryMeta(nextHeroEvent.category).bg },
                   ]}
                 >
-                  {getCategoryMeta(nextHeroEvent.category).label}
+                  <Ionicons
+                    name={getCategoryMeta(nextHeroEvent.category).icon}
+                    size={13}
+                    color={getCategoryMeta(nextHeroEvent.category).color}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryPillText,
+                      { color: getCategoryMeta(nextHeroEvent.category).color },
+                    ]}
+                  >
+                    {getCategoryMeta(nextHeroEvent.category).label}
+                  </Text>
+                </View>
+
+                <Text style={styles.heroTag}>PRÓXIMO MOMENTO</Text>
+              </View>
+
+              <Text style={styles.heroTitle} numberOfLines={2}>
+                {nextHeroEvent.title}
+              </Text>
+
+              <View style={styles.heroDateRow}>
+                <Ionicons name="time-outline" size={15} color="#7E7699" />
+                <Text style={styles.heroDateText}>
+                  {formatFullDatePTBR(nextHeroEvent.event_date)} às{' '}
+                  {formatTimePTBR(nextHeroEvent.event_date)}
                 </Text>
               </View>
 
-              <Text style={styles.heroTag}>PRÓXIMO MOMENTO</Text>
-            </View>
-
-            <Text style={styles.heroTitle} numberOfLines={2}>
-              {nextHeroEvent.title}
-            </Text>
-
-            <View style={styles.heroDateRow}>
-              <Ionicons name="time-outline" size={15} color="rgba(22, 21, 30, 0.65)" />
-              <Text style={styles.heroDateText}>
-                {formatFullDatePTBR(nextHeroEvent.event_date)} às{' '}
-                {formatTimePTBR(nextHeroEvent.event_date)}
-              </Text>
-            </View>
-
-            {countdown.isNow ? (
-              <View style={styles.eventHappeningBox}>
-                <Ionicons name="heart" size={20} color="#8E7CE8" />
-                <Text style={styles.eventHappeningText}>É hoje! Aproveitem cada segundo.</Text>
-              </View>
-            ) : (
-              <View style={styles.countdownRow}>
-                {/* Dias */}
-                <View style={styles.countBadge}>
-                  <Text style={styles.countNumber}>{countdown.days}</Text>
-                  <Text style={styles.countLabel}>DIAS</Text>
+              {countdown.isNow ? (
+                <View style={styles.eventHappeningBox}>
+                  <Ionicons name="heart" size={20} color="#7C3AED" />
+                  <Text style={styles.eventHappeningText}>É hoje! Aproveitem cada segundo.</Text>
                 </View>
+              ) : (
+                <View style={styles.countdownRow}>
+                  {/* Dias */}
+                  <LiquidGlassView variant="pill" style={styles.countBadge} borderRadius={16}>
+                    <Text style={styles.countNumber}>{countdown.days}</Text>
+                    <Text style={styles.countLabel}>DIAS</Text>
+                  </LiquidGlassView>
 
-                {/* Horas */}
-                <View style={styles.countBadge}>
-                  <Text style={styles.countNumber}>
-                    {String(countdown.hours).padStart(2, '0')}
-                  </Text>
-                  <Text style={styles.countLabel}>HORAS</Text>
-                </View>
+                  {/* Horas */}
+                  <LiquidGlassView variant="pill" style={styles.countBadge} borderRadius={16}>
+                    <Text style={styles.countNumber}>
+                      {String(countdown.hours).padStart(2, '0')}
+                    </Text>
+                    <Text style={styles.countLabel}>HORAS</Text>
+                  </LiquidGlassView>
 
-                {/* Minutos */}
-                <View style={styles.countBadge}>
-                  <Text style={styles.countNumber}>
-                    {String(countdown.minutes).padStart(2, '0')}
-                  </Text>
-                  <Text style={styles.countLabel}>MINUTOS</Text>
-                </View>
+                  {/* Minutos */}
+                  <LiquidGlassView variant="pill" style={styles.countBadge} borderRadius={16}>
+                    <Text style={styles.countNumber}>
+                      {String(countdown.minutes).padStart(2, '0')}
+                    </Text>
+                    <Text style={styles.countLabel}>MINUTOS</Text>
+                  </LiquidGlassView>
 
-                {/* Segundos */}
-                <View style={styles.countBadge}>
-                  <Text style={styles.countNumber}>
-                    {String(countdown.seconds).padStart(2, '0')}
-                  </Text>
-                  <Text style={styles.countLabel}>SEGUNDOS</Text>
+                  {/* Segundos */}
+                  <LiquidGlassView variant="pill" style={styles.countBadge} borderRadius={16}>
+                    <Text style={styles.countNumber}>
+                      {String(countdown.seconds).padStart(2, '0')}
+                    </Text>
+                    <Text style={styles.countLabel}>SEGUNDOS</Text>
+                  </LiquidGlassView>
                 </View>
-              </View>
-            )}
-          </View>
+              )}
+            </LiquidGlassView>
+          </Animated.View>
         ) : (
-          <View style={styles.emptyHeroCard}>
-            <View style={styles.emptyHeroIconCircle}>
-              <Ionicons name="sparkles-outline" size={26} color="#8E7CE8" />
-            </View>
-            <Text style={styles.emptyHeroTitle}>Nenhum evento agendado</Text>
-            <Text style={styles.emptyHeroSubtitle}>
-              Que tal planejar o próximo momento juntos e acompanhar a contagem regressiva?
-            </Text>
-            <AnimatedTouchable
-              style={styles.emptyHeroBtn}
-              onPress={() => setIsAddModalVisible(true)}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="add-circle-outline" size={18} color="#8E7CE8" />
-              <Text style={styles.emptyHeroBtnText}>Agendar momento</Text>
-            </AnimatedTouchable>
-          </View>
+          <Animated.View entering={FadeInDown.springify().damping(15)}>
+            <LiquidGlassView variant="card" style={styles.emptyHeroCard} borderRadius={26}>
+              <View style={styles.emptyHeroIconCircle}>
+                <Ionicons name="sparkles-outline" size={26} color={themeTokens.primary} />
+              </View>
+              <Text style={styles.emptyHeroTitle}>Nenhum evento agendado</Text>
+              <Text style={styles.emptyHeroSubtitle}>
+                Que tal planejar o próximo momento juntos e acompanhar a contagem regressiva?
+              </Text>
+              <AnimatedTouchable
+                style={styles.emptyHeroBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsAddModalVisible(true);
+                }}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="add-circle-outline" size={18} color={themeTokens.primary} />
+                <Text style={styles.emptyHeroBtnText}>Agendar momento</Text>
+              </AnimatedTouchable>
+            </LiquidGlassView>
+          </Animated.View>
         )}
 
         {/* 2. Filtro de Abas: Próximos vs Histórico */}
-        <View style={styles.segmentedContainer}>
-          <AnimatedTouchable
-            style={[
-              styles.segmentItem,
-              activeTab === 'upcoming' && styles.segmentItemActive,
-            ]}
-            onPress={() => setActiveTab('upcoming')}
-            activeOpacity={0.8}
-          >
-            <Text
+        <Animated.View entering={FadeInDown.springify().damping(15)}>
+          <LiquidGlassView variant="pill" style={styles.segmentedContainer} borderRadius={24}>
+            <AnimatedTouchable
               style={[
-                styles.segmentText,
-                activeTab === 'upcoming' && styles.segmentTextActive,
+                styles.segmentItem,
+                activeTab === 'upcoming' && styles.segmentItemActive,
               ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setActiveTab('upcoming');
+              }}
+              activeOpacity={0.8}
             >
-              Próximos ({upcomingEvents.length})
-            </Text>
-          </AnimatedTouchable>
+              <Text
+                style={[
+                  styles.segmentText,
+                  activeTab === 'upcoming' && styles.segmentTextActive,
+                ]}
+              >
+                Próximos ({upcomingEvents.length})
+              </Text>
+            </AnimatedTouchable>
 
-          <AnimatedTouchable
-            style={[
-              styles.segmentItem,
-              activeTab === 'past' && styles.segmentItemActive,
-            ]}
-            onPress={() => setActiveTab('past')}
-            activeOpacity={0.8}
-          >
-            <Text
+            <AnimatedTouchable
               style={[
-                styles.segmentText,
-                activeTab === 'past' && styles.segmentTextActive,
+                styles.segmentItem,
+                activeTab === 'past' && styles.segmentItemActive,
               ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setActiveTab('past');
+              }}
+              activeOpacity={0.8}
             >
-              Histórico ({pastEvents.length})
-            </Text>
-          </AnimatedTouchable>
-        </View>
+              <Text
+                style={[
+                  styles.segmentText,
+                  activeTab === 'past' && styles.segmentTextActive,
+                ]}
+              >
+                Histórico ({pastEvents.length})
+              </Text>
+            </AnimatedTouchable>
+          </LiquidGlassView>
+        </Animated.View>
 
         {/* 3. Listagem de Eventos da Aba Selecionada */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator color="#8E7CE8" size="large" />
+          <View style={styles.skeletonContainer}>
+            <Animated.View style={[styles.skeletonCard, shimmerStyle]} />
+            <Animated.View style={[styles.skeletonCard, shimmerStyle]} />
           </View>
         ) : activeTab === 'upcoming' ? (
           upcomingEvents.length === 0 ? (
-            <View style={styles.emptyListContainer}>
+            <LiquidGlassView variant="card" style={styles.emptyListContainer} borderRadius={26}>
               <Ionicons name="calendar-outline" size={38} color="#C4BDEE" />
               <Text style={styles.emptyListTitle}>Sem próximas datas agendadas</Text>
               <Text style={styles.emptyListSubtitle}>
-                Toque em "Nova Data" no topo para marcar uma viagem, encontro ou aniversário.
+                Toque em "Adicionar" no topo para marcar uma viagem, encontro ou aniversário.
               </Text>
-            </View>
+            </LiquidGlassView>
           ) : (
-            upcomingEvents.map((item) => {
+            upcomingEvents.map((item, index) => {
               const meta = getCategoryMeta(item.category);
               return (
-                <View key={item.id} style={styles.eventCard}>
-                  <View style={[styles.eventIconCircle, { backgroundColor: meta.bg }]}>
-                    <Ionicons name={meta.icon} size={20} color={meta.color} />
+                <Animated.View
+                  key={item.id}
+                  entering={FadeInDown.springify().damping(14)}
+                >
+                  <LiquidGlassView variant="card" style={styles.eventCard} borderRadius={22}>
+                    <View style={[styles.eventIconCircle, { backgroundColor: meta.bg }]}>
+                      <Ionicons name={meta.icon} size={20} color={meta.color} />
+                    </View>
+
+                    <View style={styles.eventInfo}>
+                      <View style={styles.eventMetaRow}>
+                        <View style={[styles.miniCategoryPill, { backgroundColor: meta.bg }]}>
+                          <Text style={[styles.miniCategoryText, { color: meta.color }]}>
+                            {meta.label}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.eventTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+
+                      <Text style={styles.eventDateText}>
+                        {formatFullDatePTBR(item.event_date)} • {formatTimePTBR(item.event_date)}
+                      </Text>
+                    </View>
+
+                    <AnimatedTouchable
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteDate(item.id, item.title)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <Ionicons name="trash-outline" size={17} color="#8A879A" />
+                    </AnimatedTouchable>
+                  </LiquidGlassView>
+                </Animated.View>
+              );
+            })
+          )
+        ) : pastEvents.length === 0 ? (
+          <LiquidGlassView variant="card" style={styles.emptyListContainer} borderRadius={26}>
+            <Ionicons name="checkmark-done-circle-outline" size={38} color="#C4BDEE" />
+            <Text style={styles.emptyListTitle}>Nenhuma data no histórico ainda</Text>
+            <Text style={styles.emptyListSubtitle}>
+              Quando os momentos planejados forem vivenciados, eles ficarão guardados aqui.
+            </Text>
+          </LiquidGlassView>
+        ) : (
+          pastEvents.map((item, index) => {
+            const meta = getCategoryMeta(item.category);
+            return (
+              <Animated.View
+                key={item.id}
+                entering={FadeInDown.springify().damping(14)}
+              >
+                <LiquidGlassView variant="card" style={[styles.eventCard, styles.pastEventCard]} borderRadius={22}>
+                  <View
+                    style={[
+                      styles.eventIconCircle,
+                      { backgroundColor: 'rgba(104, 101, 120, 0.08)' },
+                    ]}
+                  >
+                    <Ionicons name={meta.icon} size={20} color="#686578" />
                   </View>
 
                   <View style={styles.eventInfo}>
                     <View style={styles.eventMetaRow}>
-                      <View style={[styles.miniCategoryPill, { backgroundColor: meta.bg }]}>
-                        <Text style={[styles.miniCategoryText, { color: meta.color }]}>
+                      <View
+                        style={[
+                          styles.miniCategoryPill,
+                          { backgroundColor: 'rgba(104, 101, 120, 0.08)' },
+                        ]}
+                      >
+                        <Text style={[styles.miniCategoryText, { color: themeTokens.textSecondary }]}>
                           {meta.label}
                         </Text>
                       </View>
+                      <Text style={styles.concludedBadge}>CONCLUÍDO</Text>
                     </View>
 
-                    <Text style={styles.eventTitle} numberOfLines={2}>
+                    <Text style={[styles.eventTitle, styles.pastEventTitle]} numberOfLines={2}>
                       {item.title}
                     </Text>
 
                     <Text style={styles.eventDateText}>
-                      {formatFullDatePTBR(item.event_date)} • {formatTimePTBR(item.event_date)}
+                      {formatFullDatePTBR(item.event_date)}
                     </Text>
                   </View>
 
@@ -536,66 +650,10 @@ export default function DatesScreen() {
                     onPress={() => handleDeleteDate(item.id, item.title)}
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   >
-                    <Ionicons name="trash-outline" size={18} color="#A09EAD" />
+                    <Ionicons name="trash-outline" size={17} color="#8A879A" />
                   </AnimatedTouchable>
-                </View>
-              );
-            })
-          )
-        ) : pastEvents.length === 0 ? (
-          <View style={styles.emptyListContainer}>
-            <Ionicons name="checkmark-done-circle-outline" size={38} color="#C4BDEE" />
-            <Text style={styles.emptyListTitle}>Nenhuma data no histórico ainda</Text>
-            <Text style={styles.emptyListSubtitle}>
-              Quando os momentos planejados forem vivenciados, eles ficarão guardados aqui.
-            </Text>
-          </View>
-        ) : (
-          pastEvents.map((item) => {
-            const meta = getCategoryMeta(item.category);
-            return (
-              <View key={item.id} style={[styles.eventCard, styles.pastEventCard]}>
-                <View
-                  style={[
-                    styles.eventIconCircle,
-                    { backgroundColor: 'rgba(104, 101, 120, 0.08)' },
-                  ]}
-                >
-                  <Ionicons name={meta.icon} size={20} color="#686578" />
-                </View>
-
-                <View style={styles.eventInfo}>
-                  <View style={styles.eventMetaRow}>
-                    <View
-                      style={[
-                        styles.miniCategoryPill,
-                        { backgroundColor: 'rgba(104, 101, 120, 0.08)' },
-                      ]}
-                    >
-                      <Text style={[styles.miniCategoryText, { color: '#686578' }]}>
-                        {meta.label}
-                      </Text>
-                    </View>
-                    <Text style={styles.concludedBadge}>CONCLUÍDO</Text>
-                  </View>
-
-                  <Text style={[styles.eventTitle, styles.pastEventTitle]} numberOfLines={2}>
-                    {item.title}
-                  </Text>
-
-                  <Text style={styles.eventDateText}>
-                    {formatFullDatePTBR(item.event_date)}
-                  </Text>
-                </View>
-
-                <AnimatedTouchable
-                  style={styles.deleteButton}
-                  onPress={() => handleDeleteDate(item.id, item.title)}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <Ionicons name="trash-outline" size={18} color="#A09EAD" />
-                </AnimatedTouchable>
-              </View>
+                </LiquidGlassView>
+              </Animated.View>
             );
           })
         )}
@@ -617,7 +675,7 @@ export default function DatesScreen() {
 
             <View style={styles.modalHeaderRow}>
               <View style={styles.modalHeaderIconBadge}>
-                <Ionicons name="calendar" size={20} color="#8E7CE8" />
+                <Ionicons name="calendar" size={20} color={themeTokens.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle}>Nova Data Especial</Text>
@@ -634,7 +692,7 @@ export default function DatesScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholder="Ex: Aniversário de Namoro, Viagem à praia..."
-                  placeholderTextColor="#686578"
+                  placeholderTextColor="#8A879A"
                   value={newTitle}
                   onChangeText={setNewTitle}
                   maxLength={70}
@@ -654,13 +712,16 @@ export default function DatesScreen() {
                           styles.catChip,
                           isSelected && styles.catChipSelected,
                         ]}
-                        onPress={() => setNewCategory(cat.id)}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setNewCategory(cat.id);
+                        }}
                         activeOpacity={0.8}
                       >
                         <Ionicons
                           name={cat.icon}
                           size={16}
-                          color={isSelected ? '#8E7CE8' : '#686578'}
+                          color={isSelected ? themeTokens.primary : themeTokens.textSecondary}
                         />
                         <Text
                           style={[
@@ -684,11 +745,11 @@ export default function DatesScreen() {
                   onPress={() => setShowDatePicker(true)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="calendar-outline" size={18} color="#8E7CE8" />
+                  <Ionicons name="calendar-outline" size={18} color={themeTokens.primary} />
                   <Text style={styles.dateTimeButtonText}>
                     {formatFullDatePTBR(selectedDate.toISOString())}
                   </Text>
-                  <Ionicons name="chevron-forward" size={16} color="#686578" />
+                  <Ionicons name="chevron-forward" size={16} color="#8A879A" />
                 </AnimatedTouchable>
               </View>
 
@@ -700,15 +761,15 @@ export default function DatesScreen() {
                   onPress={() => setShowTimePicker(true)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="time-outline" size={18} color="#8E7CE8" />
+                  <Ionicons name="time-outline" size={18} color={themeTokens.primary} />
                   <Text style={styles.dateTimeButtonText}>
                     {formatTimePTBR(selectedDate.toISOString())}
                   </Text>
-                  <Ionicons name="chevron-forward" size={16} color="#686578" />
+                  <Ionicons name="chevron-forward" size={16} color="#8A879A" />
                 </AnimatedTouchable>
               </View>
 
-              {/* DatePicker no iOS ou quando acionado no Android */}
+              {/* DatePicker */}
               {(showDatePicker || Platform.OS === 'ios') && (
                 <View style={styles.pickerBox}>
                   <Text style={styles.pickerTitle}>Selecione a Data</Text>
@@ -730,7 +791,7 @@ export default function DatesScreen() {
                 </View>
               )}
 
-              {/* TimePicker quando acionado */}
+              {/* TimePicker */}
               {showTimePicker && (
                 <View style={styles.pickerBox}>
                   <Text style={styles.pickerTitle}>Selecione o Horário</Text>
@@ -785,83 +846,55 @@ export default function DatesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FC',
+    backgroundColor: themeTokens.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  headerWrapper: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 56 : 36,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(142, 124, 232, 0.1)',
-    backgroundColor: '#F8F9FC',
-  },
-  headerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.25)',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#16151E',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#686578',
-    marginTop: 2,
+    zIndex: 10,
   },
   headerAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#8E7CE8',
+    gap: 4,
+    backgroundColor: themeTokens.primary,
     paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 999,
-    shadowColor: '#8E7CE8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 8,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
     elevation: 3,
   },
   headerAddBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 120 : 100,
+    letterSpacing: -0.2,
   },
 
-  // Hero Countdown Card
+  // Skeleton Loading Shimmer
+  skeletonContainer: {
+    paddingTop: 10,
+    gap: 16,
+  },
+  skeletonCard: {
+    width: '100%',
+    height: 90,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+
+  // Hero Countdown Card Liquid Glass
   heroCard: {
     position: 'relative',
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
-    borderRadius: 28,
+    borderRadius: 32,
     padding: 22,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#8E7CE8',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 24,
     elevation: 4,
     overflow: 'hidden',
@@ -898,14 +931,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1,
-    color: '#8E7CE8',
+    color: themeTokens.primary,
   },
   heroTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#16151E',
+    color: themeTokens.textPrimary,
     lineHeight: 28,
     marginBottom: 6,
+    letterSpacing: -0.4,
   },
   heroDateRow: {
     flexDirection: 'row',
@@ -915,7 +949,7 @@ const styles = StyleSheet.create({
   },
   heroDateText: {
     fontSize: 13,
-    color: 'rgba(22, 21, 30, 0.65)',
+    color: themeTokens.textSecondary,
     fontWeight: '500',
   },
   countdownRow: {
@@ -925,29 +959,28 @@ const styles = StyleSheet.create({
   },
   countBadge: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 16,
+    borderRadius: 18,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.2)',
-    shadowColor: '#16151E',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
   countNumber: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#8E7CE8',
+    color: themeTokens.primary,
     letterSpacing: -0.5,
+    fontVariant: ['tabular-nums'],
   },
   countLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#686578',
+    color: themeTokens.textSecondary,
     letterSpacing: 0.8,
     marginTop: 2,
   },
@@ -965,15 +998,15 @@ const styles = StyleSheet.create({
   eventHappeningText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#8E7CE8',
+    color: themeTokens.primary,
   },
 
   // Empty Hero Card
   emptyHeroCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
     borderRadius: 28,
     padding: 24,
     alignItems: 'center',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(142, 124, 232, 0.2)',
     borderStyle: 'dashed',
@@ -983,7 +1016,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'rgba(142, 124, 232, 0.1)',
+    backgroundColor: 'rgba(142, 124, 232, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -991,12 +1024,12 @@ const styles = StyleSheet.create({
   emptyHeroTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#16151E',
+    color: themeTokens.textPrimary,
     marginBottom: 4,
   },
   emptyHeroSubtitle: {
     fontSize: 13,
-    color: '#686578',
+    color: themeTokens.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 16,
@@ -1014,29 +1047,27 @@ const styles = StyleSheet.create({
   emptyHeroBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#8E7CE8',
+    color: themeTokens.primary,
   },
 
-  // Segmented Tabs
+  // Segmented Tabs Liquid Glass
   segmentedContainer: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 4,
+    overflow: 'hidden',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
   },
   segmentItem: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 16,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   segmentItemActive: {
-    backgroundColor: '#8E7CE8',
-    shadowColor: '#8E7CE8',
+    backgroundColor: themeTokens.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -1045,33 +1076,30 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#686578',
+    color: themeTokens.textSecondary,
   },
   segmentTextActive: {
     color: '#FFFFFF',
     fontWeight: '700',
   },
 
-  // Event Card
+  // Event Card Liquid Glass
   eventCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 14,
+    overflow: 'hidden',
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 3,
     gap: 12,
   },
   pastEventCard: {
-    opacity: 0.85,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    opacity: 0.88,
   },
   eventIconCircle: {
     width: 44,
@@ -1102,20 +1130,21 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.8,
-    color: '#686578',
+    color: themeTokens.textSecondary,
   },
   eventTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#16151E',
-    marginBottom: 4,
+    fontWeight: '800',
+    color: themeTokens.textPrimary,
+    marginBottom: 3,
+    letterSpacing: -0.2,
   },
   pastEventTitle: {
-    color: '#4A5568',
+    color: themeTokens.textSecondary,
   },
   eventDateText: {
     fontSize: 12,
-    color: '#686578',
+    color: themeTokens.textSecondary,
     fontWeight: '500',
   },
   deleteButton: {
@@ -1124,34 +1153,28 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(104, 101, 120, 0.06)',
+    backgroundColor: 'rgba(142, 124, 232, 0.08)',
   },
 
-  // Loading & Empty States
-  loadingContainer: {
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
   emptyListContainer: {
     paddingVertical: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-    borderRadius: 22,
+    borderRadius: 24,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.15)',
     paddingHorizontal: 24,
   },
   emptyListTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#16151E',
+    color: themeTokens.textPrimary,
     marginTop: 12,
     marginBottom: 4,
   },
   emptyListSubtitle: {
     fontSize: 13,
-    color: '#686578',
+    color: themeTokens.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -1164,16 +1187,15 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
     paddingTop: 12,
     paddingHorizontal: 22,
     paddingBottom: Platform.OS === 'ios' ? 44 : 26,
     maxHeight: '90%',
-    shadowColor: '#000000',
     shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.12,
-    shadowRadius: 20,
+    shadowRadius: 24,
     elevation: 10,
   },
   modalHandle: {
@@ -1199,13 +1221,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#16151E',
+    fontSize: 20,
+    fontWeight: '800',
+    color: themeTokens.textPrimary,
+    letterSpacing: -0.3,
   },
   modalSubtitle: {
     fontSize: 12,
-    color: '#686578',
+    color: themeTokens.textSecondary,
     marginTop: 2,
     lineHeight: 16,
   },
@@ -1215,7 +1238,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#16151E',
+    color: themeTokens.textPrimary,
     marginBottom: 8,
   },
   textInput: {
@@ -1224,9 +1247,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#16151E',
+    color: themeTokens.textPrimary,
     borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.15)',
+    borderColor: 'rgba(142, 124, 232, 0.18)',
   },
   categoriesGrid: {
     flexDirection: 'row',
@@ -1242,19 +1265,19 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: 'rgba(142, 124, 232, 0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.12)',
+    borderColor: 'rgba(142, 124, 232, 0.15)',
   },
   catChipSelected: {
-    backgroundColor: 'rgba(142, 124, 232, 0.18)',
-    borderColor: '#8E7CE8',
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+    borderColor: themeTokens.primary,
   },
   catChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#686578',
+    color: themeTokens.textSecondary,
   },
   catChipTextSelected: {
-    color: '#8E7CE8',
+    color: themeTokens.primary,
     fontWeight: '700',
   },
   dateTimeButton: {
@@ -1266,14 +1289,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.15)',
+    borderColor: 'rgba(142, 124, 232, 0.18)',
   },
   dateTimeButtonText: {
     flex: 1,
     marginLeft: 10,
     fontSize: 15,
     fontWeight: '600',
-    color: '#16151E',
+    color: themeTokens.textPrimary,
   },
   pickerBox: {
     backgroundColor: 'rgba(142, 124, 232, 0.04)',
@@ -1285,7 +1308,7 @@ const styles = StyleSheet.create({
   pickerTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#8E7CE8',
+    color: themeTokens.primary,
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -1295,7 +1318,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 999,
-    backgroundColor: '#8E7CE8',
+    backgroundColor: themeTokens.primary,
   },
   pickerDoneBtnText: {
     color: '#FFFFFF',
@@ -1319,7 +1342,7 @@ const styles = StyleSheet.create({
   modalCancelText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#686578',
+    color: themeTokens.textSecondary,
   },
   modalSaveBtn: {
     flex: 2,
@@ -1329,8 +1352,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 15,
     borderRadius: 18,
-    backgroundColor: '#8E7CE8',
-    shadowColor: '#8E7CE8',
+    backgroundColor: themeTokens.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,

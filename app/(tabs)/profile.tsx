@@ -4,24 +4,37 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Platform,
   RefreshControl,
   Image,
   Alert,
   ActivityIndicator,
   Modal,
- } from 'react-native';
+} from 'react-native';
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
-import { LiquidGlassBackground } from '../../components/LiquidGlassBackground';
+import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
+import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
 import { AppHeader } from '../../components/AppHeader';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
+import { useAppTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
+import { THEME, getThemeTokens } from '../../constants/theme';
+import { useScrollNavbar } from '../../hooks/useScrollNavbar';
 
 interface ProfileData {
   id: string;
@@ -57,9 +70,15 @@ const formatFullDatePTBR = (dateString?: string | null): string => {
 };
 
 export default function ProfileScreen() {
+  const { isDark } = useAppTheme();
+  const themeTokens = getThemeTokens(isDark);
+  const styles = getStyles(themeTokens, isDark);
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { coupleId, clearCouple } = useCouple();
+  const { mode, setMode } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const { onScroll } = useScrollNavbar();
 
   // Estados de perfis
   const [myProfile, setMyProfile] = useState<ProfileData | null>(null);
@@ -77,34 +96,54 @@ export default function ProfileScreen() {
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [savingDate, setSavingDate] = useState(false);
 
+  // Shimmer pulse animation para skeleton loading
+  const shimmerOpacity = useSharedValue(0.4);
+  useEffect(() => {
+    shimmerOpacity.value = withRepeat(
+      withTiming(0.85, { duration: 1000 }),
+      -1,
+      true
+    );
+  }, []);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: shimmerOpacity.value,
+  }));
+
   // Resolve URL assinada para foto do avatar
   const resolveAvatarUrl = async (pathOrUrl?: string | null): Promise<string | null> => {
     if (!pathOrUrl) return null;
-    if (pathOrUrl.startsWith('file:') || pathOrUrl.startsWith('data:')) {
-      return pathOrUrl;
+    const trimmed = pathOrUrl.trim();
+    if (!trimmed) return null;
+
+    if (trimmed.startsWith('file:') || trimmed.startsWith('data:')) {
+      return trimmed;
     }
 
-    let cleanPath = pathOrUrl.trim();
+    if ((trimmed.startsWith('http://') || trimmed.startsWith('https://')) && !trimmed.includes('/avatars/')) {
+      return trimmed;
+    }
+
+    let cleanPath = trimmed;
     if (cleanPath.includes('/avatars/')) {
       cleanPath = cleanPath.split('/avatars/')[1].split('?')[0];
     }
+    cleanPath = cleanPath.replace(/^\/+/, '');
 
-    // Tenta URL assinada válida por 24 horas (caso o bucket seja privado)
     try {
-      const { data: signedData } = await supabase.storage
+      const { data: signedData, error: signError } = await supabase.storage
         .from('avatars')
         .createSignedUrl(cleanPath, 60 * 60 * 24);
 
-      if (signedData?.signedUrl) {
+      if (!signError && signedData?.signedUrl) {
         return signedData.signedUrl;
       }
     } catch {
       // Ignora e tenta URL pública
     }
 
-    // Fallback: URL pública
     const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(cleanPath);
-    return publicData?.publicUrl || pathOrUrl;
+    return publicData?.publicUrl || trimmed;
   };
 
   // 1. Carrega todos os dados do casal e membros
@@ -114,7 +153,6 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
 
-      // Busca membros do casal
       const { data: members, error: membersError } = await supabase
         .from('couple_members')
         .select('user_id')
@@ -124,14 +162,15 @@ export default function ProfileScreen() {
 
       const userIds = (members || []).map((m) => m.user_id);
 
-      // Busca perfis dos membros
       if (userIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, display_name, avatar_url')
           .in('id', userIds);
 
-        if (profilesError) console.warn('Erro ao carregar perfis:', profilesError.message);
+        if (profilesError) {
+          // Ignora silenciosamente
+        }
 
         const profilesWithUrls: ProfileData[] = await Promise.all(
           (profiles || []).map(async (p) => {
@@ -164,13 +203,11 @@ export default function ProfileScreen() {
       }
 
       // Busca dados do relacionamento na tabela couples
-      const { data: coupleData, error: coupleError } = await supabase
+      const { data: coupleData } = await supabase
         .from('couples')
         .select('id, anniversary_date, created_at')
         .eq('id', coupleId)
         .single();
-
-      if (coupleError) console.warn('Erro ao carregar dados do casal:', coupleError.message);
 
       if (coupleData) {
         setAnniversaryDate(coupleData.anniversary_date || coupleData.created_at);
@@ -196,8 +233,8 @@ export default function ProfileScreen() {
       if (inviteData?.code) {
         setCoupleCode(inviteData.code);
       }
-    } catch (err: any) {
-      console.warn('Erro geral ao carregar dados do perfil:', err.message);
+    } catch {
+      // Ignora silenciosamente
     } finally {
       setLoading(false);
     }
@@ -206,7 +243,6 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadProfileData();
 
-    // Sincronização em tempo real para alterações em profiles e couples
     if (!coupleId) return;
 
     const channel = supabase
@@ -238,6 +274,7 @@ export default function ProfileScreen() {
   // 2. Upload de novo avatar do usuário
   const handlePickAvatar = async () => {
     if (!user) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -283,7 +320,6 @@ export default function ProfileScreen() {
         }
       }
 
-      // Upload para o bucket avatars
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, fileBody, {
@@ -295,7 +331,6 @@ export default function ProfileScreen() {
         throw uploadError;
       }
 
-      // Atualiza o registro em profiles
       const { error: updateError } = await supabase
         .from('profiles')
         .upsert({
@@ -309,6 +344,7 @@ export default function ProfileScreen() {
         throw updateError;
       }
 
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await loadProfileData();
       Alert.alert('Avatar atualizado!', 'Sua nova foto já está visível para vocês dois.');
     } catch (err: any) {
@@ -336,6 +372,7 @@ export default function ProfileScreen() {
 
       if (error) throw error;
 
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setAnniversaryDate(isoDate);
       setIsDateModalVisible(false);
       await loadProfileData();
@@ -362,6 +399,7 @@ export default function ProfileScreen() {
 
   // 4. Logout seguro
   const handleSignOut = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert('Encerrar sessão', 'Tem certeza de que deseja sair da sua conta?', [
       { text: 'Cancelar', style: 'cancel' },
       {
@@ -381,187 +419,318 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Background Liquid Glass */}
-      <LiquidGlassBackground />
+      {/* 1. Fundo Atmosférico Vivo preenchendo 100% da viewport física */}
+      <AtmosphereBackground />
 
-      {/* Cabeçalho Apple Liquid Glass */}
-      <View style={{ paddingHorizontal: 20 }}>
+      {/* Cabeçalho Apple Liquid Glass com safe area protegida */}
+      <View style={[styles.headerWrapper, { paddingTop: insets.top + 8 }]}>
         <AppHeader
           sectionTitle="perfil"
-          coupleSubtitle="Identidade e configurações do casal"
+          coupleSubtitle="Configurações e nós dois"
         />
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 130 }]}
+        contentContainerStyle={{ paddingBottom: 130, paddingHorizontal: 20 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#8E7CE8"
-            colors={['#8E7CE8']}
+            tintColor={themeTokens.primary}
+            colors={[themeTokens.primary]}
           />
         }
       >
-        {/* 1. Header / Identidade do Casal (Dois Avatares com Anéis e Badge) */}
-        <View style={styles.coupleHeroCard}>
-          <View style={styles.avatarsRow}>
-            {/* Avatar do Usuário Logado (Com botão de trocar foto) */}
-            <AnimatedTouchable
-              style={styles.avatarWrapper}
-              onPress={handlePickAvatar}
-              disabled={uploadingAvatar}
-              activeOpacity={0.85}
-            >
-              <View style={[styles.avatarRing, styles.myAvatarRing]}>
-                {uploadingAvatar ? (
-                  <ActivityIndicator color="#8E7CE8" size="small" />
-                ) : myProfile?.displayAvatarUrl ? (
-                  <Image
-                    source={{ uri: myProfile.displayAvatarUrl }}
-                    style={styles.avatarImage}
-                  />
-                ) : (
-                  <Ionicons name="person" size={32} color="#8E7CE8" />
-                )}
+        {loading ? (
+          <View style={styles.skeletonContainer}>
+            <Animated.View style={[styles.skeletonHeroCard, shimmerStyle]} />
+            <Animated.View style={[styles.skeletonCard, shimmerStyle]} />
+          </View>
+        ) : (
+          <>
+            {/* 1. Header / Identidade do Casal (Dois Avatares com Anéis e Badge) */}
+            <Animated.View entering={FadeInDown.springify().damping(15)}>
+              <LiquidGlassView variant="hero" style={styles.coupleHeroCard} borderRadius={32}>
+                <View style={styles.avatarsRow}>
+                  {/* Avatar do Usuário Logado (Com botão de trocar foto) */}
+                  <AnimatedTouchable
+                    style={styles.avatarWrapper}
+                    onPress={handlePickAvatar}
+                    disabled={uploadingAvatar}
+                    activeOpacity={0.85}
+                  >
+                    <View style={[styles.avatarRing, styles.myAvatarRing]}>
+                      {uploadingAvatar ? (
+                        <ActivityIndicator color={themeTokens.primary} size="small" />
+                      ) : myProfile?.displayAvatarUrl ? (
+                        <Image
+                          source={{ uri: myProfile.displayAvatarUrl }}
+                          style={styles.avatarImage}
+                        />
+                      ) : (
+                        <Ionicons name="person" size={32} color={themeTokens.primary} />
+                      )}
+                    </View>
+
+                    <View style={styles.cameraBadge}>
+                      <Ionicons name="camera" size={13} color="#FFFFFF" />
+                    </View>
+                    <Text style={styles.avatarLabel} numberOfLines={1}>
+                      {myName}
+                    </Text>
+                    <Text style={styles.avatarSubLabel}>Você</Text>
+                  </AnimatedTouchable>
+
+                  {/* Conector Central (Coração Pulsante) */}
+                  <View style={styles.connectorCenter}>
+                    <View style={styles.connectorLine} />
+                    <View style={styles.heartCircle}>
+                      <Ionicons name="heart" size={16} color="#FFFFFF" />
+                    </View>
+                    <View style={styles.connectorLine} />
+                  </View>
+
+                  {/* Avatar do Parceiro/Parceira */}
+                  <View style={styles.avatarWrapper}>
+                    <View style={[styles.avatarRing, styles.partnerAvatarRing]}>
+                      {partnerProfile?.displayAvatarUrl ? (
+                        <Image
+                          source={{ uri: partnerProfile.displayAvatarUrl }}
+                          style={styles.avatarImage}
+                        />
+                      ) : (
+                        <Ionicons name="person" size={32} color="#7C3AED" />
+                      )}
+                    </View>
+
+                    <View style={styles.onlineBadge} />
+                    <Text style={styles.avatarLabel} numberOfLines={1}>
+                      {partnerName}
+                    </Text>
+                    <Text style={styles.avatarSubLabel}>Parceiro(a)</Text>
+                  </View>
+                </View>
+
+                {/* Badge de Sincronização Ativa */}
+                <View style={styles.syncStatusBadge}>
+                  <View style={styles.greenPulseDot} />
+                  <Text style={styles.syncStatusText}>Espaço Compartilhado Sincronizado</Text>
+                </View>
+              </LiquidGlassView>
+            </Animated.View>
+
+            {/* 2. Card "Nosso Relacionamento" */}
+            <Animated.View entering={FadeInDown.springify().damping(15)}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>NOSSO RELACIONAMENTO</Text>
               </View>
 
-              <View style={styles.cameraBadge}>
-                <Ionicons name="camera" size={13} color="#FFFFFF" />
+              <AnimatedTouchable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsDateModalVisible(true);
+                }}
+                activeOpacity={0.88}
+              >
+                <LiquidGlassView variant="card" style={styles.relationshipCard} borderRadius={24}>
+                  <View style={styles.relationIconCircle}>
+                    <Ionicons name="calendar" size={22} color={themeTokens.primary} />
+                  </View>
+
+                  <View style={styles.relationContent}>
+                    <Text style={styles.relationLabel}>Data de Início Oficial</Text>
+                    <Text style={styles.relationDateValue}>
+                      {formatFullDatePTBR(anniversaryDate)}
+                    </Text>
+                    <Text style={styles.relationHint}>Toque para alterar a data comemorativa</Text>
+                  </View>
+
+                  <View style={styles.editPill}>
+                    <Ionicons name="pencil" size={13} color={themeTokens.primary} />
+                    <Text style={styles.editPillText}>Editar</Text>
+                  </View>
+                </LiquidGlassView>
+              </AnimatedTouchable>
+
+              {coupleCode && (
+                <LiquidGlassView variant="card" style={styles.codeCard} borderRadius={24}>
+                  <View style={styles.codeIconCircle}>
+                    <Ionicons name="key-outline" size={20} color={themeTokens.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.codeLabel}>Código de Vínculo do Casal</Text>
+                    <Text style={styles.codeValue}>{coupleCode}</Text>
+                  </View>
+                  <View style={styles.linkedBadge}>
+                    <Ionicons name="checkmark-circle" size={14} color="#34C759" />
+                    <Text style={styles.linkedBadgeText}>Vinculado</Text>
+                  </View>
+                </LiquidGlassView>
+              )}
+            </Animated.View>
+
+            {/* 3. Seção "Aparência & Tema" (Dark Mode Control) */}
+            <Animated.View entering={FadeInDown.springify().damping(15)}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>APARÊNCIA & TEMA</Text>
               </View>
-              <Text style={styles.avatarLabel} numberOfLines={1}>
-                {myName}
-              </Text>
-              <Text style={styles.avatarSubLabel}>Você</Text>
-            </AnimatedTouchable>
 
-            {/* Conector Central (Coração Pulsante) */}
-            <View style={styles.connectorCenter}>
-              <View style={styles.connectorLine} />
-              <View style={styles.heartCircle}>
-                <Ionicons name="heart" size={16} color="#FFFFFF" />
+              <LiquidGlassView variant="card" style={styles.themeCard} borderRadius={24}>
+                <View style={styles.themeHeaderRow}>
+                  <View style={styles.themeIconCircle}>
+                    <Ionicons
+                      name={mode === 'dark' ? 'moon' : mode === 'light' ? 'sunny' : 'phone-portrait-outline'}
+                      size={20}
+                      color={themeTokens.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.themeCardTitle}>Tema do Aplicativo</Text>
+                    <Text style={styles.themeCardDesc}>
+                      {mode === 'system'
+                        ? `Seguindo o sistema (${isDark ? 'Escuro' : 'Claro'})`
+                        : mode === 'dark'
+                        ? 'Modo Escuro ativado'
+                        : 'Modo Claro ativado'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Segmented Control Liquid Glass: Sistema, Claro, Escuro */}
+                <View style={styles.segmentedControl}>
+                  <AnimatedTouchable
+                    style={[
+                      styles.segmentButton,
+                      mode === 'system' && styles.segmentButtonActive,
+                    ]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setMode('system');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="phone-portrait-outline"
+                      size={14}
+                      color={mode === 'system' ? '#FFFFFF' : themeTokens.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.segmentButtonText,
+                        mode === 'system' && styles.segmentButtonTextActive,
+                      ]}
+                    >
+                      Sistema
+                    </Text>
+                  </AnimatedTouchable>
+
+                  <AnimatedTouchable
+                    style={[
+                      styles.segmentButton,
+                      mode === 'light' && styles.segmentButtonActive,
+                    ]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setMode('light');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="sunny-outline"
+                      size={14}
+                      color={mode === 'light' ? '#FFFFFF' : themeTokens.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.segmentButtonText,
+                        mode === 'light' && styles.segmentButtonTextActive,
+                      ]}
+                    >
+                      Claro
+                    </Text>
+                  </AnimatedTouchable>
+
+                  <AnimatedTouchable
+                    style={[
+                      styles.segmentButton,
+                      mode === 'dark' && styles.segmentButtonActive,
+                    ]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setMode('dark');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="moon-outline"
+                      size={14}
+                      color={mode === 'dark' ? '#FFFFFF' : themeTokens.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.segmentButtonText,
+                        mode === 'dark' && styles.segmentButtonTextActive,
+                      ]}
+                    >
+                      Escuro
+                    </Text>
+                  </AnimatedTouchable>
+                </View>
+              </LiquidGlassView>
+            </Animated.View>
+
+            {/* 4. Seção "Preferências & Segurança" */}
+            <Animated.View entering={FadeInDown.springify().damping(15)}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>PREFERÊNCIAS & SEGURANÇA</Text>
               </View>
-              <View style={styles.connectorLine} />
-            </View>
 
-            {/* Avatar do Parceiro/Parceira */}
-            <View style={styles.avatarWrapper}>
-              <View style={[styles.avatarRing, styles.partnerAvatarRing]}>
-                {partnerProfile?.displayAvatarUrl ? (
-                  <Image
-                    source={{ uri: partnerProfile.displayAvatarUrl }}
-                    style={styles.avatarImage}
-                  />
-                ) : (
-                  <Ionicons name="person" size={32} color="#735FD7" />
-                )}
-              </View>
+              <LiquidGlassView variant="card" style={styles.securityCard} borderRadius={24}>
+                <View style={styles.securityRow}>
+                  <View style={styles.securityIconBox}>
+                    <Ionicons name="shield-checkmark" size={22} color="#34C759" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.securityTitle}>Espaço Privado & Seguro</Text>
+                    <Text style={styles.securitySubtitle}>
+                      Protegido com Row Level Security (RLS) no Supabase. Somente vocês dois têm acesso às fotos, recados e memórias.
+                    </Text>
+                  </View>
+                </View>
 
-              <View style={styles.onlineBadge} />
-              <Text style={styles.avatarLabel} numberOfLines={1}>
-                {partnerName}
-              </Text>
-              <Text style={styles.avatarSubLabel}>Parceiro(a)</Text>
-            </View>
-          </View>
+                <View style={styles.securityDivider} />
 
-          {/* Badge de Sincronização Ativa */}
-          <View style={styles.syncStatusBadge}>
-            <View style={styles.greenPulseDot} />
-            <Text style={styles.syncStatusText}>Conexão Ativa & Sincronizada</Text>
-          </View>
-        </View>
+                <View style={styles.securityRow}>
+                  <View style={styles.securityIconBox}>
+                    <Ionicons name="lock-closed" size={22} color={themeTokens.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.securityTitle}>Armazenamento Criptografado</Text>
+                    <Text style={styles.securitySubtitle}>
+                      Buckets de fotos e arquivos privados com acesso controlado por assinaturas temporárias.
+                    </Text>
+                  </View>
+                </View>
+              </LiquidGlassView>
+            </Animated.View>
 
-        {/* 2. Card "Nosso Relacionamento" */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>NOSSO RELACIONAMENTO</Text>
-        </View>
+            {/* 4. Ação da Conta (Encerrar Sessão) */}
+            <Animated.View entering={FadeInDown.springify().damping(15)}>
+              <AnimatedTouchable
+                onPress={handleSignOut}
+                activeOpacity={0.85}
+              >
+                <LiquidGlassView variant="pill" style={styles.signOutButton} borderRadius={24}>
+                  <Ionicons name="log-out-outline" size={18} color="#FF5A5F" />
+                  <Text style={styles.signOutText}>Encerrar Sessão</Text>
+                </LiquidGlassView>
+              </AnimatedTouchable>
 
-        <AnimatedTouchable
-          style={styles.relationshipCard}
-          onPress={() => setIsDateModalVisible(true)}
-          activeOpacity={0.85}
-        >
-          <View style={styles.relationIconCircle}>
-            <Ionicons name="calendar" size={24} color="#8E7CE8" />
-          </View>
-
-          <View style={styles.relationContent}>
-            <Text style={styles.relationLabel}>Data de Início Oficial</Text>
-            <Text style={styles.relationDateValue}>
-              {formatFullDatePTBR(anniversaryDate)}
-            </Text>
-            <Text style={styles.relationHint}>Toque para alterar a data comemorativa</Text>
-          </View>
-
-          <View style={styles.editPill}>
-            <Ionicons name="pencil" size={14} color="#8E7CE8" />
-            <Text style={styles.editPillText}>Editar</Text>
-          </View>
-        </AnimatedTouchable>
-
-        {coupleCode && (
-          <View style={styles.codeCard}>
-            <View style={styles.codeIconCircle}>
-              <Ionicons name="key-outline" size={20} color="#8E7CE8" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.codeLabel}>Código de Vínculo do Casal</Text>
-              <Text style={styles.codeValue}>{coupleCode}</Text>
-            </View>
-            <View style={styles.linkedBadge}>
-              <Ionicons name="checkmark-circle" size={14} color="#38A169" />
-              <Text style={styles.linkedBadgeText}>Vinculado</Text>
-            </View>
-          </View>
+              <Text style={styles.footerNote}>NÓS • Feito para guardar nossa história</Text>
+            </Animated.View>
+          </>
         )}
-
-        {/* 3. Seção "Preferências & Segurança" */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>PREFERÊNCIAS & SEGURANÇA</Text>
-        </View>
-
-        <View style={styles.securityCard}>
-          <View style={styles.securityRow}>
-            <View style={styles.securityIconBox}>
-              <Ionicons name="shield-checkmark" size={22} color="#38A169" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.securityTitle}>Espaço Privado & Seguro</Text>
-              <Text style={styles.securitySubtitle}>
-                Protegido com Row Level Security (RLS) no Supabase. Somente vocês dois têm acesso às fotos, recados e memórias.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.securityDivider} />
-
-          <View style={styles.securityRow}>
-            <View style={styles.securityIconBox}>
-              <Ionicons name="lock-closed" size={22} color="#8E7CE8" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.securityTitle}>Armazenamento Criptografado</Text>
-              <Text style={styles.securitySubtitle}>
-                Buckets de fotos e arquivos privados com acesso controlado por assinaturas temporárias.
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* 4. Ação da Conta (Encerrar Sessão) */}
-        <AnimatedTouchable
-          style={styles.signOutButton}
-          onPress={handleSignOut}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="log-out-outline" size={20} color="#FF5A5F" />
-          <Text style={styles.signOutText}>Encerrar Sessão</Text>
-        </AnimatedTouchable>
-
-        {/* Versão e Assinatura */}
-        <Text style={styles.footerNote}>NÓS • Feito para guardar nossa história</Text>
       </ScrollView>
 
       {/* Modal de Edição da Data de Aniversário */}
@@ -577,7 +746,7 @@ export default function ProfileScreen() {
 
             <View style={styles.modalHeaderRow}>
               <View style={styles.modalIconBadge}>
-                <Ionicons name="calendar" size={22} color="#8E7CE8" />
+                <Ionicons name="calendar" size={22} color={themeTokens.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle}>Início do Relacionamento</Text>
@@ -594,7 +763,7 @@ export default function ProfileScreen() {
                 onPress={() => setShowAndroidPicker(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="calendar-outline" size={20} color="#8E7CE8" />
+                <Ionicons name="calendar-outline" size={20} color={themeTokens.primary} />
                 <Text style={styles.androidDateText}>
                   {tempDate.toLocaleDateString('pt-BR', {
                     day: 'numeric',
@@ -651,59 +820,43 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FC',
+    backgroundColor: themeTokens.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerWrapper: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 56 : 36,
-    paddingBottom: 16,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(142, 124, 232, 0.1)',
-    backgroundColor: '#F8F9FC',
-  },
-  headerBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.25)',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#16151E',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#686578',
-    marginTop: 2,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 120 : 100,
+    zIndex: 10,
   },
 
-  // Hero Card do Casal
+  // Skeleton Shimmer Loading
+  skeletonContainer: {
+    paddingTop: 10,
+    gap: 20,
+  },
+  skeletonHeroCard: {
+    width: '100%',
+    height: 180,
+    borderRadius: 32,
+    borderWidth: 1,
+  },
+  skeletonCard: {
+    width: '100%',
+    height: 100,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+
+  // Hero Card do Casal Liquid Glass
   coupleHeroCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    borderRadius: 30,
+    borderRadius: 32,
     padding: 24,
     alignItems: 'center',
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#8E7CE8',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.1,
     shadowRadius: 24,
     elevation: 4,
     marginBottom: 24,
@@ -727,7 +880,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 3,
-    shadowColor: '#16151E',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -735,10 +887,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   myAvatarRing: {
-    borderColor: '#8E7CE8',
+    borderColor: themeTokens.primary,
   },
   partnerAvatarRing: {
-    borderColor: '#735FD7',
+    borderColor: themeTokens.primary,
   },
   avatarImage: {
     width: '100%',
@@ -751,7 +903,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#8E7CE8',
+    backgroundColor: themeTokens.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -769,21 +921,23 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#38A169',
+    backgroundColor: '#34C759',
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
   avatarLabel: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#16151E',
+    fontWeight: '800',
+    color: themeTokens.textPrimary,
     marginTop: 8,
     textAlign: 'center',
+    letterSpacing: -0.2,
   },
   avatarSubLabel: {
     fontSize: 11,
-    color: '#686578',
+    color: themeTokens.textSecondary,
     marginTop: 1,
+    fontWeight: '500',
   },
   connectorCenter: {
     flexDirection: 'row',
@@ -800,167 +954,167 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#8E7CE8',
+    backgroundColor: themeTokens.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#8E7CE8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 2,
   },
   syncStatusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(56, 161, 105, 0.1)',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    gap: 6,
+    backgroundColor: 'rgba(52, 199, 89, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 999,
-    gap: 8,
   },
   greenPulseDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: '#38A169',
+    backgroundColor: '#34C759',
   },
   syncStatusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#276749',
+    color: '#15803D',
   },
 
-  // Headers de Seção
+  // Seções
   sectionHeader: {
-    marginBottom: 10,
+    marginBottom: 12,
     paddingHorizontal: 4,
   },
   sectionTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#686578',
-    letterSpacing: 0.8,
+    color: themeTokens.textSecondary,
+    letterSpacing: 1.2,
   },
 
-  // Card do Relacionamento
+  // Card Relacionamento Liquid Glass
   relationshipCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
     borderRadius: 24,
-    padding: 18,
+    padding: 16,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#16151E',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 14,
-    elevation: 2,
-    marginBottom: 14,
-    gap: 14,
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 3,
+    marginBottom: 16,
   },
   relationIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     backgroundColor: 'rgba(142, 124, 232, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 14,
   },
   relationContent: {
     flex: 1,
   },
   relationLabel: {
-    fontSize: 12,
+    fontSize: 11,
+    color: themeTokens.textSecondary,
     fontWeight: '600',
-    color: '#686578',
     marginBottom: 2,
   },
   relationDateValue: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#16151E',
+    fontWeight: '800',
+    color: themeTokens.textPrimary,
     marginBottom: 2,
+    letterSpacing: -0.2,
   },
   relationHint: {
     fontSize: 11,
-    color: '#8E7CE8',
+    color: themeTokens.primary,
+    fontWeight: '500',
   },
   editPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(142, 124, 232, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 999,
   },
   editPillText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#8E7CE8',
+    color: themeTokens.primary,
   },
 
-  // Card Código do Casal
+  // Código do Casal
   codeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    borderRadius: 20,
-    padding: 14,
+    borderRadius: 24,
+    padding: 16,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 3,
     marginBottom: 24,
-    gap: 12,
   },
   codeIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(142, 124, 232, 0.1)',
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(142, 124, 232, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 14,
   },
   codeLabel: {
     fontSize: 11,
-    color: '#686578',
+    color: themeTokens.textSecondary,
     fontWeight: '600',
+    marginBottom: 2,
   },
   codeValue: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#16151E',
-    letterSpacing: 1,
-    marginTop: 1,
+    color: themeTokens.textPrimary,
+    letterSpacing: 1.5,
   },
   linkedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(56, 161, 105, 0.12)',
+    backgroundColor: 'rgba(52, 199, 89, 0.1)',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 999,
   },
   linkedBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#276749',
+    color: '#15803D',
   },
 
-  // Card Segurança & Privacidade
+  // Card Segurança
   securityCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
     borderRadius: 24,
-    padding: 18,
+    padding: 16,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#16151E',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.03,
-    shadowRadius: 14,
-    elevation: 2,
-    marginBottom: 28,
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 3,
+    marginBottom: 24,
   },
   securityRow: {
     flexDirection: 'row',
@@ -971,41 +1125,40 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(142, 124, 232, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.15)',
+    marginTop: 2,
   },
   securityTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#16151E',
-    marginBottom: 2,
+    color: themeTokens.textPrimary,
+    marginBottom: 4,
   },
   securitySubtitle: {
     fontSize: 12,
-    color: '#686578',
-    lineHeight: 16,
+    color: themeTokens.textSecondary,
+    lineHeight: 18,
   },
   securityDivider: {
     height: 1,
-    backgroundColor: 'rgba(142, 124, 232, 0.08)',
+    backgroundColor: 'rgba(142, 124, 232, 0.1)',
     marginVertical: 14,
   },
 
-  // Botão de Logout
+  // Botão Sair
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(255, 90, 95, 0.08)',
     borderRadius: 20,
     paddingVertical: 16,
+    backgroundColor: 'rgba(255, 90, 95, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255, 90, 95, 0.2)',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   signOutText: {
     fontSize: 15,
@@ -1014,9 +1167,9 @@ const styles = StyleSheet.create({
   },
   footerNote: {
     fontSize: 12,
-    color: '#A09EAD',
+    color: themeTokens.textSecondary,
     textAlign: 'center',
-    marginTop: 4,
+    marginBottom: 20,
   },
 
   // Modal Styles
@@ -1027,15 +1180,14 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
     paddingTop: 12,
     paddingHorizontal: 22,
     paddingBottom: Platform.OS === 'ios' ? 44 : 26,
-    shadowColor: '#000000',
     shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.12,
-    shadowRadius: 20,
+    shadowRadius: 24,
     elevation: 10,
   },
   modalHandle: {
@@ -1050,7 +1202,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   modalIconBadge: {
     width: 44,
@@ -1061,13 +1213,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#16151E',
+    fontSize: 20,
+    fontWeight: '800',
+    color: themeTokens.textPrimary,
+    letterSpacing: -0.3,
   },
   modalSubtitle: {
     fontSize: 12,
-    color: '#686578',
+    color: themeTokens.textSecondary,
     marginTop: 2,
     lineHeight: 16,
   },
@@ -1076,22 +1229,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     backgroundColor: 'rgba(142, 124, 232, 0.08)',
-    borderRadius: 16,
-    paddingHorizontal: 16,
     paddingVertical: 14,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.15)',
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    marginBottom: 16,
   },
   androidDateText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#16151E',
+    color: themeTokens.textPrimary,
   },
   pickerBox: {
-    backgroundColor: 'rgba(142, 124, 232, 0.04)',
-    borderRadius: 20,
-    padding: 10,
     alignItems: 'center',
     marginVertical: 10,
   },
@@ -1111,7 +1259,7 @@ const styles = StyleSheet.create({
   modalCancelText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#686578',
+    color: themeTokens.textSecondary,
   },
   modalSaveBtn: {
     flex: 2,
@@ -1121,8 +1269,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 15,
     borderRadius: 18,
-    backgroundColor: '#8E7CE8',
-    shadowColor: '#8E7CE8',
+    backgroundColor: themeTokens.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -1135,5 +1282,68 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.6,
+  },
+  themeCard: {
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  themeHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  themeIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(142, 124, 232, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: themeTokens.textPrimary,
+    letterSpacing: -0.2,
+  },
+  themeCardDesc: {
+    fontSize: 12,
+    color: themeTokens.textSecondary,
+    marginTop: 2,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(142, 124, 232, 0.08)',
+    borderRadius: 16,
+    padding: 4,
+    gap: 4,
+  },
+  segmentButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  segmentButtonActive: {
+    backgroundColor: themeTokens.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  segmentButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: themeTokens.textSecondary,
+  },
+  segmentButtonTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

@@ -5,21 +5,36 @@ import {
   StyleSheet,
   FlatList,
   TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Alert,
   Keyboard,
   TouchableWithoutFeedback,
- } from 'react-native';
-import { AnimatedTouchable } from '../../components/AnimatedTouchable';
-import { LiquidGlassBackground } from '../../components/LiquidGlassBackground';
-import { AppHeader } from '../../components/AppHeader';
+  Image,
+} from 'react-native';
+import Animated, { 
+  FadeInDown, 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { AnimatedTouchable } from '../../components/AnimatedTouchable';
+import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
+import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
+import { AppHeader } from '../../components/AppHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
+import { useAppTheme } from '../../context/ThemeContext';
+import { getThemeTokens } from '../../constants/theme';
 import { supabase } from '../../lib/supabase';
 
 interface Message {
@@ -28,6 +43,12 @@ interface Message {
   created_by: string;
   content: string;
   created_at: string;
+}
+
+interface UserProfile {
+  name: string;
+  avatar_url?: string | null;
+  push_token?: string | null;
 }
 
 const getFirstName = (name?: string | null): string => {
@@ -42,53 +63,62 @@ const formatMessageTime = (dateString?: string): string => {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return '';
 
-  const now = new Date();
-  const isToday =
-    date.getDate() === now.getDate() &&
-    date.getMonth() === now.getMonth() &&
-    date.getFullYear() === now.getFullYear();
-
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
-
-  if (isToday) {
-    return `${hours}:${minutes}`;
-  }
-
-  const day = date.getDate();
-  const monthNames = [
-    'jan',
-    'fev',
-    'mar',
-    'abr',
-    'mai',
-    'jun',
-    'jul',
-    'ago',
-    'set',
-    'out',
-    'nov',
-    'dez',
-  ];
-  const month = monthNames[date.getMonth()];
-  return `${day} ${month} • ${hours}:${minutes}`;
+  return `${hours}:${minutes}`;
 };
 
 export default function MessagesScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { coupleId } = useCouple();
+  const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
+  const themeTokens = getThemeTokens(isDark);
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [profileMap, setProfileMap] = useState<Map<string, string>>(new Map());
+  // Inicializa o mapa com os dados imediatos do usuário logado para evitar flashes
+  const [profileMap, setProfileMap] = useState<Map<string, UserProfile>>(() => {
+    const initialMap = new Map<string, UserProfile>();
+    if (user) {
+      initialMap.set(user.id, {
+        name: getFirstName(user.user_metadata?.display_name || user.email?.split('@')[0]) || 'Você',
+        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+      });
+    }
+    return initialMap;
+  });
+
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
+  const channelRef = useRef<any>(null);
 
-  // Monitora visibilidade do teclado para ajustar margens da barra de entrada
+  // Escala animada do botão de envio (microinteração elástica withSpring)
+  const sendScale = useSharedValue(1);
+
+  const sendBtnAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: sendScale.value }],
+  }));
+
+  // Shimmer pulse animation para skeleton loading (chat)
+  const shimmerOpacity = useSharedValue(0.4);
+  useEffect(() => {
+    shimmerOpacity.value = withRepeat(
+      withTiming(0.85, { duration: 1000 }),
+      -1,
+      true
+    );
+  }, []);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: shimmerOpacity.value,
+  }));
+
+  // Monitora teclado para scroll automático e ajuste de espaçamento
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -110,7 +140,44 @@ export default function MessagesScreen() {
     };
   }, []);
 
-  // 1. Carrega os perfis dos integrantes para exibir o nome do autor
+  // Resolve URL assinada ou pública para o avatar com tolerância a caminhos do Supabase Storage
+  const resolveAvatarUrl = async (pathOrUrl?: string | null): Promise<string | null> => {
+    if (!pathOrUrl) return null;
+    const trimmed = pathOrUrl.trim();
+    if (!trimmed) return null;
+
+    if (trimmed.startsWith('file:') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+
+    // Se já é uma URL externa completa (Google OAuth, CDNs externos, etc.)
+    if ((trimmed.startsWith('http://') || trimmed.startsWith('https://')) && !trimmed.includes('/avatars/')) {
+      return trimmed;
+    }
+
+    let cleanPath = trimmed;
+    if (cleanPath.includes('/avatars/')) {
+      cleanPath = cleanPath.split('/avatars/')[1].split('?')[0];
+    }
+    cleanPath = cleanPath.replace(/^\/+/, '');
+
+    try {
+      const { data: signedData, error: signError } = await supabase.storage
+        .from('avatars')
+        .createSignedUrl(cleanPath, 60 * 60 * 24);
+
+      if (!signError && signedData?.signedUrl) {
+        return signedData.signedUrl;
+      }
+    } catch {
+      // Ignora erro e tenta URL pública
+    }
+
+    const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(cleanPath);
+    return publicData?.publicUrl || trimmed;
+  };
+
+  // 1. Carrega os perfis dos integrantes para exibir a foto real do autor
   const loadMemberProfiles = useCallback(async () => {
     if (!coupleId) return;
 
@@ -120,32 +187,59 @@ export default function MessagesScreen() {
         .select('user_id')
         .eq('couple_id', coupleId);
 
-      const userIds = (members || []).map((m) => m.user_id);
-      if (userIds.length === 0) return;
-
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, display_name')
-        .in('id', userIds);
-
-      const map = new Map<string, string>();
-      profiles?.forEach((p) => {
-        if (p.id && p.display_name) {
-          map.set(p.id, getFirstName(p.display_name));
-        }
+      const userIds = new Set<string>();
+      if (user?.id) userIds.add(user.id);
+      (members || []).forEach((m) => {
+        if (m.user_id) userIds.add(m.user_id);
       });
+
+      if (userIds.size === 0) return;
+
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url, push_token')
+        .in('id', Array.from(userIds));
+
+      if (error) {
+        console.warn('Erro ao carregar perfis:', error.message);
+      }
+
+      const map = new Map<string, UserProfile>(profileMap);
+
+      if (profiles && profiles.length > 0) {
+        await Promise.all(
+          profiles.map(async (p) => {
+            const currentUser = user;
+            let finalAvatarUrl: string | null = null;
+            if (p.avatar_url) {
+              finalAvatarUrl = await resolveAvatarUrl(p.avatar_url);
+            } else if (currentUser && p.id === currentUser.id && (currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture)) {
+              finalAvatarUrl = currentUser.user_metadata.avatar_url || currentUser.user_metadata.picture || null;
+            }
+
+            if (p.id) {
+              map.set(p.id, {
+                name: getFirstName(p.display_name),
+                avatar_url: finalAvatarUrl,
+                push_token: (p as any).push_token || null,
+              });
+            }
+          })
+        );
+      }
+
       setProfileMap(map);
     } catch (err) {
       console.warn('Erro ao carregar perfis de mensagens:', err);
     }
-  }, [coupleId]);
+  }, [coupleId, user]);
 
   // 2. Carrega as mensagens do casal em ordem cronológica
-  const loadMessages = useCallback(async () => {
+  const loadMessages = useCallback(async (silent = false) => {
     if (!coupleId) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const { data, error } = await supabase
         .from('messages')
         .select('id, couple_id, created_by, content, created_at')
@@ -156,11 +250,23 @@ export default function MessagesScreen() {
         throw error;
       }
 
-      setMessages(data || []);
+      if (data) {
+        setMessages((prev) => {
+          // Preserva mensagens temporárias em envio que ainda não estejam no banco
+          const tempOnes = prev.filter((m) => m.id.startsWith('temp-'));
+          const fresh = [...data];
+          tempOnes.forEach((t) => {
+            if (!fresh.some((m) => m.created_by === t.created_by && m.content === t.content)) {
+              fresh.push(t);
+            }
+          });
+          return fresh;
+        });
+      }
     } catch (err: any) {
       console.warn('Erro ao carregar mensagens:', err.message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [coupleId]);
 
@@ -170,9 +276,48 @@ export default function MessagesScreen() {
     loadMemberProfiles();
     loadMessages();
 
-    // 3. Subscription do Supabase Realtime para mensagens instantâneas
+    // 3. Subscription do Supabase Realtime com DUAL CANAL: Broadcast (instantâneo ~50ms) + Postgres Changes (confirmação no DB)
     const channel = supabase
-      .channel(`messages_channel_${coupleId}`)
+      .channel(`messages_room_${coupleId}`, {
+        config: {
+          broadcast: { self: false },
+        },
+      })
+      // Recebe mensagem peer-to-peer via WebSocket instantaneamente sem esperar commit do Postgres
+      .on('broadcast', { event: 'new_message' }, (event) => {
+        const incoming = event.payload as Message;
+        if (!incoming || incoming.created_by === user?.id) return;
+
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setMessages((prev) => {
+          if (
+            prev.some(
+              (m) =>
+                m.id === incoming.id ||
+                (m.created_by === incoming.created_by &&
+                  m.content === incoming.content &&
+                  Math.abs(new Date(m.created_at).getTime() - new Date(incoming.created_at).getTime()) < 6000)
+            )
+          ) {
+            return prev;
+          }
+          return [...prev, incoming];
+        });
+
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 50);
+      })
+      // Substitui o tempId quando confirmado pelo banco
+      .on('broadcast', { event: 'message_confirmed' }, (event) => {
+        const { tempId, confirmedMsg } = event.payload || {};
+        if (confirmedMsg) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === tempId ? (confirmedMsg as Message) : m))
+          );
+        }
+      })
+      // Postgres Changes: listener padrão para consistência e backup
       .on(
         'postgres_changes',
         {
@@ -185,47 +330,163 @@ export default function MessagesScreen() {
           const newMsg = payload.new as Message;
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
+
+            if (newMsg.created_by === user?.id) {
+              const tempIndex = prev.findIndex(
+                (m) =>
+                  m.id.startsWith('temp-') &&
+                  m.created_by === newMsg.created_by &&
+                  m.content === newMsg.content
+              );
+              if (tempIndex !== -1) {
+                const next = [...prev];
+                next[tempIndex] = newMsg;
+                return next;
+              }
+            }
+
             return [...prev, newMsg];
           });
+
           setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
-          }, 150);
+          }, 80);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+        },
+        () => {
+          loadMemberProfiles();
         }
       )
       .subscribe();
 
+    channelRef.current = channel;
+
+    // Fallback de ultra-baixa latência: sincronização silenciosa a cada 2.5s enquanto na tela de mensagens
+    const pollInterval = setInterval(() => {
+      loadMessages(true);
+    }, 2500);
+
     return () => {
+      clearInterval(pollInterval);
+      channelRef.current = null;
       supabase.removeChannel(channel);
     };
-  }, [coupleId, loadMemberProfiles, loadMessages]);
+  }, [coupleId, loadMemberProfiles, loadMessages, user?.id]);
 
-  // 4. Envia mensagem rápida
+  // 4. Envia mensagem instantaneamente com atualização otimista (ZERO DELAY)
   const handleSendMessage = async () => {
-    if (!inputText.trim() || !user || !coupleId || sending) return;
-
     const contentToSend = inputText.trim();
+    if (!contentToSend || !user || !coupleId || sending) return;
+
+    // Haptics e animação elástica imediata no botão
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    sendScale.value = withSpring(0.85, { damping: 10, stiffness: 300 }, () => {
+      sendScale.value = withSpring(1, { damping: 12, stiffness: 220 });
+    });
+
+    // 1. Limpa o input IMEDIATAMENTE (zero delay para o usuário)
     setInputText('');
+
+    // 2. Cria mensagem otimista e insere no estado local na hora
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const optimisticMsg: Message = {
+      id: tempId,
+      couple_id: coupleId,
+      created_by: user.id,
+      content: contentToSend,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    // Dispara broadcast instantâneo para o parceiro via WebSocket (tempo de entrega ~30-50ms)
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'new_message',
+        payload: optimisticMsg,
+      });
+    }
+
+    // Rola instantaneamente para a nova mensagem
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 40);
+
     setSending(true);
 
     try {
-      const { error } = await supabase.from('messages').insert({
-        couple_id: coupleId,
-        created_by: user.id,
-        content: contentToSend,
-      });
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          couple_id: coupleId,
+          created_by: user.id,
+          content: contentToSend,
+        })
+        .select()
+        .single();
 
       if (error) {
         throw error;
       }
+
+      // Substitui o tempId pelo registro real retornado do banco
+      if (data) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? (data as Message) : m))
+        );
+
+        // Notifica o parceiro do ID definitivo
+        if (channelRef.current) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'message_confirmed',
+            payload: { tempId, confirmedMsg: data },
+          });
+        }
+      }
+
+      // 3. Dispara push notification para o parceiro em segundo plano
+      const currentUserProfile = profileMap.get(user.id);
+      const partnerId = Array.from(profileMap.keys()).find((id) => id !== user.id);
+      if (partnerId) {
+        const partnerProfile = profileMap.get(partnerId);
+        if (partnerProfile?.push_token) {
+          fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Accept-encoding': 'gzip, deflate',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              to: partnerProfile.push_token,
+              sound: 'default',
+              title: 'nós.',
+              body: `Tem um novo recado carinhoso de ${currentUserProfile?.name || 'seu amor'} ❤️`,
+              data: { url: '/messages' },
+            }),
+          }).catch((err) => console.warn('Push error:', err));
+        }
+      }
     } catch (err: any) {
-      Alert.alert('Erro ao enviar', 'Não foi possível entregar o seu bilhete. Tente novamente.');
+      console.warn('Erro ao salvar mensagem:', err);
+      // Em caso de falha de conexão, remove a mensagem otimista e devolve o texto
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setInputText(contentToSend);
+      Alert.alert('Erro ao enviar', 'Não foi possível entregar o seu bilhete. Verifique sua conexão.');
     } finally {
       setSending(false);
     }
   };
 
-  // Volta para a tela anterior com segurança
   const handleGoBack = () => {
     Keyboard.dismiss();
     if (router.canGoBack()) {
@@ -237,188 +498,249 @@ export default function MessagesScreen() {
 
   const renderMessageItem = ({ item }: { item: Message }) => {
     const isMe = item.created_by === user?.id;
-    const authorName = isMe
-      ? 'Você'
-      : profileMap.get(item.created_by) || 'Meu Amor';
+    const authorProfile = profileMap.get(item.created_by);
 
-    return (
+    const avatarUri =
+      authorProfile?.avatar_url ||
+      (isMe ? user?.user_metadata?.avatar_url || user?.user_metadata?.picture : null);
+
+    const avatar = (
       <View
         style={[
-          styles.messageCardContainer,
-          isMe ? styles.myMessageContainer : styles.partnerMessageContainer,
+          styles.avatarContainer,
+          {
+            backgroundColor: isDark
+              ? 'rgba(167,151,255,0.15)'
+              : 'rgba(142,124,232,0.12)',
+            borderColor: isMe ? themeTokens.primary : (isDark ? themeTokens.primaryDark : '#735FD7'),
+          },
         ]}
       >
-        <View
-          style={[
-            styles.glassNoteCard,
-            isMe ? styles.myGlassNoteCard : styles.partnerGlassNoteCard,
-          ]}
-        >
-          {/* Cabeçalho do bilhete */}
-          <View style={styles.noteHeader}>
-            <View style={styles.noteAuthorBadge}>
-              <Ionicons
-                name={isMe ? 'heart' : 'heart-outline'}
-                size={12}
-                color="#8E7CE8"
-              />
-              <Text style={styles.noteAuthorText}>{authorName}</Text>
-            </View>
-            <Text style={styles.noteTimeText}>
+        {avatarUri ? (
+          <Image
+            source={{ uri: avatarUri }}
+            style={styles.avatarImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.avatarFallback}>
+            <LinearGradient
+              colors={
+                isMe
+                  ? [themeTokens.primary, themeTokens.primaryDark]
+                  : isDark
+                  ? [themeTokens.orbLavender, themeTokens.orbPink]
+                  : ['#EDE9FE', '#DDD6FE']
+              }
+              style={StyleSheet.absoluteFill}
+            />
+            <Ionicons
+              name="person"
+              size={16}
+              color={isMe ? '#FFFFFF' : themeTokens.primary}
+            />
+          </View>
+        )}
+      </View>
+    );
+
+    return (
+      <View style={[styles.messageRow, isMe ? styles.messageRowMe : styles.messageRowPartner]}>
+        {!isMe && avatar}
+
+        {isMe ? (
+          <LinearGradient
+            colors={isDark ? ['#A797FF', '#8B5CF6'] : ['#8E7CE8', '#7C3AED']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.messageBubble, styles.bubbleMe]}
+          >
+            <Text style={styles.messageTextMe}>{item.content}</Text>
+            <Text style={styles.messageTimeMe}>{formatMessageTime(item.created_at)}</Text>
+          </LinearGradient>
+        ) : (
+          <View
+            style={[
+              styles.messageBubble,
+              styles.bubblePartner,
+              {
+                backgroundColor: isDark
+                  ? themeTokens.glassSurface
+                  : 'rgba(255,255,255,0.65)',
+                borderColor: isDark
+                  ? themeTokens.glassBorder
+                  : 'rgba(255,255,255,0.6)',
+              },
+            ]}
+          >
+            <BlurView
+              intensity={Platform.OS === 'ios' ? 75 : 100}
+              tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text style={[styles.messageTextPartner, { color: themeTokens.textPrimary }]}>
+              {item.content}
+            </Text>
+            <Text style={[styles.messageTimePartner, { color: themeTokens.textMuted }]}>
               {formatMessageTime(item.created_at)}
             </Text>
           </View>
+        )}
 
-          {/* Texto do bilhete */}
-          <Text style={styles.noteContentText}>{item.content}</Text>
-        </View>
+        {isMe && avatar}
       </View>
     );
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
-    >
-      {/* Background Liquid Glass */}
-      <LiquidGlassBackground />
+    <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
+      <AtmosphereBackground />
 
-      {/* Cabeçalho Superior Apple Liquid Glass */}
-      <View style={{ paddingHorizontal: 20 }}>
-        <AppHeader
-          sectionTitle="recados"
-          coupleSubtitle="Bilhetes carinhosos do casal"
-          showBack
-          onBack={handleGoBack}
-        />
-      </View>
-
-      {/* Área de Visualização das Mensagens */}
-      <View style={styles.contentFlex}>
-        {loading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator color="#8E7CE8" size="large" />
-          </View>
-        ) : messages.length === 0 ? (
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-            <View style={styles.centerContainer}>
-              <View style={styles.emptyGlassCard}>
-                <View style={styles.emptyIconBadge}>
-                  <Ionicons name="mail-open-outline" size={36} color="#8E7CE8" />
-                </View>
-                <Text style={styles.emptyTitle}>Nenhum bilhete ainda</Text>
-                <Text style={styles.emptySubtitle}>
-                  Surpreenda seu amor deixando o primeiro recado carinhoso aqui.
-                </Text>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={renderMessageItem}
-            contentContainerStyle={[styles.listContent, { paddingBottom: 130 }]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-          />
-        )}
-      </View>
-
-      {/* Barra de Entrada de Texto em Fluxo Flexível (Sempre Visível) */}
-      <View
-        style={[
-          styles.inputBarWrapper,
-          {
-            marginBottom: isKeyboardVisible
-              ? 10
-              : Platform.OS === 'ios'
-              ? 88
-              : 76,
-          },
-        ]}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        style={styles.keyboardAvoid}
       >
-        <View style={styles.inputGlassBar}>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Escreva um recado com carinho..."
-            placeholderTextColor="#686578"
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={1000}
+        {/* Header */}
+        <View style={[styles.headerWrap, { paddingTop: insets.top + 8 }]}>
+          <AppHeader
+            sectionTitle="recados"
+            coupleSubtitle="Bilhetes carinhosos do casal"
+            showBack
+            onBack={handleGoBack}
           />
-
-          <AnimatedTouchable
-            style={[
-              styles.sendButton,
-              (!inputText.trim() || sending) && styles.sendButtonDisabled,
-            ]}
-            onPress={handleSendMessage}
-            disabled={!inputText.trim() || sending}
-            activeOpacity={0.8}
-          >
-            {sending ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Ionicons name="send" size={17} color="#FFFFFF" />
-            )}
-          </AnimatedTouchable>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+
+        {/* Messages Area */}
+        <View style={styles.contentFlex}>
+          {loading ? (
+            <View style={styles.skeletonChat}>
+              {[
+                { align: 'left' as const, w: '65%' },
+                { align: 'right' as const, w: '60%' },
+                { align: 'left' as const, w: '55%' },
+                { align: 'right' as const, w: '70%' },
+              ].map((s, i) => (
+                <Animated.View
+                  key={i}
+                  style={[
+                    s.align === 'left' ? styles.skeletonLeft : styles.skeletonRight,
+                    {
+                      width: s.w as any,
+                      backgroundColor:
+                        s.align === 'right'
+                          ? isDark
+                            ? 'rgba(167,151,255,0.15)'
+                            : 'rgba(142,124,232,0.2)'
+                          : isDark
+                          ? 'rgba(255,255,255,0.06)'
+                          : 'rgba(255,255,255,0.55)',
+                      borderColor: isDark
+                        ? themeTokens.glassBorder
+                        : 'rgba(255,255,255,0.7)',
+                    },
+                    shimmerStyle,
+                  ]}
+                />
+              ))}
+            </View>
+          ) : messages.length === 0 ? (
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+              <View style={styles.centerContainer}>
+                <LiquidGlassView variant="card" style={styles.emptyCard} borderRadius={24}>
+                  <View
+                    style={[
+                      styles.emptyIconBox,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(167,151,255,0.15)'
+                          : 'rgba(142,124,232,0.1)',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="mail-open-outline" size={32} color={themeTokens.primary} />
+                  </View>
+                  <Text style={[styles.emptyTitle, { color: themeTokens.textPrimary }]}>
+                    Nenhum bilhete ainda
+                  </Text>
+                  <Text style={[styles.emptySub, { color: themeTokens.textSecondary }]}>
+                    Surpreenda seu amor deixando o primeiro recado carinhoso aqui.
+                  </Text>
+                </LiquidGlassView>
+              </View>
+            </TouchableWithoutFeedback>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={(item) => item.id}
+              renderItem={renderMessageItem}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            />
+          )}
+        </View>
+
+        {/* Input Bar */}
+        <View
+          style={[
+            styles.inputBarWrap,
+            {
+              paddingBottom: isKeyboardVisible
+                ? (Platform.OS === 'ios' ? 8 : 12)
+                : (Platform.OS === 'ios' ? (insets.bottom > 0 ? insets.bottom + 66 : 76) : 80),
+            },
+          ]}
+        >
+          <LiquidGlassView variant="control" style={styles.inputGlass} borderRadius={24}>
+            <TextInput
+              style={[styles.textInput, { color: themeTokens.textPrimary }]}
+              placeholder="Escreva um recado com carinho..."
+              placeholderTextColor={themeTokens.textMuted}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={1000}
+              textAlignVertical="center"
+            />
+
+            <Animated.View style={sendBtnAnimatedStyle}>
+              <AnimatedTouchable
+                style={[
+                  styles.sendButton,
+                  {
+                    backgroundColor: themeTokens.primaryDark,
+                    shadowColor: themeTokens.primaryDark,
+                  },
+                  (!inputText.trim() || sending) && styles.sendButtonDisabled,
+                ]}
+                onPress={handleSendMessage}
+                disabled={!inputText.trim() || sending}
+              >
+                <Ionicons name="paper-plane" size={16} color="#FFFFFF" style={{ marginLeft: 1 }} />
+              </AnimatedTouchable>
+            </Animated.View>
+          </LiquidGlassView>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FC',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 56 : 36,
-    paddingBottom: 14,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(142, 124, 232, 0.1)',
-    backgroundColor: '#F8F9FC',
+  keyboardAvoid: {
+    flex: 1,
+  },
+  headerWrap: {
+    paddingHorizontal: 20,
+    paddingBottom: 4,
     zIndex: 10,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  headerTitleWrapper: {
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#8E7CE8',
-    letterSpacing: 0.5,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: '#686578',
-    marginTop: 1,
   },
   contentFlex: {
     flex: 1,
@@ -429,150 +751,178 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 32,
   },
-  emptyGlassCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    borderRadius: 28,
-    padding: 32,
-    alignItems: 'center',
+
+  /* ── Skeleton ── */
+  skeletonChat: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 14,
+  },
+  skeletonLeft: {
+    height: 48,
+    borderRadius: 18,
+    borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 3,
+  },
+  skeletonRight: {
+    height: 48,
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+    alignSelf: 'flex-end',
+    borderWidth: 1,
+  },
+
+  /* ── Empty State ── */
+  emptyCard: {
+    padding: 28,
+    alignItems: 'center',
     width: '100%',
   },
-  emptyIconBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 24,
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
+  emptyIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.25)',
+    marginBottom: 14,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#16151E',
     marginBottom: 6,
   },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#686578',
+  emptySub: {
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 19,
   },
+
+  /* ── Messages List ── */
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingTop: 12,
+    paddingBottom: 20,
   },
-  messageCardContainer: {
-    marginVertical: 6,
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginVertical: 5,
     width: '100%',
   },
-  myMessageContainer: {
-    alignItems: 'flex-end',
+  messageRowMe: {
+    justifyContent: 'flex-end',
   },
-  partnerMessageContainer: {
-    alignItems: 'flex-start',
+  messageRowPartner: {
+    justifyContent: 'flex-start',
   },
-  glassNoteCard: {
-    maxWidth: '82%',
-    borderRadius: 22,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    shadowColor: '#16151E',
+
+  /* ── Avatars ── */
+  avatarContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginHorizontal: 6,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* ── Bubbles ── */
+  messageBubble: {
+    maxWidth: '75%',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  bubbleMe: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 6,
+    shadowColor: '#5B4294',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.18,
     shadowRadius: 10,
+    elevation: 4,
+  },
+  bubblePartner: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    shadowColor: '#5B4294',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
-  myGlassNoteCard: {
-    backgroundColor: 'rgba(142, 124, 232, 0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.3)',
-    borderBottomRightRadius: 6,
-  },
-  partnerGlassNoteCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    borderBottomLeftRadius: 6,
-  },
-  noteHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 6,
-  },
-  noteAuthorBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  noteAuthorText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8E7CE8',
-  },
-  noteTimeText: {
-    fontSize: 11,
-    color: '#686578',
-    opacity: 0.85,
-  },
-  noteContentText: {
+  messageTextMe: {
     fontSize: 15,
-    color: '#16151E',
+    color: '#FFFFFF',
     lineHeight: 21,
+    fontWeight: '500',
   },
-  inputBarWrapper: {
+  messageTextPartner: {
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '500',
+  },
+  messageTimeMe: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 4,
+    alignSelf: 'flex-end',
+    fontWeight: '500',
+  },
+  messageTimePartner: {
+    fontSize: 10,
+    marginTop: 4,
+    alignSelf: 'flex-end',
+    fontWeight: '500',
+  },
+
+  /* ── Input Bar ── */
+  inputBarWrap: {
     paddingHorizontal: 16,
     paddingTop: 6,
+    zIndex: 20,
   },
-  inputGlassBar: {
+  inputGlass: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 26,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.25)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   textInput: {
     flex: 1,
-    minHeight: 40,
-    maxHeight: 90,
+    minHeight: 38,
+    maxHeight: 96,
     fontSize: 15,
-    color: '#16151E',
-    paddingVertical: 8,
-    paddingRight: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
   sendButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#8E7CE8',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#8E7CE8',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: 5,
     elevation: 3,
   },
   sendButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.3,
   },
 });
+

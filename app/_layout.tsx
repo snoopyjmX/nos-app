@@ -1,7 +1,14 @@
 import React, { useEffect } from 'react';
+import { LogBox } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CoupleProvider } from '../context/CoupleContext';
+import { ThemeProvider } from '../context/ThemeContext';
+import { NavbarProvider } from '../context/NavbarContext';
+
+// Desativa todos os banners amarelos e toasts de aviso na tela do app
+LogBox.ignoreAllLogs(true);
 
 function RootLayoutNav() {
   const { session, isLoading } = useAuth();
@@ -15,7 +22,7 @@ function RootLayoutNav() {
 
     // Se a sessão expirou ou o usuário deslogou e não está no grupo (auth), redireciona compulsoriamente
     if (!session && !inAuthGroup) {
-      router.replace('/(auth)/login');
+      router.replace('/(auth)/welcome');
     } else if (session && inAuthGroup) {
       // Se já possui sessão e está nas telas de login/cadastro, redireciona para a raiz
       router.replace('/');
@@ -27,10 +34,16 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <CoupleProvider>
-        <RootLayoutNav />
-      </CoupleProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <CoupleProvider>
+            <NavbarProvider>
+              <RootLayoutNav />
+            </NavbarProvider>
+          </CoupleProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

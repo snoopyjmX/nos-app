@@ -1,19 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { AnimatedTouchable } from './AnimatedTouchable';
+import { NotificationsModal } from './NotificationsModal';
+import { useAppTheme } from '../context/ThemeContext';
 
 interface AppHeaderProps {
   sectionTitle?: string;
   coupleSubtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
+  showNotification?: boolean;
   rightAction?: React.ReactNode;
 }
 
@@ -22,64 +22,115 @@ export function AppHeader({
   coupleSubtitle,
   showBack = false,
   onBack,
+  showNotification = false,
   rightAction,
 }: AppHeaderProps) {
-  const pulseScale = useSharedValue(1);
-  const pulseOpacity = useSharedValue(1);
+  const { isDark } = useAppTheme();
+  const [notifModalVisible, setNotifModalVisible] = useState(false);
 
-  useEffect(() => {
-    pulseScale.value = withRepeat(withTiming(1.6, { duration: 1600 }), -1, true);
-    pulseOpacity.value = withRepeat(withTiming(0.35, { duration: 1600 }), -1, true);
-  }, []);
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
-    opacity: pulseOpacity.value,
-  }));
+  const handleOpenNotifications = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNotifModalVisible(true);
+  };
 
   return (
-    <View style={styles.header}>
-      <View style={styles.leftContainer}>
-        {showBack && onBack && (
-          <AnimatedTouchable style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={20} color="#16151E" />
-          </AnimatedTouchable>
-        )}
+    <>
+      <View style={styles.header}>
+        <View style={styles.leftContainer}>
+          {showBack && onBack && (
+            <AnimatedTouchable
+              style={[
+                styles.glassCircleButton,
+                {
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.75)',
+                  borderTopColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.95)',
+                },
+              ]}
+              onPress={onBack}
+              accessibilityLabel="Voltar"
+            >
+              <BlurView
+                intensity={Platform.OS === 'ios' ? 80 : 100}
+                tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+                style={StyleSheet.absoluteFill}
+              />
+              <LinearGradient
+                colors={
+                  isDark
+                    ? ['rgba(255, 255, 255, 0.16)', 'transparent']
+                    : ['rgba(255, 255, 255, 0.70)', 'transparent']
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 0.8 }}
+                style={styles.specularHighlight}
+                pointerEvents="none"
+              />
+              <Ionicons name="arrow-back" size={20} color={isDark ? '#F7F5FF' : '#16151E'} />
+            </AnimatedTouchable>
+          )}
 
-        <View style={styles.brandWrapper}>
-          <View style={styles.logoRow}>
-            <Text style={styles.brandTitle}>
-              nós<Text style={styles.brandDot}>.</Text>
-            </Text>
-            {sectionTitle ? (
-              <View style={styles.sectionBadge}>
-                <Text style={styles.sectionBadgeText}>{sectionTitle}</Text>
-              </View>
+          <View style={styles.brandWrapper}>
+            <Text style={[styles.brandTitle, { color: isDark ? '#A797FF' : '#7C3AED' }]}>nós.</Text>
+            {coupleSubtitle ? (
+              <Text
+                style={[styles.coupleSubtitle, { color: isDark ? '#AAA5B8' : '#7E7699' }]}
+                numberOfLines={1}
+              >
+                {coupleSubtitle}
+              </Text>
             ) : null}
           </View>
+        </View>
 
-          {coupleSubtitle ? (
-            <Text style={styles.coupleSubtitle} numberOfLines={1}>
-              {coupleSubtitle}
-            </Text>
+        <View style={styles.rightContainer}>
+          {rightAction ? (
+            rightAction
+          ) : showNotification ? (
+            <AnimatedTouchable
+              style={[
+                styles.glassCircleButton,
+                {
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.75)',
+                  borderTopColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.95)',
+                },
+              ]}
+              onPress={handleOpenNotifications}
+              accessibilityLabel="Notificações"
+            >
+              <BlurView
+                intensity={Platform.OS === 'ios' ? 80 : 100}
+                tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+                style={StyleSheet.absoluteFill}
+              />
+              <LinearGradient
+                colors={
+                  isDark
+                    ? ['rgba(255, 255, 255, 0.16)', 'transparent']
+                    : ['rgba(255, 255, 255, 0.70)', 'transparent']
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 0.8 }}
+                style={styles.specularHighlight}
+                pointerEvents="none"
+              />
+              <Ionicons
+                name="notifications-outline"
+                size={20}
+                color={isDark ? '#A797FF' : '#6A56A8'}
+              />
+              {/* Badge indicativo de atividade */}
+              <View style={styles.notifDot} />
+            </AnimatedTouchable>
           ) : null}
         </View>
       </View>
 
-      <View style={styles.rightContainer}>
-        {rightAction ? (
-          rightAction
-        ) : (
-          <View style={styles.connectedPill}>
-            <View style={styles.pulseDotContainer}>
-              <Animated.View style={[styles.pulseDotRing, pulseStyle]} />
-              <View style={styles.pulseDotCore} />
-            </View>
-            <Text style={styles.connectedText}>Conectados</Text>
-          </View>
-        )}
-      </View>
-    </View>
+      {/* Modal de Alertas e Notificações do Casal */}
+      <NotificationsModal
+        visible={notifModalVisible}
+        onClose={() => setNotifModalVisible(false)}
+      />
+    </>
   );
 }
 
@@ -89,108 +140,69 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 20,
-    paddingTop: Platform.OS === 'ios' ? 12 : 8,
+    paddingTop: Platform.OS === 'ios' ? 10 : 6,
   },
   leftContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#635380',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
+    minWidth: 0,
+    paddingRight: 8,
   },
   brandWrapper: {
+    flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
   },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   brandTitle: {
-    fontSize: 28,
+    fontSize: 29,
     fontWeight: '800',
-    color: '#16151E',
-    letterSpacing: -1.5,
-  },
-  brandDot: {
-    color: '#8E7CE8',
-  },
-  sectionBadge: {
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.25)',
-  },
-  sectionBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#8E7CE8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: -0.8,
   },
   coupleSubtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#686578',
-    marginTop: 2,
+    marginTop: 1,
   },
   rightContainer: {
     alignItems: 'flex-end',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginLeft: 8,
   },
-  connectedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.82)',
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-    shadowColor: '#635380',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  pulseDotContainer: {
-    width: 12,
-    height: 12,
+  glassCircleButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 6,
+    borderWidth: 1,
+    shadowColor: '#5B4294',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 3,
+    position: 'relative',
   },
-  pulseDotRing: {
+  specularHighlight: {
     position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#34C759',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    borderRadius: 22,
   },
-  pulseDotCore: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#34C759',
-  },
-  connectedText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#16151E',
+  notifDot: {
+    position: 'absolute',
+    top: 9,
+    right: 11,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#7C3AED',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
 });
