@@ -1,7 +1,7 @@
 # 💜 nós. — Nosso Espaço a Dois
 
 <p align="center">
-  <img src="assets/images/icon.png" width="96" height="96" alt="nós icon" style="border-radius: 24px;" />
+  <img src="assets/images/favicon.png" width="96" height="96" alt="nós icon" style="border-radius: 24px;" />
 </p>
 
 <p align="center">
