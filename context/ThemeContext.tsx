@@ -3,7 +3,7 @@ import { useColorScheme as useDeviceColorScheme, Appearance } from 'react-native
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 
-export type ThemeMode = 'system' | 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark';
 
 interface ThemeContextData {
   themeMode: ThemeMode;
@@ -11,6 +11,7 @@ interface ThemeContextData {
   isDark: boolean;
   setThemeMode: (mode: ThemeMode) => Promise<void>;
   setMode: (mode: ThemeMode) => Promise<void>;
+  toggleTheme: () => Promise<void>;
 }
 
 const THEME_STORAGE_KEY = '@nos_theme_mode';
@@ -18,26 +19,21 @@ const THEME_STORAGE_KEY = '@nos_theme_mode';
 const ThemeContext = createContext<ThemeContextData>({} as ThemeContextData);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [systemColorScheme, setSystemColorScheme] = useState(Appearance.getColorScheme());
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
   const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
-      setSystemColorScheme(colorScheme);
-    });
-    return () => subscription.remove();
-  }, []);
 
   useEffect(() => {
     async function loadStoredTheme() {
       try {
         const stored = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-        if (stored === 'light' || stored === 'dark' || stored === 'system') {
+        if (stored === 'light' || stored === 'dark') {
           setThemeModeState(stored);
+        } else {
+          // Se for legado 'system' ou vazio, define 'light'
+          setThemeModeState('light');
         }
       } catch {
-        // Fallback para 'system'
+        setThemeModeState('light');
       } finally {
         setIsLoaded(true);
       }
@@ -54,11 +50,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isDark = useMemo(() => {
-    if (themeMode === 'dark') return true;
-    if (themeMode === 'light') return false;
-    return systemColorScheme === 'dark';
-  }, [themeMode, systemColorScheme]);
+  const toggleTheme = async () => {
+    const next = themeMode === 'dark' ? 'light' : 'dark';
+    await setThemeMode(next);
+  };
+
+  const isDark = themeMode === 'dark';
 
   return (
     <ThemeContext.Provider
@@ -68,9 +65,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         isDark,
         setThemeMode,
         setMode: setThemeMode,
+        toggleTheme,
       }}
     >
-      <StatusBar style={isDark ? 'light' : 'dark'} animated />
+      <StatusBar style={isDark ? 'light' : 'dark'} animated={false} />
       {children}
     </ThemeContext.Provider>
   );

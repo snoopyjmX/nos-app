@@ -9,13 +9,6 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
-import Animated, {
-  FadeInDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -197,19 +190,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [, setCurrentTick] = useState<number>(Date.now());
 
-  // Shimmer pulse animation para skeleton loading
-  const shimmerOpacity = useSharedValue(0.4);
-  useEffect(() => {
-    shimmerOpacity.value = withRepeat(
-      withTiming(0.85, { duration: 1000 }),
-      -1,
-      true
-    );
-  }, []);
 
-  const shimmerStyle = useAnimatedStyle(() => ({
-    opacity: shimmerOpacity.value,
-  }));
 
   // Intervalo a cada 60s para manter horas vivas
   useEffect(() => {
@@ -320,21 +301,42 @@ export default function HomeScreen() {
       let displayUrl = memoryData.image_url;
       if (memoryData.image_url) {
         let cleanPath = memoryData.image_url.trim();
-        if (cleanPath.includes('/memories/')) {
-          cleanPath = cleanPath.split('/memories/')[1].split('?')[0];
-        }
-        cleanPath = cleanPath.replace(/^\/+/, '');
-
-        try {
-          const { data: signedData } = await supabase.storage
-            .from('memories')
-            .createSignedUrl(cleanPath, 60 * 60 * 24);
-
-          if (signedData?.signedUrl) {
-            displayUrl = signedData.signedUrl;
+        if (
+          cleanPath.startsWith('file:') ||
+          cleanPath.startsWith('data:') ||
+          cleanPath.startsWith('http://') ||
+          cleanPath.startsWith('https://')
+        ) {
+          displayUrl = cleanPath;
+        } else {
+          if (cleanPath.includes('/memories/')) {
+            cleanPath = cleanPath.split('/memories/')[1].split('?')[0];
           }
-        } catch {
-          // Ignora e usa a url original
+          cleanPath = cleanPath.replace(/^\/+/, '');
+
+          try {
+            const { data: signedData } = await supabase.storage
+              .from('memories')
+              .createSignedUrl(cleanPath, 60 * 60 * 24);
+
+            if (signedData?.signedUrl) {
+              displayUrl = signedData.signedUrl;
+            } else {
+              const { data: publicData } = supabase.storage
+                .from('memories')
+                .getPublicUrl(cleanPath);
+              if (publicData?.publicUrl) {
+                displayUrl = publicData.publicUrl;
+              }
+            }
+          } catch {
+            const { data: publicData } = supabase.storage
+              .from('memories')
+              .getPublicUrl(cleanPath);
+            if (publicData?.publicUrl) {
+              displayUrl = publicData.publicUrl;
+            }
+          }
         }
       }
 
@@ -528,7 +530,7 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
       <AtmosphereBackground />
 
-      <Animated.ScrollView
+      <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: insets.top + 10, paddingBottom: 130 },
@@ -550,7 +552,7 @@ export default function HomeScreen() {
 
         {loading ? (
           <View style={styles.skeletonContainer}>
-            <Animated.View
+            <View
               style={[
                 styles.skeletonHeroCard,
                 {
@@ -561,7 +563,6 @@ export default function HomeScreen() {
                     ? themeTokens.glassBorder
                     : 'rgba(255,255,255,0.8)',
                 },
-                shimmerStyle,
               ]}
             >
               <View
@@ -584,8 +585,8 @@ export default function HomeScreen() {
                   },
                 ]}
               />
-            </Animated.View>
-            <Animated.View
+            </View>
+            <View
               style={[
                 styles.skeletonRowCard,
                 {
@@ -596,12 +597,11 @@ export default function HomeScreen() {
                     ? themeTokens.glassBorder
                     : 'rgba(255,255,255,0.8)',
                 },
-                shimmerStyle,
               ]}
             />
           </View>
         ) : (
-          <Animated.View entering={FadeInDown.duration(400).springify().damping(18)}>
+          <View>
             {/* ── Hero Card: Photo + Journey Counter ── */}
             <LiquidGlassView variant="hero" style={styles.heroGlassCard} borderRadius={28}>
               <AnimatedTouchable
@@ -927,9 +927,9 @@ export default function HomeScreen() {
                 </Text>
               </LiquidGlassView>
             </AnimatedTouchable>
-          </Animated.View>
+          </View>
         )}
-      </Animated.ScrollView>
+      </ScrollView>
     </View>
   );
 }

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { supabase } from '../../lib/supabase';
@@ -60,9 +60,8 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
-        <Animated.View 
+        <View 
           style={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 20 }]}
-          entering={FadeInDown.duration(600).springify().damping(18)}
         >
                     {/* Header Brand */}
           <View style={styles.header}>
@@ -134,7 +133,7 @@ export default function LoginScreen() {
               </Text>
             </AnimatedTouchable>
           </LiquidGlassView>
-        </Animated.View>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );

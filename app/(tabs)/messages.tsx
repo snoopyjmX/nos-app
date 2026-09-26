@@ -13,14 +13,7 @@ import {
   TouchableWithoutFeedback,
   Image,
 } from 'react-native';
-import Animated, { 
-  FadeInDown, 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -97,26 +90,7 @@ export default function MessagesScreen() {
   const flatListRef = useRef<FlatList>(null);
   const channelRef = useRef<any>(null);
 
-  // Escala animada do botão de envio (microinteração elástica withSpring)
-  const sendScale = useSharedValue(1);
 
-  const sendBtnAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: sendScale.value }],
-  }));
-
-  // Shimmer pulse animation para skeleton loading (chat)
-  const shimmerOpacity = useSharedValue(0.4);
-  useEffect(() => {
-    shimmerOpacity.value = withRepeat(
-      withTiming(0.85, { duration: 1000 }),
-      -1,
-      true
-    );
-  }, []);
-
-  const shimmerStyle = useAnimatedStyle(() => ({
-    opacity: shimmerOpacity.value,
-  }));
 
   // Monitora teclado para scroll automático e ajuste de espaçamento
   useEffect(() => {
@@ -385,11 +359,8 @@ export default function MessagesScreen() {
     const contentToSend = inputText.trim();
     if (!contentToSend || !user || !coupleId || sending) return;
 
-    // Haptics e animação elástica imediata no botão
+    // Haptics no botão
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    sendScale.value = withSpring(0.85, { damping: 10, stiffness: 300 }, () => {
-      sendScale.value = withSpring(1, { damping: 12, stiffness: 220 });
-    });
 
     // 1. Limpa o input IMEDIATAMENTE (zero delay para o usuário)
     setInputText('');
@@ -621,7 +592,7 @@ export default function MessagesScreen() {
                 { align: 'left' as const, w: '55%' },
                 { align: 'right' as const, w: '70%' },
               ].map((s, i) => (
-                <Animated.View
+                <View
                   key={i}
                   style={[
                     s.align === 'left' ? styles.skeletonLeft : styles.skeletonRight,
@@ -639,7 +610,6 @@ export default function MessagesScreen() {
                         ? themeTokens.glassBorder
                         : 'rgba(255,255,255,0.7)',
                     },
-                    shimmerStyle,
                   ]}
                 />
               ))}
@@ -707,7 +677,7 @@ export default function MessagesScreen() {
               textAlignVertical="center"
             />
 
-            <Animated.View style={sendBtnAnimatedStyle}>
+            <View>
               <AnimatedTouchable
                 style={[
                   styles.sendButton,
@@ -722,7 +692,7 @@ export default function MessagesScreen() {
               >
                 <Ionicons name="paper-plane" size={16} color="#FFFFFF" style={{ marginLeft: 1 }} />
               </AnimatedTouchable>
-            </Animated.View>
+            </View>
           </LiquidGlassView>
         </View>
       </KeyboardAvoidingView>

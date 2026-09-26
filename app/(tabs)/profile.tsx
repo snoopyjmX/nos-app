@@ -11,13 +11,6 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import Animated, {
-  FadeInDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
@@ -96,19 +89,7 @@ export default function ProfileScreen() {
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [savingDate, setSavingDate] = useState(false);
 
-  // Shimmer pulse animation para skeleton loading
-  const shimmerOpacity = useSharedValue(0.4);
-  useEffect(() => {
-    shimmerOpacity.value = withRepeat(
-      withTiming(0.85, { duration: 1000 }),
-      -1,
-      true
-    );
-  }, []);
 
-  const shimmerStyle = useAnimatedStyle(() => ({
-    opacity: shimmerOpacity.value,
-  }));
 
   // Resolve URL assinada para foto do avatar
   const resolveAvatarUrl = async (pathOrUrl?: string | null): Promise<string | null> => {
@@ -444,13 +425,13 @@ export default function ProfileScreen() {
       >
         {loading ? (
           <View style={styles.skeletonContainer}>
-            <Animated.View style={[styles.skeletonHeroCard, shimmerStyle]} />
-            <Animated.View style={[styles.skeletonCard, shimmerStyle]} />
+            <View style={styles.skeletonHeroCard} />
+            <View style={styles.skeletonCard} />
           </View>
         ) : (
           <>
             {/* 1. Header / Identidade do Casal (Dois Avatares com Anéis e Badge) */}
-            <Animated.View entering={FadeInDown.springify().damping(15)}>
+            <View>
               <LiquidGlassView variant="hero" style={styles.coupleHeroCard} borderRadius={32}>
                 <View style={styles.avatarsRow}>
                   {/* Avatar do Usuário Logado (Com botão de trocar foto) */}
@@ -518,10 +499,10 @@ export default function ProfileScreen() {
                   <Text style={styles.syncStatusText}>Espaço Compartilhado Sincronizado</Text>
                 </View>
               </LiquidGlassView>
-            </Animated.View>
+            </View>
 
             {/* 2. Card "Nosso Relacionamento" */}
-            <Animated.View entering={FadeInDown.springify().damping(15)}>
+            <View>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>NOSSO RELACIONAMENTO</Text>
               </View>
@@ -568,10 +549,10 @@ export default function ProfileScreen() {
                   </View>
                 </LiquidGlassView>
               )}
-            </Animated.View>
+            </View>
 
             {/* 3. Seção "Aparência & Tema" (Dark Mode Control) */}
-            <Animated.View entering={FadeInDown.springify().damping(15)}>
+            <View>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>APARÊNCIA & TEMA</Text>
               </View>
@@ -580,7 +561,7 @@ export default function ProfileScreen() {
                 <View style={styles.themeHeaderRow}>
                   <View style={styles.themeIconCircle}>
                     <Ionicons
-                      name={mode === 'dark' ? 'moon' : mode === 'light' ? 'sunny' : 'phone-portrait-outline'}
+                      name={mode === 'dark' ? 'moon' : 'sunny'}
                       size={20}
                       color={themeTokens.primary}
                     />
@@ -588,43 +569,13 @@ export default function ProfileScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.themeCardTitle}>Tema do Aplicativo</Text>
                     <Text style={styles.themeCardDesc}>
-                      {mode === 'system'
-                        ? `Seguindo o sistema (${isDark ? 'Escuro' : 'Claro'})`
-                        : mode === 'dark'
-                        ? 'Modo Escuro ativado'
-                        : 'Modo Claro ativado'}
+                      {mode === 'dark' ? 'Modo Escuro ativado' : 'Modo Claro ativado'}
                     </Text>
                   </View>
                 </View>
 
-                {/* Segmented Control Liquid Glass: Sistema, Claro, Escuro */}
+                {/* Segmented Control Liquid Glass: Claro, Escuro */}
                 <View style={styles.segmentedControl}>
-                  <AnimatedTouchable
-                    style={[
-                      styles.segmentButton,
-                      mode === 'system' && styles.segmentButtonActive,
-                    ]}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setMode('system');
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name="phone-portrait-outline"
-                      size={14}
-                      color={mode === 'system' ? '#FFFFFF' : themeTokens.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.segmentButtonText,
-                        mode === 'system' && styles.segmentButtonTextActive,
-                      ]}
-                    >
-                      Sistema
-                    </Text>
-                  </AnimatedTouchable>
-
                   <AnimatedTouchable
                     style={[
                       styles.segmentButton,
@@ -678,10 +629,10 @@ export default function ProfileScreen() {
                   </AnimatedTouchable>
                 </View>
               </LiquidGlassView>
-            </Animated.View>
+            </View>
 
             {/* 4. Seção "Preferências & Segurança" */}
-            <Animated.View entering={FadeInDown.springify().damping(15)}>
+            <View>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>PREFERÊNCIAS & SEGURANÇA</Text>
               </View>
@@ -713,10 +664,10 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               </LiquidGlassView>
-            </Animated.View>
+            </View>
 
             {/* 4. Ação da Conta (Encerrar Sessão) */}
-            <Animated.View entering={FadeInDown.springify().damping(15)}>
+            <View>
               <AnimatedTouchable
                 onPress={handleSignOut}
                 activeOpacity={0.85}
@@ -728,7 +679,7 @@ export default function ProfileScreen() {
               </AnimatedTouchable>
 
               <Text style={styles.footerNote}>NÓS • Feito para guardar nossa história</Text>
-            </Animated.View>
+            </View>
           </>
         )}
       </ScrollView>
@@ -840,12 +791,16 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     height: 180,
     borderRadius: 32,
     borderWidth: 1,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(142, 124, 232, 0.08)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(142, 124, 232, 0.15)',
   },
   skeletonCard: {
     width: '100%',
     height: 100,
     borderRadius: 24,
     borderWidth: 1,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(142, 124, 232, 0.08)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(142, 124, 232, 0.15)',
   },
 
   // Hero Card do Casal Liquid Glass
@@ -1179,7 +1134,7 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: isDark ? '#1C1A2E' : '#FFFFFF',
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     paddingTop: 12,
@@ -1189,12 +1144,14 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 24,
     elevation: 10,
+    borderWidth: 1,
+    borderColor: themeTokens.glassBorder,
   },
   modalHandle: {
     width: 44,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#E2E8F0',
     alignSelf: 'center',
     marginBottom: 16,
   },

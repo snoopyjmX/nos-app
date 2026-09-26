@@ -13,13 +13,6 @@ import {
   Alert,
   KeyboardAvoidingView,
 } from 'react-native';
-import Animated, {
-  FadeInDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
@@ -131,19 +124,7 @@ export default function DatesScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Shimmer pulse animation para skeleton loading
-  const shimmerOpacity = useSharedValue(0.4);
-  useEffect(() => {
-    shimmerOpacity.value = withRepeat(
-      withTiming(0.85, { duration: 1000 }),
-      -1,
-      true
-    );
-  }, []);
 
-  const shimmerStyle = useAnimatedStyle(() => ({
-    opacity: shimmerOpacity.value,
-  }));
 
   // 1. Atualizador do relógio para o countdown hero
   useEffect(() => {
@@ -386,7 +367,7 @@ export default function DatesScreen() {
       >
         {/* 1. Card de Destaque (Countdown Hero) */}
         {nextHeroEvent && countdown ? (
-          <Animated.View entering={FadeInDown.springify().damping(15)}>
+          <View>
             <LiquidGlassView variant="hero" style={styles.heroCard} borderRadius={30}>
               <View style={styles.heroTopRow}>
                 <View
@@ -464,9 +445,9 @@ export default function DatesScreen() {
                 </View>
               )}
             </LiquidGlassView>
-          </Animated.View>
+          </View>
         ) : (
-          <Animated.View entering={FadeInDown.springify().damping(15)}>
+          <View>
             <LiquidGlassView variant="card" style={styles.emptyHeroCard} borderRadius={26}>
               <View style={styles.emptyHeroIconCircle}>
                 <Ionicons name="sparkles-outline" size={26} color={themeTokens.primary} />
@@ -487,11 +468,11 @@ export default function DatesScreen() {
                 <Text style={styles.emptyHeroBtnText}>Agendar momento</Text>
               </AnimatedTouchable>
             </LiquidGlassView>
-          </Animated.View>
+          </View>
         )}
 
         {/* 2. Filtro de Abas: Próximos vs Histórico */}
-        <Animated.View entering={FadeInDown.springify().damping(15)}>
+        <View>
           <LiquidGlassView variant="pill" style={styles.segmentedContainer} borderRadius={24}>
             <AnimatedTouchable
               style={[
@@ -535,13 +516,13 @@ export default function DatesScreen() {
               </Text>
             </AnimatedTouchable>
           </LiquidGlassView>
-        </Animated.View>
+        </View>
 
         {/* 3. Listagem de Eventos da Aba Selecionada */}
         {loading ? (
           <View style={styles.skeletonContainer}>
-            <Animated.View style={[styles.skeletonCard, shimmerStyle]} />
-            <Animated.View style={[styles.skeletonCard, shimmerStyle]} />
+            <View style={styles.skeletonCard} />
+            <View style={styles.skeletonCard} />
           </View>
         ) : activeTab === 'upcoming' ? (
           upcomingEvents.length === 0 ? (
@@ -556,10 +537,7 @@ export default function DatesScreen() {
             upcomingEvents.map((item, index) => {
               const meta = getCategoryMeta(item.category);
               return (
-                <Animated.View
-                  key={item.id}
-                  entering={FadeInDown.springify().damping(14)}
-                >
+                <View key={item.id}>
                   <LiquidGlassView variant="card" style={styles.eventCard} borderRadius={22}>
                     <View style={[styles.eventIconCircle, { backgroundColor: meta.bg }]}>
                       <Ionicons name={meta.icon} size={20} color={meta.color} />
@@ -591,7 +569,7 @@ export default function DatesScreen() {
                       <Ionicons name="trash-outline" size={17} color="#8A879A" />
                     </AnimatedTouchable>
                   </LiquidGlassView>
-                </Animated.View>
+                </View>
               );
             })
           )
@@ -607,10 +585,7 @@ export default function DatesScreen() {
           pastEvents.map((item, index) => {
             const meta = getCategoryMeta(item.category);
             return (
-              <Animated.View
-                key={item.id}
-                entering={FadeInDown.springify().damping(14)}
-              >
+              <View key={item.id}>
                 <LiquidGlassView variant="card" style={[styles.eventCard, styles.pastEventCard]} borderRadius={22}>
                   <View
                     style={[
@@ -653,7 +628,7 @@ export default function DatesScreen() {
                     <Ionicons name="trash-outline" size={17} color="#8A879A" />
                   </AnimatedTouchable>
                 </LiquidGlassView>
-              </Animated.View>
+              </View>
             );
           })
         )}
@@ -885,6 +860,8 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     height: 90,
     borderRadius: 24,
     borderWidth: 1,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(142, 124, 232, 0.08)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(142, 124, 232, 0.15)',
   },
 
   // Hero Countdown Card Liquid Glass
@@ -1186,7 +1163,7 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: isDark ? '#1C1A2E' : '#FFFFFF',
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     paddingTop: 12,
@@ -1197,12 +1174,14 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 24,
     elevation: 10,
+    borderWidth: 1,
+    borderColor: themeTokens.glassBorder,
   },
   modalHandle: {
     width: 44,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#E2E8F0',
     alignSelf: 'center',
     marginBottom: 16,
   },

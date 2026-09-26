@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,10 +41,7 @@ export default function WelcomeScreen() {
           },
         ]}
       >
-        <Animated.View 
-          entering={FadeInDown.duration(800).springify().damping(20)}
-          style={styles.heroContainer}
-        >
+        <View style={styles.heroContainer}>
           <LiquidGlassView variant="hero" style={styles.heroGlass} borderRadius={44}>
             <View style={styles.heroContent}>
               <View style={[styles.pillBadge, { backgroundColor: isDark ? 'rgba(167, 151, 255, 0.12)' : 'rgba(142, 124, 232, 0.12)', borderColor: isDark ? 'rgba(167, 151, 255, 0.25)' : 'rgba(142, 124, 232, 0.22)' }]}>
@@ -68,12 +65,9 @@ export default function WelcomeScreen() {
               </View>
             </View>
           </LiquidGlassView>
-        </Animated.View>
+        </View>
 
-        <Animated.View
-          entering={FadeInDown.duration(800).springify().damping(20)}
-          style={styles.bottomSection}
-        >
+        <View style={styles.bottomSection}>
           <Text style={[styles.brandDescription, { color: themeTokens.textSecondary }]}>
             Um lugar privado e silencioso para registrar memórias, trocar bilhetes e celebrar a nossa história juntos.
           </Text>
@@ -117,7 +111,7 @@ export default function WelcomeScreen() {
               </LiquidGlassView>
             </AnimatedTouchable>
           </View>
-        </Animated.View>
+        </View>
       </View>
     </View>
   );

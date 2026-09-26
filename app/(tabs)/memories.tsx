@@ -15,13 +15,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
 } from 'react-native';
-import Animated, {
-  FadeInDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -131,20 +125,6 @@ export default function MemoriesScreen() {
   // Modal para visualização ampliada
   const [previewMemory, setPreviewMemory] = useState<MemoryItem | null>(null);
 
-  // Shimmer pulse animation para skeleton loading
-  const shimmerOpacity = useSharedValue(0.4);
-  useEffect(() => {
-    shimmerOpacity.value = withRepeat(
-      withTiming(0.85, { duration: 1000 }),
-      -1,
-      true
-    );
-  }, []);
-
-  const shimmerStyle = useAnimatedStyle(() => ({
-    opacity: shimmerOpacity.value,
-  }));
-
   // Carrega os perfis dos membros para saber o nome do autor e o push_token para notificações
   const loadMemberProfiles = useCallback(async () => {
     if (!coupleId) return;
@@ -184,11 +164,11 @@ export default function MemoriesScreen() {
   }, [coupleId, user?.id]);
 
   // 1. Carrega todas as memórias do casal
-  const loadMemories = useCallback(async () => {
+  const loadMemories = useCallback(async (silent = false) => {
     if (!coupleId) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const { data, error } = await supabase
         .from('memories')
         .select('id, couple_id, title, memory_date, image_url, created_at, created_by')
@@ -209,6 +189,15 @@ export default function MemoriesScreen() {
           }
 
           let cleanPath = item.image_url.trim();
+          if (
+            cleanPath.startsWith('file:') ||
+            cleanPath.startsWith('data:') ||
+            cleanPath.startsWith('http://') ||
+            cleanPath.startsWith('https://')
+          ) {
+            return { ...item, displayUrl: cleanPath };
+          }
+
           if (cleanPath.includes('/memories/')) {
             cleanPath = cleanPath.split('/memories/')[1].split('?')[0];
           }
@@ -219,25 +208,51 @@ export default function MemoriesScreen() {
               .from('memories')
               .createSignedUrl(cleanPath, 60 * 60 * 24);
 
-            if (signError || !signedData?.signedUrl) {
-              return { ...item, displayUrl: item.image_url };
+            if (signedData?.signedUrl) {
+              return {
+                ...item,
+                displayUrl: signedData.signedUrl,
+              };
             }
+
+            const { data: publicData } = supabase.storage
+              .from('memories')
+              .getPublicUrl(cleanPath);
 
             return {
               ...item,
-              displayUrl: signedData.signedUrl,
+              displayUrl: publicData?.publicUrl || item.image_url,
             };
           } catch {
-            return { ...item, displayUrl: item.image_url };
+            const { data: publicData } = supabase.storage
+              .from('memories')
+              .getPublicUrl(cleanPath);
+            return { ...item, displayUrl: publicData?.publicUrl || item.image_url };
           }
         })
       );
 
-      setMemories(memoriesWithSignedUrls);
+      setMemories((prevList) => {
+        const optimisticItems = prevList.filter(
+          (p) => p.id.startsWith('local-') && !memoriesWithSignedUrls.some((n) => n.image_url === p.image_url)
+        );
+        const mergedList = memoriesWithSignedUrls.map((newItem) => {
+          const localMatch = prevList.find(
+            (p) => (p.image_url === newItem.image_url || (p.title === newItem.title && p.memory_date === newItem.memory_date)) &&
+                   p.displayUrl &&
+                   (p.displayUrl.startsWith('file:') || p.displayUrl.startsWith('data:'))
+          );
+          if (localMatch && (!newItem.displayUrl || !newItem.displayUrl.startsWith('http'))) {
+            return { ...newItem, displayUrl: localMatch.displayUrl };
+          }
+          return newItem;
+        });
+        return [...optimisticItems, ...mergedList];
+      });
     } catch {
       // Falha silenciosa
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [coupleId]);
 
@@ -392,13 +407,27 @@ export default function MemoriesScreen() {
         }
       }
 
+      // Adiciona memória imediatamente na lista com a foto já visível em alta qualidade
+      const localSavedUri = selectedImageUri;
+      const optimisticMemory: MemoryItem = {
+        id: `local-${Date.now()}`,
+        couple_id: coupleId,
+        created_by: user.id,
+        title: memoryTitle.trim(),
+        memory_date: isoDate,
+        image_url: fileName,
+        displayUrl: localSavedUri,
+        created_at: new Date().toISOString(),
+      };
+      setMemories((prev) => [optimisticMemory, ...prev]);
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsAddModalVisible(false);
       setSelectedImageUri(null);
       setSelectedImageBase64(null);
       setMemoryTitle('');
 
-      await loadMemories();
+      await loadMemories(true);
     } catch (err: any) {
       Alert.alert('Erro ao guardar memória', err.message || 'Ocorreu um erro no upload.');
     } finally {
@@ -491,8 +520,8 @@ export default function MemoriesScreen() {
       {/* Conteúdo Principal */}
       {loading ? (
         <View style={styles.skeletonContainer}>
-          <Animated.View style={[styles.skeletonCard, shimmerStyle]} />
-          <Animated.View style={[styles.skeletonCard, shimmerStyle]} />
+          <View style={styles.skeletonCard} />
+          <View style={styles.skeletonCard} />
         </View>
       ) : memories.length === 0 ? (
         <ScrollView
@@ -635,7 +664,7 @@ export default function MemoriesScreen() {
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     maximumDate={new Date()}
                     onValueChange={onDateChange}
-                    textColor="#16151E"
+                    textColor={themeTokens.textPrimary}
                   />
                   {Platform.OS === 'ios' && (
                     <AnimatedTouchable
@@ -753,6 +782,8 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     height: 320,
     borderRadius: 28,
     borderWidth: 1,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(142, 124, 232, 0.08)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(142, 124, 232, 0.15)',
   },
 
   centerContainer: {
@@ -808,6 +839,8 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 20,
     overflow: 'hidden',
     borderWidth: 1,
+    borderColor: themeTokens.glassBorder,
+    backgroundColor: themeTokens.glassSurface,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 22,
@@ -889,6 +922,7 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalCard: {
+    backgroundColor: isDark ? '#1C1A2E' : '#FFFFFF',
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     paddingTop: 14,
@@ -899,12 +933,14 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 24,
     elevation: 10,
+    borderWidth: 1,
+    borderColor: themeTokens.glassBorder,
   },
   modalHandle: {
     width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#E2E8F0',
     alignSelf: 'center',
     marginBottom: 16,
   },
@@ -941,24 +977,24 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
   },
   textInput: {
     height: 52,
-    backgroundColor: 'rgba(142, 124, 232, 0.06)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(142, 124, 232, 0.08)',
     borderRadius: 16,
     paddingHorizontal: 16,
     fontSize: 15,
     color: themeTokens.textPrimary,
     borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.18)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(142, 124, 232, 0.22)',
   },
   dateSelectorButton: {
     height: 52,
-    backgroundColor: 'rgba(142, 124, 232, 0.06)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(142, 124, 232, 0.08)',
     borderRadius: 16,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.18)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(142, 124, 232, 0.22)',
   },
   dateSelectorText: {
     fontSize: 15,
@@ -993,7 +1029,7 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
     height: 52,
     borderRadius: 999,
-    backgroundColor: 'rgba(104, 101, 120, 0.08)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(104, 101, 120, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
