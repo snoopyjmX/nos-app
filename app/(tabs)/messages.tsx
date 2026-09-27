@@ -23,7 +23,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
 import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
-import { AppHeader } from '../../components/AppHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
 import { useAppTheme } from '../../context/ThemeContext';
@@ -572,20 +571,10 @@ export default function MessagesScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         style={styles.keyboardAvoid}
       >
-        {/* Header */}
-        <View style={[styles.headerWrap, { paddingTop: insets.top + 8 }]}>
-          <AppHeader
-            sectionTitle="recados"
-            coupleSubtitle="Bilhetes carinhosos do casal"
-            showBack
-            onBack={handleGoBack}
-          />
-        </View>
-
         {/* Messages Area */}
         <View style={styles.contentFlex}>
           {loading ? (
-            <View style={styles.skeletonChat}>
+            <View style={[styles.skeletonChat, { paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66) }]}>
               {[
                 { align: 'left' as const, w: '65%' },
                 { align: 'right' as const, w: '60%' },
@@ -616,7 +605,7 @@ export default function MessagesScreen() {
             </View>
           ) : messages.length === 0 ? (
             <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-              <View style={styles.centerContainer}>
+              <View style={[styles.centerContainer, { paddingTop: insets.top + 80 }]}>
                 <LiquidGlassView variant="card" style={styles.emptyCard} borderRadius={24}>
                   <View
                     style={[
@@ -645,7 +634,13 @@ export default function MessagesScreen() {
               data={messages}
               keyExtractor={(item) => item.id}
               renderItem={renderMessageItem}
-              contentContainerStyle={styles.listContent}
+              contentContainerStyle={[
+                styles.listContent,
+                {
+                  paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
+                  paddingBottom: 16,
+                },
+              ]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="interactive"
@@ -654,14 +649,63 @@ export default function MessagesScreen() {
           )}
         </View>
 
-        {/* Input Bar */}
+        {/* Header fixo com Blur e transparência - mensagens passam por trás */}
+        <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
+          <BlurView
+            intensity={Platform.OS === 'ios' ? 80 : 100}
+            tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+            style={StyleSheet.absoluteFill}
+          />
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: isDark ? 'rgba(15, 13, 24, 0.65)' : 'rgba(248, 249, 252, 0.70)',
+                borderBottomWidth: 1,
+                borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.60)',
+              },
+            ]}
+          />
+          <View style={styles.headerContentRow}>
+            <AnimatedTouchable
+              style={[
+                styles.headerBackButton,
+                {
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.75)',
+                  borderTopColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.95)',
+                },
+              ]}
+              onPress={handleGoBack}
+              accessibilityLabel="Voltar"
+            >
+              <BlurView
+                intensity={Platform.OS === 'ios' ? 70 : 100}
+                tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name="arrow-back" size={20} color={isDark ? '#F7F5FF' : '#16151E'} />
+            </AnimatedTouchable>
+
+            <View style={styles.headerBrandWrapper}>
+              <Text style={[styles.headerBrandTitle, { color: isDark ? '#A797FF' : '#7C3AED' }]}>nós.</Text>
+              <Text
+                style={[styles.headerCoupleSubtitle, { color: isDark ? '#AAA5B8' : '#7E7699' }]}
+                numberOfLines={1}
+              >
+                Bilhetes carinhosos do casal
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Input Bar com espaço confortável acima da navbar */}
         <View
           style={[
             styles.inputBarWrap,
             {
               paddingBottom: isKeyboardVisible
-                ? (Platform.OS === 'ios' ? 8 : 12)
-                : (Platform.OS === 'ios' ? (insets.bottom > 0 ? insets.bottom + 66 : 76) : 80),
+                ? (Platform.OS === 'ios' ? 10 : 12)
+                : (insets.bottom > 0 ? insets.bottom + 84 : 102),
             },
           ]}
         >
@@ -707,10 +751,50 @@ const styles = StyleSheet.create({
   keyboardAvoid: {
     flex: 1,
   },
-  headerWrap: {
+  blurredHeaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 30,
+    overflow: 'hidden',
+  },
+  headerContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 4,
-    zIndex: 10,
+    paddingTop: Platform.OS === 'ios' ? 8 : 10,
+    paddingBottom: 12,
+    gap: 12,
+  },
+  headerBackButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: '#5B4294',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  headerBrandWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  headerBrandTitle: {
+    fontSize: 27,
+    fontWeight: '800',
+    letterSpacing: -0.8,
+  },
+  headerCoupleSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 1,
   },
   contentFlex: {
     flex: 1,

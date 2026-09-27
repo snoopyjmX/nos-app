@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
   View,
@@ -14,8 +14,11 @@ import {
   Alert,
   ScrollView,
   KeyboardAvoidingView,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -32,7 +35,6 @@ import { supabase } from '../../lib/supabase';
 import { THEME } from '../../constants/theme';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getThemeTokens } from '../../constants/theme';
-import { useScrollNavbar } from '../../hooks/useScrollNavbar';
 
 interface MemoryItem {
   id: string;
@@ -104,7 +106,46 @@ export default function MemoriesScreen() {
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
-  const { onScroll } = useScrollNavbar();
+
+  // Animação e estado para esconder o botão flutuante ao scrollar
+  const lastOffsetY = useRef(0);
+  const fabTranslateY = useSharedValue(0);
+  const fabOpacity = useSharedValue(1);
+  const [isFabVisible, setIsFabVisible] = useState(true);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const currentOffsetY = event.nativeEvent.contentOffset.y;
+
+    // Se estiver no topo da tela, o botão sempre aparece
+    if (currentOffsetY <= 15) {
+      if (!isFabVisible) setIsFabVisible(true);
+      fabTranslateY.value = withTiming(0, { duration: 180 });
+      fabOpacity.value = withTiming(1, { duration: 180 });
+      lastOffsetY.current = currentOffsetY;
+      return;
+    }
+
+    const diff = currentOffsetY - lastOffsetY.current;
+
+    // Ao scrollar para baixo (mais de 8px): esconde o botão para dar visão livre às fotos
+    if (diff > 8) {
+      if (isFabVisible) setIsFabVisible(false);
+      fabTranslateY.value = withTiming(90, { duration: 180 });
+      fabOpacity.value = withTiming(0, { duration: 180 });
+      lastOffsetY.current = currentOffsetY;
+    } else if (diff < -8) {
+      // Ao scrollar para cima: reaparece o botão suavemente
+      if (!isFabVisible) setIsFabVisible(true);
+      fabTranslateY.value = withTiming(0, { duration: 180 });
+      fabOpacity.value = withTiming(1, { duration: 180 });
+      lastOffsetY.current = currentOffsetY;
+    }
+  };
+
+  const fabAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: fabTranslateY.value }],
+    opacity: fabOpacity.value,
+  }));
 
   const [memories, setMemories] = useState<MemoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -552,7 +593,7 @@ export default function MemoriesScreen() {
           renderItem={renderMemoryCard}
           contentContainerStyle={[styles.listContent, { paddingBottom: 150 }]}
           showsVerticalScrollIndicator={false}
-          onScroll={onScroll}
+          onScroll={handleScroll}
           scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
@@ -566,7 +607,8 @@ export default function MemoriesScreen() {
       )}
 
       {/* Botão Flutuante Liquid Glass de Adicionar Memória */}
-      <AnimatedTouchable
+      <Animated.View
+        pointerEvents={isFabVisible ? 'auto' : 'none'}
         style={[
           styles.floatingButtonWrapper,
           {
@@ -574,27 +616,31 @@ export default function MemoriesScreen() {
               ? (insets.bottom > 0 ? insets.bottom + 76 : 88)
               : 96,
           },
+          fabAnimatedStyle,
         ]}
-        onPress={handlePickImage}
-        activeOpacity={0.88}
       >
-        <LinearGradient
-          colors={[themeTokens.primary, themeTokens.primary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.floatingButtonGradient}
+        <AnimatedTouchable
+          onPress={handlePickImage}
+          activeOpacity={0.88}
         >
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.40)', 'transparent']}
+            colors={[themeTokens.primary, themeTokens.primary]}
             start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 0.7 }}
-            style={styles.fabGlint}
-            pointerEvents="none"
-          />
-          <Ionicons name="add" size={20} color="#FFFFFF" />
-          <Text style={styles.floatingButtonText}>Adicionar Memória</Text>
-        </LinearGradient>
-      </AnimatedTouchable>
+            end={{ x: 1, y: 1 }}
+            style={styles.floatingButtonGradient}
+          >
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.40)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 0.7 }}
+              style={styles.fabGlint}
+              pointerEvents="none"
+            />
+            <Ionicons name="add" size={20} color="#FFFFFF" />
+            <Text style={styles.floatingButtonText}>Adicionar Memória</Text>
+          </LinearGradient>
+        </AnimatedTouchable>
+      </Animated.View>
 
       {/* Modal para Adicionar Memória */}
       <Modal

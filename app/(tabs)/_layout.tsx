@@ -127,13 +127,10 @@ function TabButton({
 }
 
 import { useAppTheme } from '../../context/ThemeContext';
-import { useNavbar } from '../../context/NavbarContext';
-
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { isDark } = useAppTheme();
-  const { isVisible } = useNavbar();
   const themeTokens = getThemeTokens(isDark);
 
   const DOCK_MARGIN = 16;
@@ -142,7 +139,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
   const translateX = useSharedValue(state.index * tabItemWidth);
   const opacityVal = useSharedValue(1);
-  const translateY = useSharedValue(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
@@ -165,11 +161,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   }, []);
 
   useEffect(() => {
-    // Hide/show logic (spring down below screen when hidden)
-    translateY.value = withSpring(isVisible ? 0 : 100, SPRING.gentle);
-  }, [isVisible]);
-
-  useEffect(() => {
     translateX.value = withSpring(state.index * tabItemWidth, SPRING.gentle);
   }, [state.index, tabItemWidth]);
 
@@ -180,7 +171,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
   const containerAnimatedStyle = useAnimatedStyle(() => ({
     opacity: opacityVal.value,
-    transform: [{ translateY: translateY.value }],
   }));
 
   if (keyboardVisible) {
