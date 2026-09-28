@@ -15,6 +15,15 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
 import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
@@ -188,7 +197,41 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [, setCurrentTick] = useState<number>(Date.now());
 
+  // Micro-interações táteis e orgânicas refinadas
+  const badgeHeartScale = useSharedValue(1);
+  const sparkleScale = useSharedValue(1);
 
+  useEffect(() => {
+    badgeHeartScale.value = withRepeat(
+      withSequence(
+        withTiming(1.28, { duration: 150, easing: Easing.out(Easing.ease) }),
+        withTiming(1.05, { duration: 110, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.32, { duration: 170, easing: Easing.out(Easing.ease) }),
+        withTiming(1.0, { duration: 260, easing: Easing.out(Easing.quad) }),
+        withDelay(1800, withTiming(1.0, { duration: 0 }))
+      ),
+      -1,
+      false
+    );
+
+    sparkleScale.value = withRepeat(
+      withSequence(
+        withTiming(1.2, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.0, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        withDelay(800, withTiming(1.0, { duration: 0 }))
+      ),
+      -1,
+      false
+    );
+  }, [badgeHeartScale, sparkleScale]);
+
+  const badgeHeartAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: badgeHeartScale.value }],
+  }));
+
+  const sparkleAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: sparkleScale.value }],
+  }));
 
   // Intervalo a cada 60s para manter horas vivas
   useEffect(() => {
@@ -532,7 +575,7 @@ export default function HomeScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
+            paddingTop: insets.top + (Platform.OS === 'ios' ? 88 : 82),
             paddingBottom: 130,
           },
         ]}
@@ -665,7 +708,9 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <Ionicons name="heart" size={12} color="#FFFFFF" />
+                  <Animated.View style={badgeHeartAnimatedStyle}>
+                    <Ionicons name="heart" size={12} color="#FFFFFF" />
+                  </Animated.View>
                   <Text style={styles.photoBadgeText}>Nós</Text>
                 </View>
               </AnimatedTouchable>
@@ -740,7 +785,9 @@ export default function HomeScreen() {
                       },
                     ]}
                   >
-                    <Ionicons name="sparkles" size={17} color={themeTokens.primary} />
+                    <Animated.View style={sparkleAnimatedStyle}>
+                      <Ionicons name="sparkles" size={17} color={themeTokens.primary} />
+                    </Animated.View>
                   </View>
                   <View style={styles.milestoneInfo}>
                     <Text style={[styles.milestoneLabel, { color: themeTokens.textSecondary }]}>
@@ -928,20 +975,20 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* Cabeçalho Fixo com Blur e Transparência */}
+      {/* Cabeçalho Fixo com Blur e Transparência Apple Liquid Glass */}
       <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
         <BlurView
-          intensity={Platform.OS === 'ios' ? 80 : 100}
-          tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+          intensity={Platform.OS === 'ios' ? 70 : 85}
+          tint={isDark ? 'dark' : 'light'}
           style={StyleSheet.absoluteFill}
         />
         <View
           style={[
             StyleSheet.absoluteFill,
             {
-              backgroundColor: isDark ? 'rgba(15, 13, 24, 0.65)' : 'rgba(248, 249, 252, 0.70)',
-              borderBottomWidth: 1,
-              borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.60)',
+              backgroundColor: isDark ? 'rgba(15, 13, 24, 0.45)' : 'rgba(248, 249, 252, 0.50)',
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             },
           ]}
         />
@@ -949,7 +996,7 @@ export default function HomeScreen() {
           <AppHeader
             coupleSubtitle={coupleTitle}
             showNotification={true}
-            containerStyle={{ marginBottom: 0, paddingTop: 6, paddingBottom: 6 }}
+            containerStyle={{ marginBottom: 0, paddingTop: 4, paddingBottom: 8 }}
           />
         </View>
       </View>

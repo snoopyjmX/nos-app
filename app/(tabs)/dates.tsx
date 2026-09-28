@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  TouchableOpacity,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
@@ -20,6 +21,15 @@ import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
 import { AppHeader } from '../../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
@@ -89,6 +99,17 @@ const formatTimePTBR = (dateString?: string): string => {
   });
 };
 
+const formatEventDateTime = (dateString?: string): string => {
+  if (!dateString) return '';
+  const dateStr = formatFullDatePTBR(dateString);
+  const isMidnightUtc = dateString.includes('T00:00:00');
+  if (isMidnightUtc) {
+    return dateStr;
+  }
+  const timeStr = formatTimePTBR(dateString);
+  return timeStr ? `${dateStr} • ${timeStr}` : dateStr;
+};
+
 export default function DatesScreen() {
   const { isDark } = useAppTheme();
   const themeTokens = getThemeTokens(isDark);
@@ -114,15 +135,50 @@ export default function DatesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
-    d.setHours(20, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
     return d;
   });
+  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Animações refinadas para celebração e destaque
+  const todayHeartScale = useSharedValue(1);
+  const emptySparkleScale = useSharedValue(1);
 
+  useEffect(() => {
+    todayHeartScale.value = withRepeat(
+      withSequence(
+        withTiming(1.3, { duration: 150, easing: Easing.out(Easing.ease) }),
+        withTiming(1.05, { duration: 110, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.35, { duration: 170, easing: Easing.out(Easing.ease) }),
+        withTiming(1.0, { duration: 260, easing: Easing.out(Easing.quad) }),
+        withDelay(1500, withTiming(1.0, { duration: 0 }))
+      ),
+      -1,
+      false
+    );
+
+    emptySparkleScale.value = withRepeat(
+      withSequence(
+        withTiming(1.18, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.0, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+        withDelay(600, withTiming(1.0, { duration: 0 }))
+      ),
+      -1,
+      false
+    );
+  }, [todayHeartScale, emptySparkleScale]);
+
+  const todayHeartAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: todayHeartScale.value }],
+  }));
+
+  const emptySparkleAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: emptySparkleScale.value }],
+  }));
 
   // 1. Atualizador do relógio para o countdown hero
   useEffect(() => {
@@ -245,12 +301,28 @@ export default function DatesScreen() {
 
     setSubmitting(true);
     try {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+
+      let finalIso: string;
+      if (selectedTime) {
+        const hours = String(selectedTime.getHours()).padStart(2, '0');
+        const minutes = String(selectedTime.getMinutes()).padStart(2, '0');
+        const d = new Date(Number(year), Number(month) - 1, Number(day), Number(hours), Number(minutes), 0);
+        finalIso = d.toISOString();
+      } else {
+        // Horário opcional não definido: salva a data pura (meia-noite UTC)
+        const d = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 0, 0, 0));
+        finalIso = d.toISOString();
+      }
+
       const { error } = await supabase.from('special_dates').insert({
         couple_id: coupleId,
         created_by: user.id,
         title: newTitle.trim(),
         category: newCategory,
-        event_date: selectedDate.toISOString(),
+        event_date: finalIso,
       });
 
       if (error) throw error;
@@ -261,8 +333,11 @@ export default function DatesScreen() {
       setNewCategory('Comemoração');
       const resetD = new Date();
       resetD.setDate(resetD.getDate() + 7);
-      resetD.setHours(20, 0, 0, 0);
+      resetD.setHours(0, 0, 0, 0);
       setSelectedDate(resetD);
+      setSelectedTime(null);
+      setShowDatePicker(false);
+      setShowTimePicker(false);
 
       await loadDates();
     } catch (err: any) {
@@ -319,10 +394,7 @@ export default function DatesScreen() {
       setShowTimePicker(false);
     }
     if (time) {
-      const updated = new Date(selectedDate);
-      updated.setHours(time.getHours());
-      updated.setMinutes(time.getMinutes());
-      setSelectedDate(updated);
+      setSelectedTime(time);
     }
   };
 
@@ -331,20 +403,20 @@ export default function DatesScreen() {
       {/* 1. Fundo Atmosférico Vivo preenchendo 100% da viewport física */}
       <AtmosphereBackground />
 
-      {/* Cabeçalho Fixo com Blur e Transparência */}
+      {/* Cabeçalho Fixo com Blur e Transparência Apple Liquid Glass */}
       <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
         <BlurView
-          intensity={Platform.OS === 'ios' ? 80 : 100}
-          tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+          intensity={Platform.OS === 'ios' ? 70 : 85}
+          tint={isDark ? 'dark' : 'light'}
           style={StyleSheet.absoluteFill}
         />
         <View
           style={[
             StyleSheet.absoluteFill,
             {
-              backgroundColor: isDark ? 'rgba(15, 13, 24, 0.65)' : 'rgba(248, 249, 252, 0.70)',
-              borderBottomWidth: 1,
-              borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.60)',
+              backgroundColor: isDark ? 'rgba(15, 13, 24, 0.45)' : 'rgba(248, 249, 252, 0.50)',
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             },
           ]}
         />
@@ -352,7 +424,7 @@ export default function DatesScreen() {
           <AppHeader
             sectionTitle="datas"
             coupleSubtitle="Marcos e celebrações"
-            containerStyle={{ marginBottom: 0, paddingTop: 6, paddingBottom: 6 }}
+            containerStyle={{ marginBottom: 0, paddingTop: 4, paddingBottom: 8 }}
             rightAction={
               <AnimatedTouchable
                 style={styles.headerAddBtn}
@@ -371,7 +443,7 @@ export default function DatesScreen() {
 
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
+          paddingTop: insets.top + (Platform.OS === 'ios' ? 88 : 82),
           paddingBottom: 130,
           paddingHorizontal: 20,
         }}
@@ -428,7 +500,9 @@ export default function DatesScreen() {
 
               {countdown.isNow ? (
                 <View style={styles.eventHappeningBox}>
-                  <Ionicons name="heart" size={20} color="#7C3AED" />
+                  <Animated.View style={todayHeartAnimatedStyle}>
+                    <Ionicons name="heart" size={20} color="#7C3AED" />
+                  </Animated.View>
                   <Text style={styles.eventHappeningText}>É hoje! Aproveitem cada segundo.</Text>
                 </View>
               ) : (
@@ -470,7 +544,9 @@ export default function DatesScreen() {
           <View>
             <LiquidGlassView variant="card" style={styles.emptyHeroCard} borderRadius={26}>
               <View style={styles.emptyHeroIconCircle}>
-                <Ionicons name="sparkles-outline" size={26} color={themeTokens.primary} />
+                <Animated.View style={emptySparkleAnimatedStyle}>
+                  <Ionicons name="sparkles-outline" size={26} color={themeTokens.primary} />
+                </Animated.View>
               </View>
               <Text style={styles.emptyHeroTitle}>Nenhum evento agendado</Text>
               <Text style={styles.emptyHeroSubtitle}>
@@ -577,7 +653,7 @@ export default function DatesScreen() {
                       </Text>
 
                       <Text style={styles.eventDateText}>
-                        {formatFullDatePTBR(item.event_date)} • {formatTimePTBR(item.event_date)}
+                        {formatEventDateTime(item.event_date)}
                       </Text>
                     </View>
 
@@ -636,7 +712,7 @@ export default function DatesScreen() {
                     </Text>
 
                     <Text style={styles.eventDateText}>
-                      {formatFullDatePTBR(item.event_date)}
+                      {formatEventDateTime(item.event_date)}
                     </Text>
                   </View>
 
@@ -665,8 +741,23 @@ export default function DatesScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.modalOverlay}
         >
+          {/* Backdrop tocável para fechar o modal */}
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => !submitting && setIsAddModalVisible(false)}
+          />
+
           <View style={styles.modalCard}>
-            <View style={styles.modalHandle} />
+            {/* Puxador da barra para descer / fechar */}
+            <AnimatedTouchable
+              style={styles.modalHandleTouchArea}
+              onPress={() => !submitting && setIsAddModalVisible(false)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 16, bottom: 20, left: 60, right: 60 }}
+            >
+              <View style={styles.modalHandle} />
+            </AnimatedTouchable>
 
             <View style={styles.modalHeaderRow}>
               <View style={styles.modalHeaderIconBadge}>
@@ -678,6 +769,13 @@ export default function DatesScreen() {
                   Marque um momento marcante ou planeje o próximo capítulo de vocês.
                 </Text>
               </View>
+              <AnimatedTouchable
+                onPress={() => !submitting && setIsAddModalVisible(false)}
+                style={styles.modalCloseIconBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={18} color={themeTokens.textSecondary} />
+              </AnimatedTouchable>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -687,7 +785,7 @@ export default function DatesScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholder="Ex: Aniversário de Namoro, Viagem à praia..."
-                  placeholderTextColor="#8A879A"
+                  placeholderTextColor={isDark ? '#6B6880' : '#8A879A'}
                   value={newTitle}
                   onChangeText={setNewTitle}
                   maxLength={70}
@@ -737,35 +835,26 @@ export default function DatesScreen() {
                 <Text style={styles.inputLabel}>Data do Momento</Text>
                 <AnimatedTouchable
                   style={styles.dateTimeButton}
-                  onPress={() => setShowDatePicker(true)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowDatePicker((prev) => !prev);
+                  }}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="calendar-outline" size={18} color={themeTokens.primary} />
                   <Text style={styles.dateTimeButtonText}>
                     {formatFullDatePTBR(selectedDate.toISOString())}
                   </Text>
-                  <Ionicons name="chevron-forward" size={16} color="#8A879A" />
+                  <Ionicons
+                    name={showDatePicker ? 'chevron-down' : 'chevron-forward'}
+                    size={16}
+                    color={themeTokens.textSecondary}
+                  />
                 </AnimatedTouchable>
               </View>
 
-              {/* Horário do Evento */}
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>Horário (opcional)</Text>
-                <AnimatedTouchable
-                  style={styles.dateTimeButton}
-                  onPress={() => setShowTimePicker(true)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="time-outline" size={18} color={themeTokens.primary} />
-                  <Text style={styles.dateTimeButtonText}>
-                    {formatTimePTBR(selectedDate.toISOString())}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={16} color="#8A879A" />
-                </AnimatedTouchable>
-              </View>
-
-              {/* DatePicker */}
-              {(showDatePicker || Platform.OS === 'ios') && (
+              {/* DatePicker sem botão de concluir */}
+              {showDatePicker && (
                 <View style={styles.pickerBox}>
                   <Text style={styles.pickerTitle}>Selecione a Data</Text>
                   <DateTimePicker
@@ -773,38 +862,76 @@ export default function DatesScreen() {
                     mode="date"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onValueChange={onDateChange}
-                    textColor="#16151E"
+                    textColor={isDark ? '#F7F5FF' : '#16151E'}
+                    themeVariant={isDark ? 'dark' : 'light'}
                   />
-                  {Platform.OS === 'ios' && (
-                    <AnimatedTouchable
-                      style={styles.pickerDoneBtn}
-                      onPress={() => setShowDatePicker(false)}
-                    >
-                      <Text style={styles.pickerDoneBtnText}>Concluir Data</Text>
-                    </AnimatedTouchable>
-                  )}
                 </View>
               )}
 
-              {/* TimePicker */}
+              {/* Horário do Evento (Opcional) */}
+              <View style={styles.inputWrapper}>
+                <View style={styles.labelWithClearRow}>
+                  <Text style={styles.inputLabel}>Horário (opcional)</Text>
+                  {selectedTime !== null && (
+                    <AnimatedTouchable
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSelectedTime(null);
+                        setShowTimePicker(false);
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={styles.clearTimeText}>Limpar horário</Text>
+                    </AnimatedTouchable>
+                  )}
+                </View>
+                <AnimatedTouchable
+                  style={styles.dateTimeButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowTimePicker((prev) => {
+                      const next = !prev;
+                      if (next && !selectedTime) {
+                        const t = new Date();
+                        t.setHours(20, 0, 0, 0);
+                        setSelectedTime(t);
+                      }
+                      return next;
+                    });
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="time-outline" size={18} color={themeTokens.primary} />
+                  <Text
+                    style={[
+                      styles.dateTimeButtonText,
+                      !selectedTime && styles.dateTimePlaceholderText,
+                    ]}
+                  >
+                    {selectedTime
+                      ? formatTimePTBR(selectedTime.toISOString())
+                      : 'Nenhum horário definido'}
+                  </Text>
+                  <Ionicons
+                    name={showTimePicker ? 'chevron-down' : 'chevron-forward'}
+                    size={16}
+                    color={themeTokens.textSecondary}
+                  />
+                </AnimatedTouchable>
+              </View>
+
+              {/* TimePicker sem botão de concluir */}
               {showTimePicker && (
                 <View style={styles.pickerBox}>
                   <Text style={styles.pickerTitle}>Selecione o Horário</Text>
                   <DateTimePicker
-                    value={selectedDate}
+                    value={selectedTime || new Date()}
                     mode="time"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onValueChange={onTimeChange}
-                    textColor="#16151E"
+                    textColor={isDark ? '#F7F5FF' : '#16151E'}
+                    themeVariant={isDark ? 'dark' : 'light'}
                   />
-                  {Platform.OS === 'ios' && (
-                    <AnimatedTouchable
-                      style={styles.pickerDoneBtn}
-                      onPress={() => setShowTimePicker(false)}
-                    >
-                      <Text style={styles.pickerDoneBtnText}>Concluir Horário</Text>
-                    </AnimatedTouchable>
-                  )}
                 </View>
               )}
 
@@ -1205,13 +1332,26 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     borderWidth: 1,
     borderColor: themeTokens.glassBorder,
   },
+  modalHandleTouchArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 4,
+    paddingBottom: 14,
+    width: '100%',
+  },
   modalHandle: {
-    width: 44,
+    width: 48,
     height: 5,
     borderRadius: 3,
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#E2E8F0',
-    alignSelf: 'center',
-    marginBottom: 16,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.40)' : 'rgba(0, 0, 0, 0.22)',
+  },
+  modalCloseIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
   },
   modalHeaderRow: {
     flexDirection: 'row',
@@ -1241,6 +1381,21 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
   },
   inputWrapper: {
     marginBottom: 16,
+  },
+  labelWithClearRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  clearTimeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  dateTimePlaceholderText: {
+    color: themeTokens.textSecondary,
+    fontWeight: '400',
   },
   inputLabel: {
     fontSize: 13,
@@ -1306,11 +1461,13 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     color: themeTokens.textPrimary,
   },
   pickerBox: {
-    backgroundColor: 'rgba(142, 124, 232, 0.04)',
-    borderRadius: 18,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(142, 124, 232, 0.08)',
+    borderRadius: 20,
     padding: 12,
     marginVertical: 10,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(142, 124, 232, 0.22)',
   },
   pickerTitle: {
     fontSize: 12,
@@ -1319,18 +1476,6 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-  },
-  pickerDoneBtn: {
-    marginTop: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 999,
-    backgroundColor: themeTokens.primary,
-  },
-  pickerDoneBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
   },
   modalActionsRow: {
     flexDirection: 'row',

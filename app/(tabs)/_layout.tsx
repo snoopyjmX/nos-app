@@ -197,18 +197,18 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
       {/* Layer 1: Blur View Ultra Thin Material */}
       <View style={styles.blurWrapper}>
         <BlurView
-          intensity={Platform.OS === 'ios' ? 88 : 100}
-          tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+          intensity={Platform.OS === 'ios' ? 70 : 85}
+          tint={isDark ? 'dark' : 'light'}
           style={StyleSheet.absoluteFill}
         />
       </View>
 
-      {/* Layer 2: Frosted Glass Tint Fill */}
+      {/* Layer 2: Frosted Glass Tint Fill - Translucent Apple Liquid Glass */}
       <View
         style={[
           styles.tintLayer,
           {
-            backgroundColor: themeTokens.glassSurface,
+            backgroundColor: isDark ? 'rgba(15, 13, 24, 0.45)' : 'rgba(248, 249, 252, 0.50)',
           },
         ]}
       />
@@ -218,7 +218,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         colors={
           isDark
             ? ['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.02)', 'transparent']
-            : ['rgba(255, 255, 255, 0.75)', 'rgba(255, 255, 255, 0.15)', 'transparent']
+            : ['rgba(255, 255, 255, 0.70)', 'rgba(255, 255, 255, 0.12)', 'transparent']
         }
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 0.65 }}
@@ -233,10 +233,10 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             styles.indicatorInner,
             {
               backgroundColor: isDark
-                ? 'rgba(167, 151, 255, 0.20)'
-                : 'rgba(142, 124, 232, 0.15)',
+                ? 'rgba(167, 151, 255, 0.18)'
+                : 'rgba(142, 124, 232, 0.14)',
               borderColor: isDark
-                ? 'rgba(255, 255, 255, 0.28)'
+                ? 'rgba(255, 255, 255, 0.24)'
                 : 'rgba(255, 255, 255, 0.85)',
               shadowColor: themeTokens.primary,
             },

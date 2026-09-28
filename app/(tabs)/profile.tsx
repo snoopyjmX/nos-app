@@ -20,8 +20,18 @@ import { AppHeader } from '../../components/AppHeader';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
+import { LiquidThemeSelector } from '../../components/ui/LiquidThemeSelector';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
 import { useAppTheme } from '../../context/ThemeContext';
@@ -87,7 +97,79 @@ export default function ProfileScreen() {
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [savingDate, setSavingDate] = useState(false);
 
+  // Animações táteis e orgânicas (Heartbeat do casal e pulso de sincronização)
+  const heartScale = useSharedValue(1);
+  const heartAuraScale = useSharedValue(1);
+  const heartAuraOpacity = useSharedValue(0.4);
 
+  const syncDotScale = useSharedValue(1);
+  const syncDotOpacity = useSharedValue(0.5);
+
+  useEffect(() => {
+    // Batimento cardíaco físico do casal (lub-dub ritmado)
+    heartScale.value = withRepeat(
+      withSequence(
+        withTiming(1.22, { duration: 150, easing: Easing.out(Easing.ease) }),
+        withTiming(1.04, { duration: 110, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.28, { duration: 170, easing: Easing.out(Easing.ease) }),
+        withTiming(1.0, { duration: 260, easing: Easing.out(Easing.quad) }),
+        withDelay(1300, withTiming(1.0, { duration: 0 }))
+      ),
+      -1,
+      false
+    );
+
+    heartAuraScale.value = withRepeat(
+      withSequence(
+        withTiming(1.85, { duration: 690, easing: Easing.out(Easing.quad) }),
+        withDelay(1300, withTiming(1.0, { duration: 0 }))
+      ),
+      -1,
+      false
+    );
+
+    heartAuraOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 690, easing: Easing.out(Easing.quad) }),
+        withDelay(1300, withTiming(0.45, { duration: 0 }))
+      ),
+      -1,
+      false
+    );
+
+    // Pulso do status de sincronização
+    syncDotScale.value = withRepeat(
+      withSequence(
+        withTiming(2.2, { duration: 900, easing: Easing.out(Easing.ease) }),
+        withTiming(1.0, { duration: 0 })
+      ),
+      -1,
+      false
+    );
+
+    syncDotOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 900, easing: Easing.out(Easing.ease) }),
+        withTiming(0.6, { duration: 0 })
+      ),
+      -1,
+      false
+    );
+  }, [heartScale, heartAuraScale, heartAuraOpacity, syncDotScale, syncDotOpacity]);
+
+  const heartAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }));
+
+  const heartAuraAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartAuraScale.value }],
+    opacity: heartAuraOpacity.value,
+  }));
+
+  const syncDotAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: syncDotScale.value }],
+    opacity: syncDotOpacity.value,
+  }));
 
   // Resolve URL assinada para foto do avatar
   const resolveAvatarUrl = async (pathOrUrl?: string | null): Promise<string | null> => {
@@ -429,7 +511,7 @@ export default function ProfileScreen() {
 
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
+          paddingTop: insets.top + (Platform.OS === 'ios' ? 98 : 92),
           paddingBottom: 130,
           paddingHorizontal: 20,
         }}
@@ -483,11 +565,14 @@ export default function ProfileScreen() {
                     <Text style={styles.avatarSubLabel}>Você</Text>
                   </AnimatedTouchable>
 
-                  {/* Conector Central (Coração Pulsante) */}
+                  {/* Conector Central (Coração Pulsante com Aura Orgânica) */}
                   <View style={styles.connectorCenter}>
                     <View style={styles.connectorLine} />
-                    <View style={styles.heartCircle}>
-                      <Ionicons name="heart" size={16} color="#FFFFFF" />
+                    <View style={styles.heartPulseWrapper}>
+                      <Animated.View style={[styles.heartAuraHalo, heartAuraAnimatedStyle]} />
+                      <Animated.View style={[styles.heartCircle, heartAnimatedStyle]}>
+                        <Ionicons name="heart" size={16} color="#FFFFFF" />
+                      </Animated.View>
                     </View>
                     <View style={styles.connectorLine} />
                   </View>
@@ -513,9 +598,12 @@ export default function ProfileScreen() {
                   </View>
                 </View>
 
-                {/* Badge de Sincronização Ativa */}
+                {/* Badge de Sincronização Ativa com Pulso Orgânico */}
                 <View style={styles.syncStatusBadge}>
-                  <View style={styles.greenPulseDot} />
+                  <View style={styles.greenDotWrapper}>
+                    <Animated.View style={[styles.greenPulseDotAura, syncDotAnimatedStyle]} />
+                    <View style={styles.greenPulseDot} />
+                  </View>
                   <Text style={styles.syncStatusText}>Espaço Compartilhado Sincronizado</Text>
                 </View>
               </LiquidGlassView>
@@ -594,60 +682,8 @@ export default function ProfileScreen() {
                   </View>
                 </View>
 
-                {/* Segmented Control Liquid Glass: Claro, Escuro */}
-                <View style={styles.segmentedControl}>
-                  <AnimatedTouchable
-                    style={[
-                      styles.segmentButton,
-                      mode === 'light' && styles.segmentButtonActive,
-                    ]}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setMode('light');
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name="sunny-outline"
-                      size={14}
-                      color={mode === 'light' ? '#FFFFFF' : themeTokens.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.segmentButtonText,
-                        mode === 'light' && styles.segmentButtonTextActive,
-                      ]}
-                    >
-                      Claro
-                    </Text>
-                  </AnimatedTouchable>
-
-                  <AnimatedTouchable
-                    style={[
-                      styles.segmentButton,
-                      mode === 'dark' && styles.segmentButtonActive,
-                    ]}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setMode('dark');
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name="moon-outline"
-                      size={14}
-                      color={mode === 'dark' ? '#FFFFFF' : themeTokens.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.segmentButtonText,
-                        mode === 'dark' && styles.segmentButtonTextActive,
-                      ]}
-                    >
-                      Escuro
-                    </Text>
-                  </AnimatedTouchable>
-                </View>
+                {/* Segmented Control Liquid Glass: Claro, Escuro com física fluida */}
+                <LiquidThemeSelector currentMode={mode} onChangeMode={setMode} />
               </LiquidGlassView>
             </View>
 
@@ -933,6 +969,19 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     height: 2,
     backgroundColor: 'rgba(142, 124, 232, 0.3)',
   },
+  heartPulseWrapper: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heartAuraHalo: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: themeTokens.primary,
+  },
   heartCircle: {
     width: 32,
     height: 32,
@@ -953,6 +1002,19 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 999,
+  },
+  greenDotWrapper: {
+    width: 8,
+    height: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  greenPulseDotAura: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#34C759',
   },
   greenPulseDot: {
     width: 7,
