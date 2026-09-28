@@ -15,6 +15,7 @@ interface AppHeaderProps {
   onBack?: () => void;
   showNotification?: boolean;
   rightAction?: React.ReactNode;
+  containerStyle?: any;
 }
 
 export function AppHeader({
@@ -24,6 +25,7 @@ export function AppHeader({
   onBack,
   showNotification = false,
   rightAction,
+  containerStyle,
 }: AppHeaderProps) {
   const { isDark } = useAppTheme();
   const [notifModalVisible, setNotifModalVisible] = useState(false);
@@ -35,7 +37,7 @@ export function AppHeader({
 
   return (
     <>
-      <View style={styles.header}>
+      <View style={[styles.header, containerStyle]}>
         <View style={styles.leftContainer}>
           {showBack && onBack && (
             <AnimatedTouchable

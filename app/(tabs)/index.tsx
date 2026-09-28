@@ -25,7 +25,6 @@ import { supabase } from '../../lib/supabase';
 import { THEME } from '../../constants/theme';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getThemeTokens } from '../../constants/theme';
-import { useScrollNavbar } from '../../hooks/useScrollNavbar';
 
 const { width } = Dimensions.get('window');
 
@@ -179,7 +178,6 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
-  const { onScroll } = useScrollNavbar();
 
   const [coupleTitle, setCoupleTitle] = useState<string>('Você & Meu Amor');
   const [effectiveStartDateStr, setEffectiveStartDateStr] = useState<string | null>(null);
@@ -533,11 +531,12 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 10, paddingBottom: 130 },
+          {
+            paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
+            paddingBottom: 130,
+          },
         ]}
         showsVerticalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -547,8 +546,6 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Header */}
-        <AppHeader coupleSubtitle={coupleTitle} showNotification={true} />
 
         {loading ? (
           <View style={styles.skeletonContainer}>
@@ -930,6 +927,32 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Cabeçalho Fixo com Blur e Transparência */}
+      <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
+        <BlurView
+          intensity={Platform.OS === 'ios' ? 80 : 100}
+          tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: isDark ? 'rgba(15, 13, 24, 0.65)' : 'rgba(248, 249, 252, 0.70)',
+              borderBottomWidth: 1,
+              borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.60)',
+            },
+          ]}
+        />
+        <View style={styles.headerInnerRow}>
+          <AppHeader
+            coupleSubtitle={coupleTitle}
+            showNotification={true}
+            containerStyle={{ marginBottom: 0, paddingTop: 6, paddingBottom: 6 }}
+          />
+        </View>
+      </View>
     </View>
   );
 }
@@ -937,6 +960,18 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  blurredHeaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    overflow: 'hidden',
+  },
+  headerInnerRow: {
+    paddingHorizontal: 20,
+    paddingBottom: 4,
   },
   scrollContent: {
     paddingHorizontal: 20,

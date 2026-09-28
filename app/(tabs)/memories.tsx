@@ -550,23 +550,15 @@ export default function MemoriesScreen() {
       {/* 1. Fundo Atmosférico Vivo preenchendo 100% da viewport física */}
       <AtmosphereBackground />
 
-      {/* Cabeçalho Apple Liquid Glass com safe area protegida */}
-      <View style={[styles.headerWrapper, { paddingTop: insets.top + 8 }]}>
-        <AppHeader
-          sectionTitle="memórias"
-          coupleSubtitle="Nossos momentos eternizados"
-        />
-      </View>
-
       {/* Conteúdo Principal */}
       {loading ? (
-        <View style={styles.skeletonContainer}>
+        <View style={[styles.skeletonContainer, { paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66) }]}>
           <View style={styles.skeletonCard} />
           <View style={styles.skeletonCard} />
         </View>
       ) : memories.length === 0 ? (
         <ScrollView
-          contentContainerStyle={styles.centerContainer}
+          contentContainerStyle={[styles.centerContainer, { paddingTop: insets.top + 80 }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -591,7 +583,13 @@ export default function MemoriesScreen() {
           data={memories}
           keyExtractor={(item) => item.id}
           renderItem={renderMemoryCard}
-          contentContainerStyle={[styles.listContent, { paddingBottom: 150 }]}
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
+              paddingBottom: 150,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16}
@@ -605,6 +603,32 @@ export default function MemoriesScreen() {
           }
         />
       )}
+
+      {/* Cabeçalho Fixo com Blur e Transparência */}
+      <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
+        <BlurView
+          intensity={Platform.OS === 'ios' ? 80 : 100}
+          tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: isDark ? 'rgba(15, 13, 24, 0.65)' : 'rgba(248, 249, 252, 0.70)',
+              borderBottomWidth: 1,
+              borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.60)',
+            },
+          ]}
+        />
+        <View style={styles.headerInnerRow}>
+          <AppHeader
+            sectionTitle="memórias"
+            coupleSubtitle="Nossos momentos eternizados"
+            containerStyle={{ marginBottom: 0, paddingTop: 6, paddingBottom: 6 }}
+          />
+        </View>
+      </View>
 
       {/* Botão Flutuante Liquid Glass de Adicionar Memória */}
       <Animated.View
@@ -812,9 +836,17 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
     backgroundColor: themeTokens.background,
   },
-  headerWrapper: {
+  blurredHeaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    overflow: 'hidden',
+  },
+  headerInnerRow: {
     paddingHorizontal: 20,
-    zIndex: 10,
+    paddingBottom: 4,
   },
 
   // Skeleton Loading Shimmer

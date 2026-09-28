@@ -27,7 +27,6 @@ import { supabase } from '../../lib/supabase';
 import { THEME } from '../../constants/theme';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getThemeTokens } from '../../constants/theme';
-import { useScrollNavbar } from '../../hooks/useScrollNavbar';
 
 export interface SpecialDate {
   id: string;
@@ -97,7 +96,6 @@ export default function DatesScreen() {
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
-  const { onScroll } = useScrollNavbar();
 
   const [dates, setDates] = useState<SpecialDate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -333,28 +331,50 @@ export default function DatesScreen() {
       {/* 1. Fundo Atmosférico Vivo preenchendo 100% da viewport física */}
       <AtmosphereBackground />
 
-      {/* Cabeçalho Apple Liquid Glass com safe area protegida */}
-      <View style={[styles.headerWrapper, { paddingTop: insets.top + 8 }]}>
-        <AppHeader
-          sectionTitle="datas"
-          coupleSubtitle="Marcos e celebrações"
-          rightAction={
-            <AnimatedTouchable
-              style={styles.headerAddBtn}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setIsAddModalVisible(true);
-              }}
-            >
-              <Ionicons name="add" size={17} color="#FFFFFF" />
-              <Text style={styles.headerAddBtnText}>Adicionar</Text>
-            </AnimatedTouchable>
-          }
+      {/* Cabeçalho Fixo com Blur e Transparência */}
+      <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
+        <BlurView
+          intensity={Platform.OS === 'ios' ? 80 : 100}
+          tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+          style={StyleSheet.absoluteFill}
         />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: isDark ? 'rgba(15, 13, 24, 0.65)' : 'rgba(248, 249, 252, 0.70)',
+              borderBottomWidth: 1,
+              borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.60)',
+            },
+          ]}
+        />
+        <View style={styles.headerInnerRow}>
+          <AppHeader
+            sectionTitle="datas"
+            coupleSubtitle="Marcos e celebrações"
+            containerStyle={{ marginBottom: 0, paddingTop: 6, paddingBottom: 6 }}
+            rightAction={
+              <AnimatedTouchable
+                style={styles.headerAddBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsAddModalVisible(true);
+                }}
+              >
+                <Ionicons name="add" size={17} color="#FFFFFF" />
+                <Text style={styles.headerAddBtnText}>Adicionar</Text>
+              </AnimatedTouchable>
+            }
+          />
+        </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 130, paddingHorizontal: 20 }}
+        contentContainerStyle={{
+          paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
+          paddingBottom: 130,
+          paddingHorizontal: 20,
+        }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -826,9 +846,17 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
     backgroundColor: themeTokens.background,
   },
-  headerWrapper: {
+  blurredHeaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    overflow: 'hidden',
+  },
+  headerInnerRow: {
     paddingHorizontal: 20,
-    zIndex: 10,
+    paddingBottom: 4,
   },
   headerAddBtn: {
     flexDirection: 'row',

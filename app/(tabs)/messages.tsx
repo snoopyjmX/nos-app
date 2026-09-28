@@ -698,10 +698,10 @@ export default function MessagesScreen() {
           </View>
         </View>
 
-        {/* Input Bar com espaço confortável acima da navbar */}
+        {/* Barra de Input fixa com Blur e transparência na base - igual ao topo */}
         <View
           style={[
-            styles.inputBarWrap,
+            styles.blurredInputContainer,
             {
               paddingBottom: isKeyboardVisible
                 ? (Platform.OS === 'ios' ? 10 : 12)
@@ -709,35 +709,62 @@ export default function MessagesScreen() {
             },
           ]}
         >
-          <LiquidGlassView variant="control" style={styles.inputGlass} borderRadius={24}>
-            <TextInput
-              style={[styles.textInput, { color: themeTokens.textPrimary }]}
-              placeholder="Escreva um recado com carinho..."
-              placeholderTextColor={themeTokens.textMuted}
-              value={inputText}
-              onChangeText={setInputText}
-              multiline
-              maxLength={1000}
-              textAlignVertical="center"
-            />
-
-            <View>
-              <AnimatedTouchable
-                style={[
-                  styles.sendButton,
-                  {
-                    backgroundColor: themeTokens.primaryDark,
-                    shadowColor: themeTokens.primaryDark,
-                  },
-                  (!inputText.trim() || sending) && styles.sendButtonDisabled,
-                ]}
-                onPress={handleSendMessage}
-                disabled={!inputText.trim() || sending}
-              >
-                <Ionicons name="paper-plane" size={16} color="#FFFFFF" style={{ marginLeft: 1 }} />
-              </AnimatedTouchable>
+          <BlurView
+            intensity={Platform.OS === 'ios' ? 80 : 100}
+            tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+            style={StyleSheet.absoluteFill}
+          />
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: isDark ? 'rgba(15, 13, 24, 0.70)' : 'rgba(248, 249, 252, 0.75)',
+                borderTopWidth: 1,
+                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.60)',
+              },
+            ]}
+          />
+          <View style={styles.inputInnerRow}>
+            <View
+              style={[
+                styles.textInputPill,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(255, 255, 255, 0.85)',
+                  borderColor: isDark
+                    ? 'rgba(255, 255, 255, 0.16)'
+                    : 'rgba(142, 124, 232, 0.22)',
+                },
+              ]}
+            >
+              <TextInput
+                style={[styles.textInput, { color: themeTokens.textPrimary }]}
+                placeholder="Escreva um recado com carinho..."
+                placeholderTextColor={themeTokens.textMuted}
+                value={inputText}
+                onChangeText={setInputText}
+                multiline
+                maxLength={1000}
+                textAlignVertical="center"
+              />
             </View>
-          </LiquidGlassView>
+
+            <AnimatedTouchable
+              style={[
+                styles.sendButton,
+                {
+                  backgroundColor: themeTokens.primaryDark,
+                  shadowColor: themeTokens.primaryDark,
+                },
+                (!inputText.trim() || sending) && styles.sendButtonDisabled,
+              ]}
+              onPress={handleSendMessage}
+              disabled={!inputText.trim() || sending}
+            >
+              <Ionicons name="paper-plane" size={16} color="#FFFFFF" style={{ marginLeft: 1 }} />
+            </AnimatedTouchable>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -944,30 +971,35 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  /* ── Input Bar ── */
-  inputBarWrap: {
-    paddingHorizontal: 16,
-    paddingTop: 6,
+  /* ── Input Bar com Blur ── */
+  blurredInputContainer: {
     zIndex: 20,
+    overflow: 'hidden',
   },
-  inputGlass: {
+  inputInnerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
+  },
+  textInputPill: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 100,
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
   },
   textInput: {
-    flex: 1,
-    minHeight: 38,
-    maxHeight: 96,
     fontSize: 15,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 2 },
