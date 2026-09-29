@@ -9,21 +9,20 @@ const supabaseAnonKey =
 
 const supabaseUrl = rawSupabaseUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 
-// Adapter de storage seguro para web e mobile (evita erro de window indefinido no SSR)
 const safeStorage = {
-  getItem: (key: string) => {
+  getItem: (key: string): Promise<string | null> => {
     if (Platform.OS === 'web' && typeof window === 'undefined') {
       return Promise.resolve(null);
     }
     return AsyncStorage.getItem(key);
   },
-  setItem: (key: string, value: string) => {
+  setItem: (key: string, value: string): Promise<void> => {
     if (Platform.OS === 'web' && typeof window === 'undefined') {
       return Promise.resolve();
     }
     return AsyncStorage.setItem(key, value);
   },
-  removeItem: (key: string) => {
+  removeItem: (key: string): Promise<void> => {
     if (Platform.OS === 'web' && typeof window === 'undefined') {
       return Promise.resolve();
     }
