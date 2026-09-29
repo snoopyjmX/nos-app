@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   Image,
   StyleSheet,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { supabase } from '../../lib/supabase';
@@ -21,12 +20,13 @@ import { getThemeTokens } from '../../constants/theme';
 import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
+import { GlassInput } from '../../components/ui/GlassInput';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
+  const theme = getThemeTokens(isDark);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,6 +36,11 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
       Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Senha fraca', 'A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
@@ -61,17 +66,26 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <AtmosphereBackground />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardAvoid}
       >
-        <View 
-          style={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom + 20 }]}
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: Math.max(insets.top, 24) + 16,
+              paddingBottom: Math.max(insets.bottom, 24) + 16,
+            },
+          ]}
+          bounces={false}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-                    {/* Header Brand */}
+          {/* Header Brand */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image
@@ -80,53 +94,55 @@ export default function RegisterScreen() {
                 resizeMode="contain"
               />
             </View>
-            <Text style={[styles.brandTitle, { color: themeTokens.primary }]}>nós.</Text>
-            <Text style={[styles.brandSubtitle, { color: themeTokens.textSecondary }]}>Crie seu perfil</Text>
+            <Text style={[styles.brandTitle, { color: theme.primary }]}>nós.</Text>
+            <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
+              Crie seu perfil
+            </Text>
           </View>
 
           {/* Form Card */}
-          <LiquidGlassView variant="hero" style={styles.formCard} borderRadius={32}>
-            <Text style={[styles.formTitle, { color: themeTokens.textPrimary }]}>Cadastro</Text>
+          <LiquidGlassView variant="hero" style={styles.formCard} borderRadius={28}>
+            <Text style={[styles.formTitle, { color: theme.textPrimary }]}>
+              Criar Conta
+            </Text>
 
-            <LiquidGlassView variant="control" style={styles.inputWrapper} borderRadius={16}>
-              <TextInput
-                style={[styles.input, { color: themeTokens.textPrimary }]}
-                placeholder="Seu nome"
-                placeholderTextColor={themeTokens.textMuted}
-                value={name}
-                onChangeText={setName}
-              />
-            </LiquidGlassView>
+            <GlassInput
+              label="Nome"
+              iconName="person-outline"
+              placeholder="Como seu amor te chama?"
+              autoCapitalize="words"
+              value={name}
+              onChangeText={setName}
+            />
 
-            <LiquidGlassView variant="control" style={styles.inputWrapper} borderRadius={16}>
-              <TextInput
-                style={[styles.input, { color: themeTokens.textPrimary }]}
-                placeholder="E-mail"
-                placeholderTextColor={themeTokens.textMuted}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-              />
-            </LiquidGlassView>
+            <GlassInput
+              label="E-mail"
+              iconName="mail-outline"
+              placeholder="seu@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              value={email}
+              onChangeText={setEmail}
+            />
 
-            <LiquidGlassView variant="control" style={styles.inputWrapper} borderRadius={16}>
-              <TextInput
-                style={[styles.input, { color: themeTokens.textPrimary }]}
-                placeholder="Senha (mínimo 6 caracteres)"
-                placeholderTextColor={themeTokens.textMuted}
-                secureTextEntry
-                autoCapitalize="none"
-                value={password}
-                onChangeText={setPassword}
-              />
-            </LiquidGlassView>
+            <GlassInput
+              label="Senha"
+              iconName="lock-closed-outline"
+              placeholder="Mínimo de 6 caracteres"
+              secureTextEntry
+              autoCapitalize="none"
+              autoComplete="new-password"
+              value={password}
+              onChangeText={setPassword}
+            />
 
             <AnimatedTouchable
               style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleRegister}
               disabled={loading}
-              scaleTo={0.96}
+              scaleTo={0.97}
             >
               <LinearGradient
                 colors={isDark ? ['#A797FF', '#8B5CF6'] : ['#8E7CE8', '#7C3AED']}
@@ -135,9 +151,9 @@ export default function RegisterScreen() {
                 style={StyleSheet.absoluteFill}
               />
               {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.buttonText}>Criar Conta</Text>
+                <Text style={styles.buttonText}>Cadastrar</Text>
               )}
             </AnimatedTouchable>
 
@@ -146,12 +162,15 @@ export default function RegisterScreen() {
               onPress={() => router.back()}
               scaleTo={0.98}
             >
-              <Text style={[styles.switchText, { color: themeTokens.textSecondary }]}>
-                Já tem uma conta? <Text style={[styles.switchHighlight, { color: themeTokens.primary }]}>Entrar</Text>
+              <Text style={[styles.switchText, { color: theme.textSecondary }]}>
+                Já tem uma conta?{' '}
+                <Text style={[styles.switchHighlight, { color: theme.primary }]}>
+                  Entrar
+                </Text>
               </Text>
             </AnimatedTouchable>
           </LiquidGlassView>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -164,68 +183,61 @@ const styles = StyleSheet.create({
   keyboardAvoid: {
     flex: 1,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   logoContainer: {
-    marginBottom: 16,
+    marginBottom: 12,
     shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
   },
   logoImage: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
   },
   brandTitle: {
-    fontSize: 48,
+    fontSize: 42,
     fontWeight: '800',
-    letterSpacing: -1.5,
+    letterSpacing: -1.2,
   },
   brandSubtitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     marginTop: 4,
+    letterSpacing: -0.2,
   },
   formCard: {
     padding: 24,
     width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
   },
   formTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    letterSpacing: -0.5,
-    marginBottom: 24,
-  },
-  inputWrapper: {
-    marginBottom: 16,
-    borderWidth: 1,
-  },
-  input: {
-    height: 56,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    fontWeight: '500',
+    letterSpacing: -0.4,
+    marginBottom: 20,
   },
   button: {
-    height: 56,
-    borderRadius: 28,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
+    marginTop: 8,
     overflow: 'hidden',
     shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 3,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -234,12 +246,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   switchButton: {
-    marginTop: 24,
+    marginTop: 20,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   switchText: {
     fontSize: 14,

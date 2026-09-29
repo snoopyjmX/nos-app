@@ -11,57 +11,74 @@
     <meta name="description" content="Um espaço só nosso." />
     <meta name="application-name" content="NÓS" />
 
-    <!-- iOS Safari PWA Standalone (Remove guias, barra de URLs e botões do navegador) -->
+    <!-- iOS Safari PWA Standalone -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- 'default' garante que o iOS use contraste correto sem manchar o topo da tela -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="NÓS" />
 
-    <!-- Cores do tema para barra de status -->
-    <meta name="theme-color" content="#0F0D18" />
-    <meta name="msapplication-navbutton-color" content="#0F0D18" />
+    <!-- Cores da barra de sistema adaptáveis ao tema claro/escuro -->
+    <meta name="theme-color" content="#F8F9FC" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0F0D18" media="(prefers-color-scheme: dark)" />
 
-    <!-- Ícone da Tela de Início no iPhone (Add to Home Screen) -->
+    <!-- Ícones para iOS Add to Home Screen e PWA -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-
-    <!-- Web App Manifest & Favicon -->
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" href="/favicon.png" />
 
-    <!-- The `react-native-web` recommended style reset -->
     <style id="expo-reset">
+      :root {
+        --app-bg: #F8F9FC;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --app-bg: #0F0D18;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
       html,
       body {
         height: 100%;
         width: 100%;
         margin: 0;
         padding: 0;
-        background-color: #0F0D18;
-      }
-      body {
+        background-color: var(--app-bg);
         overflow: hidden;
       }
+
       #root {
         display: flex;
         height: 100%;
         width: 100%;
         flex: 1;
-        background-color: #0F0D18;
+        background-color: var(--app-bg);
       }
-      /* Experiência nativa no iPhone Safari */
-      * {
-        -webkit-tap-highlight-color: transparent;
-      }
+
       html, body, #root {
         user-select: none;
         -webkit-user-select: none;
         -webkit-touch-callout: none;
         overscroll-behavior-y: none;
       }
+
+      /* Garante contraste e visibilidade de inputs no Safari iOS */
       input, textarea {
         user-select: auto;
         -webkit-user-select: auto;
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: #8A879A !important;
+        opacity: 1 !important;
+        -webkit-text-fill-color: #8A879A !important;
       }
     </style>
   </head>
