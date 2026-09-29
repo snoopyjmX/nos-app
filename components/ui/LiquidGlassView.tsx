@@ -86,11 +86,23 @@ export function LiquidGlassView({
         style={[StyleSheet.absoluteFill, { borderRadius, overflow: 'hidden' }]}
         pointerEvents="none"
       >
-        <BlurView
-          tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
-          intensity={Platform.OS === 'ios' ? defaultIntensity : 100}
-          style={StyleSheet.absoluteFill}
-        />
+        {Platform.OS === 'web' ? (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: isDark ? 'rgba(20, 20, 20, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                backdropFilter: `blur(${variant === 'hero' ? 24 : 16}px)`,
+              } as any,
+            ]}
+          />
+        ) : (
+          <BlurView
+            tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+            intensity={Platform.OS === 'ios' ? defaultIntensity : 100}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
 
         <View
           style={[

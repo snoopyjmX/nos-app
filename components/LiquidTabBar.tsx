@@ -305,11 +305,15 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
     >
       {/* Camada 1: Blur View Ultra Thin Material */}
       <View style={styles.blurWrapper}>
-        <BlurView
-          intensity={Platform.OS === 'ios' ? 70 : 85}
-          tint={isDark ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
-        />
+        {Platform.OS === 'web' ? (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(16px)' } as any]} />
+        ) : (
+          <BlurView
+            intensity={Platform.OS === 'ios' ? 70 : 85}
+            tint={isDark ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
       </View>
 
       {/* Camada 2: Frosted Glass Tint Fill */}
