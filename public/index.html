@@ -14,20 +14,19 @@
     <!-- iOS Safari PWA Standalone -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <!-- 'default' garante status bar translúcida/nativa sem degradê preto no topo do iPhone -->
+    <!-- 'default' garante status bar nativa com texto escuro e sem degradê preto no topo do iPhone -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="nós." />
 
-    <!-- Cores da barra de sistema adaptáveis ao tema claro/escuro -->
-    <meta name="theme-color" content="#F8F9FC" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0F0D18" media="(prefers-color-scheme: dark)" />
+    <!-- Cor da barra de status sincronizada com o fundo do app (sem barra preta em modo escuro do sistema) -->
+    <meta name="theme-color" content="#F8F9FC" />
 
-    <!-- Ícones para iOS Add to Home Screen e PWA Android/Desktop com cache-busting -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=3" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icon.png?v=3" />
-    <link rel="icon" type="image/png" href="/apple-touch-icon.png?v=3" />
+    <!-- Ícones para iOS Add to Home Screen e PWA com novo arquivo v5 garantindo limpeza de cache -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-v5.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-v5.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon.png" />
+    <link rel="icon" type="image/png" href="/apple-touch-icon-v5.png" />
     <link rel="manifest" href="/manifest.json" />
 
     <style id="expo-reset">

@@ -138,49 +138,45 @@ const decoded = decodePng(path.join(__dirname, '..', 'assets', 'favicon.png'));
 const fWidth = decoded.width;
 const src = decoded.data;
 
-// Extract 128x128 card with full-bleed frosted background
-const CARD_SIZE = 128;
-const card = Buffer.alloc(CARD_SIZE * CARD_SIZE * 4);
+// Crop 104x104 tightly centered on the infinity symbol (center: 97, 109)
+// This gives ~75% fill ratio, which matches native Apple HIG app icon specifications!
+const C_SIZE = 104;
+const startX = 45;
+const startY = 57;
+const card = Buffer.alloc(C_SIZE * C_SIZE * 4);
 
-for (let cy = 0; cy < CARD_SIZE; cy++) {
-  for (let cx = 0; cx < CARD_SIZE; cx++) {
-    const sx = 32 + cx;
-    const sy = 39 + cy;
+for (let cy = 0; cy < C_SIZE; cy++) {
+  for (let cx = 0; cx < C_SIZE; cx++) {
+    const sx = startX + cx;
+    const sy = startY + cy;
     const srcIdx = (sy * fWidth + sx) * 4;
-    const dstIdx = (cy * CARD_SIZE + cx) * 4;
-    const r = src[srcIdx], g = src[srcIdx + 1], b = src[srcIdx + 2], a = src[srcIdx + 3];
+    const dstIdx = (cy * C_SIZE + cx) * 4;
+    card[dstIdx] = src[srcIdx];
+    card[dstIdx + 1] = src[srcIdx + 1];
+    card[dstIdx + 2] = src[srcIdx + 2];
+    card[dstIdx + 3] = 255; // 100% solid, fully opaque
+  }
+}
 
-    // Compute ambient frosted gradient color for this coordinate
-    const u = cx / (CARD_SIZE - 1);
-    const v = cy / (CARD_SIZE - 1);
-    const topR = 242 * (1 - u) + 224 * u;
-    const topG = 242 * (1 - u) + 224 * u;
-    const topB = 250 * (1 - u) + 239 * u;
-    const botR = 218 * (1 - u) + 188 * u;
-    const botG = 218 * (1 - u) + 188 * u;
-    const botB = 232 * (1 - u) + 212 * u;
-    const bgR = Math.round(topR * (1 - v) + botR * v);
-    const bgG = Math.round(topG * (1 - v) + botG * v);
-    const bgB = Math.round(topB * (1 - v) + botB * v);
-
-    if (a >= 250) {
-      card[dstIdx] = r;
-      card[dstIdx + 1] = g;
-      card[dstIdx + 2] = b;
-      card[dstIdx + 3] = 255;
-    } else {
-      const alpha = a / 255;
-      card[dstIdx] = Math.round(r * alpha + bgR * (1 - alpha));
-      card[dstIdx + 1] = Math.round(g * alpha + bgG * (1 - alpha));
-      card[dstIdx + 2] = Math.round(b * alpha + bgB * (1 - alpha));
-      card[dstIdx + 3] = 255; // 100% solid, NO black border on iOS!
+// Clean any corner pixel to ensure seamless frosted glass background
+for (let cy = 0; cy < C_SIZE; cy++) {
+  for (let cx = 0; cx < C_SIZE; cx++) {
+    const dstIdx = (cy * C_SIZE + cx) * 4;
+    if (cy > 95 && (cx > 95 || cx < 10)) {
+      const r = card[dstIdx], g = card[dstIdx + 1], b = card[dstIdx + 2];
+      if (r < 210 && g < 210 && b < 215 && (b - g < 15)) {
+        card[dstIdx] = 228;
+        card[dstIdx + 1] = 224;
+        card[dstIdx + 2] = 236;
+      }
     }
   }
 }
 
-// Generate the sizes:
+// Generate all sizes across public and assets:
 const sizes = [
   { path: 'assets/icon.png', size: 1024 },
+  { path: 'public/apple-touch-icon-v5.png', size: 180 },
   { path: 'public/apple-touch-icon.png', size: 180 },
   { path: 'public/icon.png', size: 512 },
   { path: 'public/icon-192.png', size: 192 },
@@ -192,7 +188,7 @@ const sizes = [
 for (const item of sizes) {
   const targetPath = path.join(__dirname, '..', item.path);
   console.log(`Generating ${item.path} (${item.size}x${item.size})...`);
-  const resized = resizeBilinear(card, CARD_SIZE, CARD_SIZE, item.size, item.size);
+  const resized = resizeBilinear(card, C_SIZE, C_SIZE, item.size, item.size);
   const pngData = writeRgbaPng(item.size, item.size, resized);
   fs.writeFileSync(targetPath, pngData);
   console.log(`✓ Saved ${item.path} (${pngData.length} bytes)`);
