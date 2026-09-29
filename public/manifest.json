@@ -1,0 +1,28 @@
+{
+  "short_name": "NÓS",
+  "name": "NÓS — Um espaço só nosso",
+  "description": "Um espaço só nosso.",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180"
+    },
+    {
+      "src": "/icon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0F0D18",
+  "theme_color": "#0F0D18",
+  "display": "standalone",
+  "orientation": "portrait"
+}

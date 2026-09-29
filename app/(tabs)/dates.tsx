@@ -21,15 +21,6 @@ import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
 import { AppHeader } from '../../components/AppHeader';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  withDelay,
-  Easing,
-} from 'react-native-reanimated';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
@@ -144,41 +135,6 @@ export default function DatesScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Animações refinadas para celebração e destaque
-  const todayHeartScale = useSharedValue(1);
-  const emptySparkleScale = useSharedValue(1);
-
-  useEffect(() => {
-    todayHeartScale.value = withRepeat(
-      withSequence(
-        withTiming(1.3, { duration: 150, easing: Easing.out(Easing.ease) }),
-        withTiming(1.05, { duration: 110, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1.35, { duration: 170, easing: Easing.out(Easing.ease) }),
-        withTiming(1.0, { duration: 260, easing: Easing.out(Easing.quad) }),
-        withDelay(1500, withTiming(1.0, { duration: 0 }))
-      ),
-      -1,
-      false
-    );
-
-    emptySparkleScale.value = withRepeat(
-      withSequence(
-        withTiming(1.18, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1.0, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-        withDelay(600, withTiming(1.0, { duration: 0 }))
-      ),
-      -1,
-      false
-    );
-  }, [todayHeartScale, emptySparkleScale]);
-
-  const todayHeartAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: todayHeartScale.value }],
-  }));
-
-  const emptySparkleAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: emptySparkleScale.value }],
-  }));
 
   // 1. Atualizador do relógio para o countdown hero
   useEffect(() => {
@@ -500,9 +456,9 @@ export default function DatesScreen() {
 
               {countdown.isNow ? (
                 <View style={styles.eventHappeningBox}>
-                  <Animated.View style={todayHeartAnimatedStyle}>
+                  <View>
                     <Ionicons name="heart" size={20} color="#7C3AED" />
-                  </Animated.View>
+                  </View>
                   <Text style={styles.eventHappeningText}>É hoje! Aproveitem cada segundo.</Text>
                 </View>
               ) : (
@@ -544,9 +500,9 @@ export default function DatesScreen() {
           <View>
             <LiquidGlassView variant="card" style={styles.emptyHeroCard} borderRadius={26}>
               <View style={styles.emptyHeroIconCircle}>
-                <Animated.View style={emptySparkleAnimatedStyle}>
+                <View>
                   <Ionicons name="sparkles-outline" size={26} color={themeTokens.primary} />
-                </Animated.View>
+                </View>
               </View>
               <Text style={styles.emptyHeroTitle}>Nenhum evento agendado</Text>
               <Text style={styles.emptyHeroSubtitle}>

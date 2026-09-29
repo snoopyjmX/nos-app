@@ -15,15 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  withDelay,
-  Easing,
-} from 'react-native-reanimated';
+
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
 import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
@@ -197,41 +189,6 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [, setCurrentTick] = useState<number>(Date.now());
 
-  // Micro-interações táteis e orgânicas refinadas
-  const badgeHeartScale = useSharedValue(1);
-  const sparkleScale = useSharedValue(1);
-
-  useEffect(() => {
-    badgeHeartScale.value = withRepeat(
-      withSequence(
-        withTiming(1.28, { duration: 150, easing: Easing.out(Easing.ease) }),
-        withTiming(1.05, { duration: 110, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1.32, { duration: 170, easing: Easing.out(Easing.ease) }),
-        withTiming(1.0, { duration: 260, easing: Easing.out(Easing.quad) }),
-        withDelay(1800, withTiming(1.0, { duration: 0 }))
-      ),
-      -1,
-      false
-    );
-
-    sparkleScale.value = withRepeat(
-      withSequence(
-        withTiming(1.2, { duration: 900, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1.0, { duration: 900, easing: Easing.inOut(Easing.ease) }),
-        withDelay(800, withTiming(1.0, { duration: 0 }))
-      ),
-      -1,
-      false
-    );
-  }, [badgeHeartScale, sparkleScale]);
-
-  const badgeHeartAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: badgeHeartScale.value }],
-  }));
-
-  const sparkleAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: sparkleScale.value }],
-  }));
 
   // Intervalo a cada 60s para manter horas vivas
   useEffect(() => {
@@ -708,9 +665,9 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <Animated.View style={badgeHeartAnimatedStyle}>
+                  <View>
                     <Ionicons name="heart" size={12} color="#FFFFFF" />
-                  </Animated.View>
+                  </View>
                   <Text style={styles.photoBadgeText}>Nós</Text>
                 </View>
               </AnimatedTouchable>
@@ -785,9 +742,9 @@ export default function HomeScreen() {
                       },
                     ]}
                   >
-                    <Animated.View style={sparkleAnimatedStyle}>
+                    <View>
                       <Ionicons name="sparkles" size={17} color={themeTokens.primary} />
-                    </Animated.View>
+                    </View>
                   </View>
                   <View style={styles.milestoneInfo}>
                     <Text style={[styles.milestoneLabel, { color: themeTokens.textSecondary }]}>
