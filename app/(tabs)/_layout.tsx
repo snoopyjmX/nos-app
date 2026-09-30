@@ -23,6 +23,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { SPRING } from '../../constants/motion';
 import { getThemeTokens } from '../../constants/theme';
+import { Gesture, GestureDetector, Directions } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
+import { usePathname, useRouter } from 'expo-router';
 
 const TAB_CONFIG: Record<
   string,
@@ -134,7 +137,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const themeTokens = getThemeTokens(isDark);
 
   const DOCK_MARGIN = 16;
-  const DOCK_WIDTH = width - DOCK_MARGIN * 2;
+  const DOCK_BORDER_WIDTH = 1;
+  const DOCK_WIDTH = width - DOCK_MARGIN * 2 - DOCK_BORDER_WIDTH * 2;
   const tabItemWidth = DOCK_WIDTH / state.routes.length;
 
   const translateX = useSharedValue(state.index * tabItemWidth);
@@ -161,7 +165,12 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   }, []);
 
   useEffect(() => {
-    translateX.value = withSpring(state.index * tabItemWidth, SPRING.gentle);
+    translateX.value = withSpring(state.index * tabItemWidth, {
+      damping: 24,
+      stiffness: 200,
+      mass: 1,
+      overshootClamping: true,
+    });
   }, [state.index, tabItemWidth]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
@@ -292,19 +301,54 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 }
 
 export default function TabsLayout() {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const tabOrder = ['/', '/messages', '/memories', '/dates', '/profile'];
+
+  const handleSwipeLeft = () => {
+    const currentIndex = tabOrder.indexOf(pathname);
+    if (currentIndex >= 0 && currentIndex < tabOrder.length - 1) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.navigate(tabOrder[currentIndex + 1] as any);
+    }
+  };
+
+  const handleSwipeRight = () => {
+    const currentIndex = tabOrder.indexOf(pathname);
+    if (currentIndex > 0) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.navigate(tabOrder[currentIndex - 1] as any);
+    }
+  };
+
+  const flingLeft = Gesture.Fling().direction(Directions.LEFT).onEnd(() => {
+    runOnJS(handleSwipeLeft)();
+  });
+
+  const flingRight = Gesture.Fling().direction(Directions.RIGHT).onEnd(() => {
+    runOnJS(handleSwipeRight)();
+  });
+
+  const swipeGesture = Gesture.Exclusive(flingLeft, flingRight);
+
   return (
-    <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Tabs.Screen name="index" options={{ title: 'Início' }} />
-      <Tabs.Screen name="messages" options={{ title: 'Mensagens' }} />
-      <Tabs.Screen name="memories" options={{ title: 'Memórias' }} />
-      <Tabs.Screen name="dates" options={{ title: 'Datas' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Perfil' }} />
-    </Tabs>
+    <GestureDetector gesture={swipeGesture}>
+      <View style={{ flex: 1 }}>
+        <Tabs
+          tabBar={(props) => <CustomTabBar {...props} />}
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Tabs.Screen name="index" options={{ title: 'Início' }} />
+          <Tabs.Screen name="messages" options={{ title: 'Mensagens' }} />
+          <Tabs.Screen name="memories" options={{ title: 'Memórias' }} />
+          <Tabs.Screen name="dates" options={{ title: 'Datas' }} />
+          <Tabs.Screen name="profile" options={{ title: 'Perfil' }} />
+        </Tabs>
+      </View>
+    </GestureDetector>
   );
 }
 

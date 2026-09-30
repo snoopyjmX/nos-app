@@ -502,7 +502,7 @@ export default function MemoriesScreen() {
           }}
           activeOpacity={0.92}
         >
-          <LiquidGlassView variant="card" style={styles.memoryCard} borderRadius={26}>
+          <LiquidGlassView variant="card" style={styles.memoryCard} borderRadius={26} disableBlur>
             <Image
               source={{ uri: imageUrl }}
               style={styles.cardImage}

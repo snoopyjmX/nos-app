@@ -590,7 +590,7 @@ export default function DatesScreen() {
               const meta = getCategoryMeta(item.category);
               return (
                 <View key={item.id}>
-                  <LiquidGlassView variant="card" style={styles.eventCard} borderRadius={22}>
+                  <LiquidGlassView variant="card" style={styles.eventCard} borderRadius={22} disableBlur>
                     <View style={[styles.eventIconCircle, { backgroundColor: meta.bg }]}>
                       <Ionicons name={meta.icon} size={20} color={meta.color} />
                     </View>
@@ -638,7 +638,7 @@ export default function DatesScreen() {
             const meta = getCategoryMeta(item.category);
             return (
               <View key={item.id}>
-                <LiquidGlassView variant="card" style={[styles.eventCard, styles.pastEventCard]} borderRadius={22}>
+                <LiquidGlassView variant="card" style={[styles.eventCard, styles.pastEventCard]} borderRadius={22} disableBlur>
                   <View
                     style={[
                       styles.eventIconCircle,

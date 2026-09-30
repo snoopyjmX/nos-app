@@ -17,6 +17,7 @@ interface LiquidGlassViewProps extends ViewProps {
   intensity?: number;
   borderRadius?: number;
   variant?: 'hero' | 'card' | 'pill' | 'control';
+  disableBlur?: boolean;
 }
 
 export function LiquidGlassView({
@@ -25,6 +26,7 @@ export function LiquidGlassView({
   intensity,
   borderRadius = 28,
   variant = 'card',
+  disableBlur = false,
   ...rest
 }: LiquidGlassViewProps) {
   const { isDark } = useAppTheme();
@@ -86,11 +88,13 @@ export function LiquidGlassView({
         style={[StyleSheet.absoluteFill, { borderRadius, overflow: 'hidden' }]}
         pointerEvents="none"
       >
-        <BlurView
-          tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
-          intensity={Platform.OS === 'ios' ? defaultIntensity : 100}
-          style={StyleSheet.absoluteFill}
-        />
+        {!disableBlur && (
+          <BlurView
+            tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+            intensity={Platform.OS === 'ios' ? defaultIntensity : 100}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
 
         <View
           style={[

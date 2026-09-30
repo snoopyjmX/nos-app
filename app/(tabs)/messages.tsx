@@ -540,14 +540,8 @@ export default function MessagesScreen() {
                 borderColor: isDark
                   ? themeTokens.glassBorder
                   : 'rgba(255,255,255,0.6)',
-              },
             ]}
           >
-            <BlurView
-              intensity={Platform.OS === 'ios' ? 75 : 100}
-              tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
-              style={StyleSheet.absoluteFill}
-            />
             <Text style={[styles.messageTextPartner, { color: themeTokens.textPrimary }]}>
               {item.content}
             </Text>

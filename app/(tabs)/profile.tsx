@@ -378,19 +378,26 @@ export default function ProfileScreen() {
 
   // 4. Logout seguro
   const handleSignOut = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert('Encerrar sessão', 'Tem certeza de que deseja sair da sua conta?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Encerrar',
-        style: 'destructive',
-        onPress: async () => {
-          clearCouple();
-          await signOut();
-          router.replace('/(auth)/login');
-        },
-      },
-    ]);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch {}
+
+    const doSignOut = async () => {
+      clearCouple();
+      await signOut();
+      router.replace('/(auth)/login');
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Tem certeza de que deseja sair da sua conta?')) {
+        doSignOut();
+      }
+    } else {
+      Alert.alert('Encerrar sessão', 'Tem certeza de que deseja sair da sua conta?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Encerrar', style: 'destructive', onPress: doSignOut },
+      ]);
+    }
   };
 
   const myName = myProfile?.display_name || user?.user_metadata?.display_name || 'Você';
