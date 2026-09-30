@@ -52,7 +52,7 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
     if (!coupleId || !user) return;
 
     try {
-      setLoading(true);
+      setLoading(notifications.length === 0);
       const list: NotificationItem[] = [];
 
       // 1. Próximas datas comemorativas

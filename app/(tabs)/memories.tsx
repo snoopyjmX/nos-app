@@ -315,7 +315,7 @@ export default function MemoriesScreen() {
           filter: `couple_id=eq.${coupleId}`,
         },
         () => {
-          loadMemories();
+          loadMemories(true);
         }
       )
       .subscribe();

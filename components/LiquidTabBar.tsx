@@ -39,8 +39,8 @@ const TAB_CONFIG: Record<
   profile: { label: 'Perfil', icon: 'person-outline', focusedIcon: 'person' },
 };
 
-const INDICATOR_SPRING = { damping: 15, stiffness: 150 };
-const ICON_SPRING = { damping: 16, stiffness: 200 };
+const INDICATOR_SPRING = { damping: 15, stiffness: 150, overshootClamping: true };
+const ICON_SPRING = { damping: 16, stiffness: 200, overshootClamping: true };
 
 const DOCK_MARGIN = 16;
 const DOCK_HEIGHT = 64;
@@ -193,15 +193,17 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
       const route = state.routes[index];
       if (!route) return;
 
-      const event = navigation.emit({
-        type: 'tabPress',
-        target: route.key,
-        canPreventDefault: true,
-      });
+      requestAnimationFrame(() => {
+        const event = navigation.emit({
+          type: 'tabPress',
+          target: route.key,
+          canPreventDefault: true,
+        });
 
-      if (!event.defaultPrevented) {
-        navigation.navigate(route.name);
-      }
+        if (!event.defaultPrevented) {
+          navigation.navigate(route.name);
+        }
+      });
     },
     [state.routes, navigation]
   );
@@ -272,13 +274,17 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
 
   const composedGesture = Gesture.Race(panGesture, tapGesture);
 
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: indicatorX.value },
-      { scaleX: indicatorScaleX.value },
-    ],
-    width: tabItemWidth,
-  }));
+  const indicatorStyle = useAnimatedStyle(() => {
+    const maxTranslate = dockWidth - tabItemWidth;
+    const clampedX = Math.max(0, Math.min(indicatorX.value, maxTranslate));
+    return {
+      transform: [
+        { translateX: clampedX },
+        { scaleX: indicatorScaleX.value },
+      ],
+      width: tabItemWidth,
+    };
+  });
 
   const containerAnimatedStyle = useAnimatedStyle(() => ({
     opacity: opacityVal.value,

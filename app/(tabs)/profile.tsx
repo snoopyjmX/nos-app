@@ -126,11 +126,11 @@ export default function ProfileScreen() {
   };
 
   // 1. Carrega todos os dados do casal e membros
-  const loadProfileData = useCallback(async () => {
+  const loadProfileData = useCallback(async (silent = false) => {
     if (!user || !coupleId) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
 
       const { data: members, error: membersError } = await supabase
         .from('couple_members')
@@ -215,7 +215,7 @@ export default function ProfileScreen() {
     } catch {
       // Ignora silenciosamente
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [user, coupleId]);
 
@@ -229,12 +229,12 @@ export default function ProfileScreen() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'couples', filter: `id=eq.${coupleId}` },
-        () => loadProfileData()
+        () => loadProfileData(true)
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'profiles' },
-        () => loadProfileData()
+        () => loadProfileData(true)
       )
       .subscribe();
 

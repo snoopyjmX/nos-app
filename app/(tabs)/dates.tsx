@@ -145,11 +145,11 @@ export default function DatesScreen() {
   }, []);
 
   // 2. Busca as datas especiais do casal
-  const loadDates = useCallback(async () => {
+  const loadDates = useCallback(async (silent = false) => {
     if (!coupleId) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const { data, error } = await supabase
         .from('special_dates')
         .select('*')
@@ -161,7 +161,7 @@ export default function DatesScreen() {
     } catch {
       // Ignora silenciosamente
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [coupleId]);
 
@@ -181,7 +181,7 @@ export default function DatesScreen() {
           filter: `couple_id=eq.${coupleId}`,
         },
         () => {
-          loadDates();
+          loadDates(true);
         }
       )
       .subscribe();
