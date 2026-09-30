@@ -93,9 +93,8 @@ export function LiquidGlassView({
             style={[
               StyleSheet.absoluteFill,
               {
-                backgroundColor: isDark ? 'rgba(20, 20, 20, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-                backdropFilter: `blur(${variant === 'hero' ? 24 : 16}px)`,
-              } as any,
+                backgroundColor: isDark ? 'rgba(31, 27, 58, 0.88)' : 'rgba(255, 255, 255, 0.90)',
+              },
             ]}
           />
         ) : (

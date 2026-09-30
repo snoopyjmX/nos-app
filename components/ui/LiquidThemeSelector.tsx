@@ -1,92 +1,95 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, LayoutChangeEvent } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withSequence,
-  withTiming,
-  Easing,
+  useReducedMotion,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getThemeTokens } from '../../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface LiquidThemeSelectorProps {
   currentMode: 'light' | 'dark';
   onChangeMode: (mode: 'light' | 'dark') => void;
 }
 
+const SPRING_CONFIG = { damping: 18, stiffness: 220, mass: 0.8 };
+
 export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSelectorProps) {
   const { isDark } = useAppTheme();
   const themeTokens = getThemeTokens(isDark);
-  const { width } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
+  const [containerWidth, setContainerWidth] = useState(0);
 
-  // Container width inside theme card
-  const containerPadding = 4;
   const isLight = currentMode === 'light';
-
-  const translateX = useSharedValue(isLight ? 0 : 1);
-  const scaleX = useSharedValue(1);
-  const scaleY = useSharedValue(1);
+  const progress = useSharedValue(isLight ? 0 : 1);
 
   useEffect(() => {
-    // Viscous fluid stretch when sliding
-    scaleX.value = withSequence(
-      withTiming(1.22, { duration: 90, easing: Easing.out(Easing.quad) }),
-      withSpring(1, { damping: 13, stiffness: 200 })
-    );
-    scaleY.value = withSequence(
-      withTiming(0.88, { duration: 90, easing: Easing.out(Easing.quad) }),
-      withSpring(1, { damping: 13, stiffness: 200 })
-    );
-    translateX.value = withSpring(currentMode === 'light' ? 0 : 1, {
-      damping: 14,
-      stiffness: 180,
-    });
-  }, [currentMode]);
+    if (reducedMotion) {
+      progress.value = currentMode === 'light' ? 0 : 1;
+    } else {
+      progress.value = withSpring(currentMode === 'light' ? 0 : 1, SPRING_CONFIG);
+    }
+  }, [currentMode, reducedMotion, progress]);
+
+  const onLayout = (e: LayoutChangeEvent) => {
+    setContainerWidth(e.nativeEvent.layout.width);
+  };
+
+  // Largura de cada metade (descontando 4px de padding em cada lado = 8px)
+  const pillWidth = containerWidth > 0 ? (containerWidth - 8) / 2 : 0;
 
   const animatedBlobStyle = useAnimatedStyle(() => {
-    // 0 = left (Claro), 1 = right (Escuro)
-    // Usamos porcentagem para responsividade
     return {
-      left: `${translateX.value * 50}%`,
       transform: [
-        { scaleX: scaleX.value },
-        { scaleY: scaleY.value },
+        { translateX: progress.value * pillWidth },
       ],
     };
   });
 
   const handleSelect = (mode: 'light' | 'dark') => {
     if (mode !== currentMode) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (Platform.OS !== 'web') {
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } catch {}
+      }
       onChangeMode(mode);
     }
   };
 
   return (
     <View
+      onLayout={onLayout}
       style={[
         styles.container,
         {
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(142, 124, 232, 0.08)',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(142, 124, 232, 0.18)',
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(124, 111, 224, 0.08)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(124, 111, 224, 0.18)',
         },
       ]}
     >
-      {/* Pílula Deslizante Líquida */}
-      <Animated.View
-        style={[
-          styles.liquidBlob,
-          {
-            backgroundColor: themeTokens.primary,
-            shadowColor: themeTokens.primary,
-          },
-          animatedBlobStyle,
-        ]}
-      />
+      {/* Pílula Deslizante com cantos arredondados perfeitos */}
+      {pillWidth > 0 && (
+        <Animated.View
+          style={[
+            styles.liquidBlob,
+            { width: pillWidth },
+            animatedBlobStyle,
+          ]}
+        >
+          <LinearGradient
+            colors={['#7C6FE0', '#F58FA8']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+          />
+        </Animated.View>
+      )}
 
       {/* Botão Claro */}
       <TouchableOpacity
@@ -102,7 +105,7 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
         <Text
           style={[
             styles.tabText,
-            { color: isLight ? '#FFFFFF' : themeTokens.textSecondary, fontWeight: isLight ? '700' : '500' },
+            { color: isLight ? '#FFFFFF' : themeTokens.textSecondary, fontWeight: isLight ? '700' : '600' },
           ]}
         >
           Claro
@@ -123,7 +126,7 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
         <Text
           style={[
             styles.tabText,
-            { color: !isLight ? '#FFFFFF' : themeTokens.textSecondary, fontWeight: !isLight ? '700' : '500' },
+            { color: !isLight ? '#FFFFFF' : themeTokens.textSecondary, fontWeight: !isLight ? '700' : '600' },
           ]}
         >
           Escuro
@@ -147,10 +150,12 @@ const styles = StyleSheet.create({
   liquidBlob: {
     position: 'absolute',
     top: 4,
+    left: 4,
     bottom: 4,
-    width: '50%',
     borderRadius: 20,
-    shadowOffset: { width: 0, height: 4 },
+    overflow: 'hidden',
+    shadowColor: '#7C6FE0',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 4,
@@ -167,5 +172,6 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     letterSpacing: -0.2,
+    fontFamily: Platform.select({ ios: 'Nunito', android: 'Nunito', default: 'sans-serif' }),
   },
 });

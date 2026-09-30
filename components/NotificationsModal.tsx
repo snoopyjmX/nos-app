@@ -4,16 +4,18 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   Platform,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AnimatedTouchable } from './AnimatedTouchable';
 import { LiquidGlassView } from './ui/LiquidGlassView';
+import { GlassSurface } from './ui/GlassSurface';
+import { EmptyState } from './ui/EmptyState';
 import { useAuth } from '../context/AuthContext';
 import { useCouple } from '../context/CoupleContext';
 import { useAppTheme } from '../context/ThemeContext';
@@ -58,7 +60,7 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
       // 1. Próximas datas comemorativas
       const { data: dates } = await supabase
         .from('special_dates')
-        .select('*')
+        .select('id, title, event_date')
         .eq('couple_id', coupleId)
         .gte('event_date', new Date().toISOString().split('T')[0])
         .order('event_date', { ascending: true })
@@ -145,6 +147,11 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
     }
   }, [coupleId, user, isDark]);
 
+  // Carrega imediatamente ao montar para abrir instantaneamente quando o usuário tocar no sino
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
   useEffect(() => {
     if (visible) {
       loadNotifications();
@@ -152,7 +159,11 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
   }, [visible, loadNotifications]);
 
   const handleNavigate = (route: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'web') {
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch {}
+    }
     onClose();
     router.push(route as any);
   };
@@ -160,10 +171,18 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <BlurView
+        <GlassSurface
           intensity={Platform.OS === 'ios' ? 70 : 90}
           tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
+          isOverlay
           style={StyleSheet.absoluteFill}
+        />
+
+        {/* Fundo escuro clicável para fechar o modal ao tocar fora */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
         />
 
         <LiquidGlassView variant="hero" style={styles.modalCard} borderRadius={30}>
@@ -183,35 +202,38 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
               </View>
             </View>
 
-            <AnimatedTouchable style={styles.closeBtn} onPress={onClose}>
-              <Ionicons name="close" size={20} color={isDark ? '#F7F5FF' : '#16151E'} />
-            </AnimatedTouchable>
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={onClose}
+              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+              accessibilityLabel="Fechar alertas"
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={22} color={isDark ? '#F7F5FF' : '#16151E'} />
+            </TouchableOpacity>
           </View>
 
           {/* Conteúdo de Alertas */}
-          <ScrollView
-            style={styles.scrollList}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {loading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator color={themeTokens.primary} size="small" />
-              </View>
-            ) : notifications.length === 0 ? (
-              <View style={styles.emptyBox}>
-                <Ionicons name="sparkles-outline" size={36} color={isDark ? '#AAA5B8' : '#8A879A'} />
-                <Text style={[styles.emptyTitle, { color: isDark ? '#F7F5FF' : '#16151E' }]}>
-                  Tudo atualizado por aqui
-                </Text>
-                <Text style={[styles.emptySubtitle, { color: isDark ? '#AAA5B8' : '#686578' }]}>
-                  Quando surgirem novos momentos ou datas próximas, eles aparecerão aqui.
-                </Text>
-              </View>
-            ) : (
-              notifications.map((item) => (
+          {loading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator color={themeTokens.primary} size="small" />
+            </View>
+          ) : notifications.length === 0 ? (
+            <EmptyState
+              icon="sparkles-outline"
+              title="Tudo tranquilo por aqui"
+              subtitle="Quando surgirem novos momentos ou datas próximas, eles aparecerão aqui."
+              compact
+            />
+          ) : (
+            <FlatList
+              data={notifications}
+              keyExtractor={(item) => item.id}
+              style={styles.scrollList}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
                 <AnimatedTouchable
-                  key={item.id}
                   style={styles.notifItemTouch}
                   onPress={() => handleNavigate(item.targetRoute)}
                   activeOpacity={0.85}
@@ -238,9 +260,9 @@ export function NotificationsModal({ visible, onClose }: NotificationsModalProps
                     <Ionicons name="chevron-forward" size={16} color={isDark ? '#8A859A' : '#A797FF'} />
                   </LiquidGlassView>
                 </AnimatedTouchable>
-              ))
-            )}
-          </ScrollView>
+              )}
+            />
+          )}
         </LiquidGlassView>
       </View>
     </Modal>
@@ -291,9 +313,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',

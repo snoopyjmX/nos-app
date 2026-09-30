@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
+import { Pressable, PressableProps, StyleProp, ViewStyle, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 interface AnimatedTouchableProps extends PressableProps {
@@ -22,9 +22,11 @@ export function AnimatedTouchable({
 }: AnimatedTouchableProps) {
   const handlePressIn = (e: any) => {
     if (disabled) return;
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
+    if (Platform.OS !== 'web') {
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch {}
+    }
     if (onPressIn) onPressIn(e);
   };
 

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { AnimatedTouchable } from './AnimatedTouchable';
@@ -44,6 +43,7 @@ export function AppHeader({
               style={[
                 styles.glassCircleButton,
                 {
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.08)',
                   borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.75)',
                   borderTopColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.95)',
                 },
@@ -51,11 +51,6 @@ export function AppHeader({
               onPress={onBack}
               accessibilityLabel="Voltar"
             >
-              <BlurView
-                intensity={Platform.OS === 'ios' ? 80 : 100}
-                tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
-                style={StyleSheet.absoluteFill}
-              />
               <LinearGradient
                 colors={
                   isDark
@@ -76,7 +71,7 @@ export function AppHeader({
             {coupleSubtitle ? (
               <Text
                 style={[styles.coupleSubtitle, { color: isDark ? '#AAA5B8' : '#7E7699' }]}
-                numberOfLines={1}
+                numberOfLines={2}
               >
                 {coupleSubtitle}
               </Text>
@@ -92,6 +87,7 @@ export function AppHeader({
               style={[
                 styles.glassCircleButton,
                 {
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.08)',
                   borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.75)',
                   borderTopColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.95)',
                 },
@@ -99,11 +95,6 @@ export function AppHeader({
               onPress={handleOpenNotifications}
               accessibilityLabel="Notificações"
             >
-              <BlurView
-                intensity={Platform.OS === 'ios' ? 80 : 100}
-                tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
-                style={StyleSheet.absoluteFill}
-              />
               <LinearGradient
                 colors={
                   isDark

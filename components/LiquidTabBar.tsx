@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
   AccessibilityInfo,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -47,15 +47,20 @@ const DOCK_HEIGHT = 64;
 const DOCK_RADIUS = 32;
 const INDICATOR_PADDING = 5;
 
+import { Image } from 'expo-image';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+
 interface TabIconProps {
   routeName: string;
   index: number;
   activeIndex: SharedValue<number>;
   isDark: boolean;
   reducedMotion: boolean;
+  avatarUrl?: string | null;
 }
 
-function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion }: TabIconProps) {
+function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion, avatarUrl }: TabIconProps) {
   const config = TAB_CONFIG[routeName] || {
     label: routeName,
     icon: 'ellipse-outline' as const,
@@ -107,15 +112,31 @@ function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion }: TabIc
     return { color };
   });
 
+  const isProfile = routeName === 'profile';
+
   return (
     <View style={styles.tabButton} pointerEvents="none">
       <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
-        <Animated.View style={unfocusedIconOpacity}>
-          <Ionicons name={config.icon} size={21} color={inactiveColor} />
-        </Animated.View>
-        <Animated.View style={focusedIconOpacity}>
-          <Ionicons name={config.focusedIcon} size={21} color={activeColor} />
-        </Animated.View>
+        {isProfile && avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={[
+              styles.avatarIcon,
+              { borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' },
+            ]}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <>
+            <Animated.View style={unfocusedIconOpacity}>
+              <Ionicons name={config.icon} size={21} color={inactiveColor} />
+            </Animated.View>
+            <Animated.View style={focusedIconOpacity}>
+              <Ionicons name={config.focusedIcon} size={21} color={activeColor} />
+            </Animated.View>
+          </>
+        )}
       </Animated.View>
       <Animated.Text
         style={[
@@ -142,6 +163,58 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
   const { width: screenWidth } = useWindowDimensions();
   const { isDark } = useAppTheme();
   const themeTokens = getThemeTokens(isDark);
+  const { user } = useAuth();
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setProfileAvatar(null);
+      return;
+    }
+    const currentUserId = user.id;
+    const currentMetaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+
+    let isMounted = true;
+    async function loadAvatar(userId: string, metaAvatar?: string | null) {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', userId)
+          .maybeSingle();
+
+        const raw = data?.avatar_url || metaAvatar;
+        if (!raw) return;
+
+        if ((raw.startsWith('http://') || raw.startsWith('https://')) && !raw.includes('/avatars/')) {
+          if (isMounted) setProfileAvatar(raw);
+          return;
+        }
+
+        let cleanPath = raw;
+        if (cleanPath.includes('/avatars/')) {
+          cleanPath = cleanPath.split('/avatars/')[1].split('?')[0];
+        }
+        cleanPath = cleanPath.replace(/^\/+/, '');
+
+        const { data: signedData } = await supabase.storage.from('avatars').createSignedUrl(cleanPath, 60 * 60 * 24);
+        if (isMounted && signedData?.signedUrl) {
+          setProfileAvatar(signedData.signedUrl);
+        } else {
+          const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(cleanPath);
+          if (isMounted && publicData?.publicUrl) {
+            setProfileAvatar(publicData.publicUrl);
+          }
+        }
+      } catch {
+        // Ignora silenciosamente
+      }
+    }
+    loadAvatar(currentUserId, currentMetaAvatar);
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const tabCount = state.routes.length;
   const dockWidth = screenWidth - DOCK_MARGIN * 2;
@@ -295,24 +368,42 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
   const bottomPosition = insets.bottom > 0 ? insets.bottom + 4 : 20;
 
   return (
-    <Animated.View
-      style={[
-        styles.dockContainer,
-        {
-          bottom: bottomPosition,
-          left: DOCK_MARGIN,
-          right: DOCK_MARGIN,
-          shadowColor: themeTokens.shadow,
-          borderColor: themeTokens.glassBorder,
-          borderTopColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.95)',
-        },
-        containerAnimatedStyle,
-      ]}
-    >
+    <>
+      {/* Fade em gradiente suave sob a barra flutuante */}
+      <LinearGradient
+        colors={[
+          'transparent',
+          isDark ? 'rgba(21, 18, 42, 0.60)' : 'rgba(248, 246, 254, 0.65)',
+          isDark ? 'rgba(21, 18, 42, 0.94)' : 'rgba(248, 246, 254, 0.96)',
+        ]}
+        style={[
+          styles.dockFadeGradient,
+          {
+            height: DOCK_HEIGHT + bottomPosition + 16,
+          },
+        ]}
+        pointerEvents="none"
+      />
+
+      <Animated.View
+        style={[
+          styles.dockContainer,
+          {
+            bottom: bottomPosition,
+            left: DOCK_MARGIN,
+            right: DOCK_MARGIN,
+            shadowColor: themeTokens.shadow,
+            borderColor: themeTokens.glassBorder,
+            borderTopColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.95)',
+            zIndex: 100,
+          },
+          containerAnimatedStyle,
+        ]}
+      >
       {/* Camada 1: Blur View Ultra Thin Material */}
       <View style={styles.blurWrapper}>
         {Platform.OS === 'web' ? (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(16px)' } as any]} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(21, 18, 42, 0.92)' : 'rgba(248, 246, 254, 0.94)' }]} />
         ) : (
           <BlurView
             intensity={Platform.OS === 'ios' ? 70 : 85}
@@ -368,7 +459,7 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
+            style={[StyleSheet.absoluteFill, { borderRadius: 999 }]}
           />
           <LinearGradient
             colors={
@@ -395,17 +486,26 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
               activeIndex={activeIndex}
               isDark={isDark}
               reducedMotion={reducedMotion}
+              avatarUrl={route.name === 'profile' ? profileAvatar : undefined}
             />
           ))}
         </Animated.View>
       </GestureDetector>
     </Animated.View>
+    </>
   );
 }
 
 export default LiquidTabBar;
 
 const styles = StyleSheet.create({
+  dockFadeGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 90,
+  },
   dockContainer: {
     position: 'absolute',
     height: DOCK_HEIGHT,
@@ -481,5 +581,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: -0.1,
     fontWeight: '500',
+  },
+  avatarIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,24 +8,32 @@ import {
   Image,
   RefreshControl,
   Dimensions,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
 import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
+import { GlassSurface } from '../../components/ui/GlassSurface';
 import { AppHeader } from '../../components/AppHeader';
+import { PressableScale } from '../../components/ui/PressableScale';
+import { Image as ExpoImage } from 'expo-image';
+import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
 import { supabase } from '../../lib/supabase';
 import { THEME } from '../../constants/theme';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getThemeTokens } from '../../constants/theme';
+import { useTabBarHeight } from '../../hooks/useTabBarHeight';
+import { ConfettiView } from '../../components/ui/ConfettiView';
+import { checkTodayCelebration } from '../../src/lib/milestones';
 
 const { width } = Dimensions.get('window');
 
@@ -69,7 +77,17 @@ const getFirstName = (name?: string | null): string => {
   if (!name) return '';
   const trimmed = name.trim();
   if (!trimmed) return '';
-  return trimmed.split(/\s+/)[0];
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+
+  const firstLower = parts[0].toLowerCase();
+  // Nomes compostos comuns no Brasil que devem ser preservados juntos (ex: Maria Luiza, João Pedro)
+  const compoundFirst = ['maria', 'joao', 'joão', 'ana', 'pedro', 'vitor', 'victor', 'luiz', 'luís', 'luis'];
+  if (compoundFirst.includes(firstLower) && parts.length > 1) {
+    return `${parts[0]} ${parts[1]}`;
+  }
+
+  return parts[0];
 };
 
 const formatMessageTime = (dateString?: string): string => {
@@ -172,6 +190,155 @@ const formatMemoryDate = (dateString?: string | null): string => {
   });
 };
 
+let hasAnimatedHeroCounterThisSession = false;
+
+interface CoupleJourneyCounterProps {
+  startDate: string | null;
+  isDark: boolean;
+  themeTokens: any;
+}
+
+const CoupleJourneyCounter = React.memo(function CoupleJourneyCounter({
+  startDate,
+  isDark,
+  themeTokens,
+}: CoupleJourneyCounterProps) {
+  const [timeTotals, setTimeTotals] = useState(() => calculateAccumulatedTime(startDate));
+  const [animatedDays, setAnimatedDays] = useState(() => {
+    return hasAnimatedHeroCounterThisSession ? timeTotals.days : 0;
+  });
+
+  useEffect(() => {
+    setTimeTotals(calculateAccumulatedTime(startDate));
+
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const startTimer = () => {
+      if (!timer) {
+        timer = setInterval(() => {
+          setTimeTotals(calculateAccumulatedTime(startDate));
+        }, 60000);
+      }
+    };
+
+    const stopTimer = () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    startTimer();
+
+    const handleAppState = (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        setTimeTotals(calculateAccumulatedTime(startDate));
+        startTimer();
+      } else {
+        stopTimer();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined') {
+        if (document.visibilityState === 'visible') {
+          setTimeTotals(calculateAccumulatedTime(startDate));
+          startTimer();
+        } else {
+          stopTimer();
+        }
+      }
+    };
+
+    const appStateSub = AppState.addEventListener('change', handleAppState);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
+    return () => {
+      stopTimer();
+      appStateSub.remove();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
+    };
+  }, [startDate]);
+
+  // Animação de 0 ao valor em ~900ms na primeira abertura da sessão
+  useEffect(() => {
+    if (hasAnimatedHeroCounterThisSession) {
+      setAnimatedDays(timeTotals.days);
+      return;
+    }
+
+    const target = timeTotals.days;
+    if (target <= 0) {
+      setAnimatedDays(0);
+      hasAnimatedHeroCounterThisSession = true;
+      return;
+    }
+
+    hasAnimatedHeroCounterThisSession = true;
+    const duration = 900;
+    const startTime = Date.now();
+    let frameId: number;
+
+    const step = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      // easeOutCubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(ease * target);
+      setAnimatedDays(current);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step);
+      } else {
+        setAnimatedDays(target);
+      }
+    };
+
+    frameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frameId);
+  }, [timeTotals.days]);
+
+  return (
+    <View style={styles.journeyContent}>
+      <Text style={styles.journeyLabel}>NOSSA JORNADA</Text>
+      <Text style={styles.journeyTitle}>Juntos há</Text>
+      <Text style={styles.journeyDaysDisplay}>{animatedDays} dias</Text>
+      <View
+        style={[
+          styles.journeyBreakdownPill,
+          {
+            backgroundColor: isDark
+              ? 'rgba(255, 255, 255, 0.18)'
+              : 'rgba(240, 236, 254, 0.92)',
+            borderColor: isDark
+              ? 'rgba(255, 255, 255, 0.25)'
+              : 'rgba(255, 255, 255, 0.85)',
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.journeyBreakdownText,
+            { color: isDark ? '#DDD6FE' : '#6D28D9' },
+          ]}
+        >
+          {timeTotals.breakdownMonths}{' '}
+          {timeTotals.breakdownMonths === 1 ? 'mês' : 'meses'} •{' '}
+          {timeTotals.breakdownDays}{' '}
+          {timeTotals.breakdownDays === 1 ? 'dia' : 'dias'} •{' '}
+          {timeTotals.breakdownHours}h
+        </Text>
+      </View>
+    </View>
+  );
+});
+
+let hasPlayedHomeEntranceInSession = false;
+
 export default function HomeScreen() {
   const { isDark } = useAppTheme();
   const themeTokens = getThemeTokens(isDark);
@@ -179,25 +346,60 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
+  const { paddingBottom: tabBarPaddingBottom } = useTabBarHeight();
+
+  const reducedMotion = useReducedMotion();
+  const [shouldAnimateCascade] = useState(() => !hasPlayedHomeEntranceInSession && !reducedMotion);
+
+  useEffect(() => {
+    hasPlayedHomeEntranceInSession = true;
+  }, []);
 
   const [coupleTitle, setCoupleTitle] = useState<string>('Você & Meu Amor');
+  const [ownerFirstName, setOwnerFirstName] = useState<string>(
+    () => getFirstName(user?.user_metadata?.display_name || user?.email?.split('@')[0]) || ''
+  );
+  const [partnerFirstName, setPartnerFirstName] = useState<string>('');
   const [effectiveStartDateStr, setEffectiveStartDateStr] = useState<string | null>(null);
   const [recentMemory, setRecentMemory] = useState<RecentMemory | null>(null);
+  const [throwbackMemory, setThrowbackMemory] = useState<{
+    id: string;
+    title: string;
+    memory_date: string;
+    displayUrl: string | null;
+    label: string;
+  } | null>(null);
   const [latestMessage, setLatestMessage] = useState<LatestMessage | null>(null);
   const [nextMilestone, setNextMilestone] = useState<NextMilestone | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [, setCurrentTick] = useState<number>(Date.now());
+  const [showConfetti, setShowConfetti] = useState(false);
 
+  const celebration = useMemo(
+    () => checkTodayCelebration(effectiveStartDateStr),
+    [effectiveStartDateStr]
+  );
 
-  // Intervalo a cada 60s para manter horas vivas
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTick(Date.now());
-    }, 60000);
+    if (celebration && !reducedMotion) {
+      setShowConfetti(true);
+    }
+  }, [celebration, reducedMotion]);
 
-    return () => clearInterval(timer);
-  }, []);
+  const contextualGreeting = useMemo(() => {
+    const hour = new Date().getHours();
+    const name = ownerFirstName?.trim() || getFirstName(user?.user_metadata?.display_name) || '';
+    const nameSuffix = name && name.toLowerCase() !== 'você' ? `, ${name}` : '';
+    if (hour >= 5 && hour < 12) {
+      return `Bom dia${nameSuffix} ☀️`;
+    }
+    if (hour >= 12 && hour < 18) {
+      return `Boa tarde${nameSuffix} 🌤️`;
+    }
+    return `Boa noite${nameSuffix} 🌙`;
+  }, [ownerFirstName, user]);
+
+  const heroImageUri = recentMemory?.displayUrl || recentMemory?.image_url;
 
   // 1. Busca os integrantes e nomes do casal
   const loadCoupleDetails = useCallback(async () => {
@@ -250,6 +452,8 @@ export default function HomeScreen() {
       }
 
       setCoupleTitle(`${myFirstName} & ${partnerFirstName}`);
+      setOwnerFirstName(myFirstName);
+      setPartnerFirstName(partnerFirstName);
     } catch {
       // Ignora silenciosamente
     }
@@ -342,6 +546,86 @@ export default function HomeScreen() {
         ...memoryData,
         displayUrl,
       });
+    } catch {
+      // Ignora silenciosamente
+    }
+  }, [coupleId]);
+
+  // Busca memória antiga especial ("Faz tempo...")
+  const loadThrowbackMemory = useCallback(async () => {
+    if (!coupleId) return;
+
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 25);
+      const dateLimitStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+      const { data: pastMemories } = await supabase
+        .from('memories')
+        .select('id, couple_id, title, memory_date, image_url, thumb_path, created_at')
+        .eq('couple_id', coupleId)
+        .lte('memory_date', dateLimitStr)
+        .order('memory_date', { ascending: false })
+        .limit(8);
+
+      if (pastMemories && pastMemories.length > 0) {
+        const now = Date.now();
+        let best = pastMemories[0];
+        let bestLabel = 'Há algum tempo:';
+
+        for (const m of pastMemories) {
+          const memTime = new Date(m.memory_date).getTime();
+          const diffDays = Math.floor((now - memTime) / (1000 * 60 * 60 * 24));
+          if (diffDays >= 340 && diffDays <= 390) {
+            best = m;
+            bestLabel = 'Há 1 ano vocês viveram isso:';
+            break;
+          } else if (diffDays >= 165 && diffDays <= 200) {
+            best = m;
+            bestLabel = 'Há 6 meses vocês viveram isso:';
+            break;
+          } else if (diffDays >= 75 && diffDays <= 110) {
+            best = m;
+            bestLabel = 'Há 3 meses vocês viveram isso:';
+            break;
+          } else if (diffDays >= 25 && diffDays <= 45) {
+            best = m;
+            bestLabel = 'Há 1 mês vocês viveram isso:';
+            break;
+          } else {
+            const months = Math.floor(diffDays / 30);
+            bestLabel = months > 1 ? `Há ${months} meses vocês viveram isso:` : 'Há algum tempo:';
+          }
+        }
+
+        let displayUrl: string | null = null;
+        const rawPath = (best.thumb_path || best.image_url)?.trim();
+        if (rawPath) {
+          let cleanPath = rawPath;
+          if (cleanPath.includes('/memories/')) {
+            cleanPath = cleanPath.split('/memories/')[1].split('?')[0];
+          }
+          cleanPath = cleanPath.replace(/^\/+/, '');
+          try {
+            const { data: signed } = await supabase.storage
+              .from('memories')
+              .createSignedUrl(cleanPath, 3600);
+            if (signed?.signedUrl) {
+              displayUrl = signed.signedUrl;
+            }
+          } catch {}
+        }
+
+        setThrowbackMemory({
+          id: best.id,
+          title: best.title,
+          memory_date: best.memory_date,
+          displayUrl,
+          label: bestLabel,
+        });
+      } else {
+        setThrowbackMemory(null);
+      }
     } catch {
       // Ignora silenciosamente
     }
@@ -449,16 +733,34 @@ export default function HomeScreen() {
         loadCoupleDetails(),
         loadCoupleDays(),
         loadRecentMemory(),
+        loadThrowbackMemory(),
         loadLatestMessage(),
         loadNextMilestone(),
       ]);
     } finally {
       setLoading(false);
     }
-  }, [loadCoupleDetails, loadCoupleDays, loadRecentMemory, loadLatestMessage, loadNextMilestone]);
+  }, [loadCoupleDetails, loadCoupleDays, loadRecentMemory, loadThrowbackMemory, loadLatestMessage, loadNextMilestone]);
+
+  const callbacksRef = useRef({
+    loadCoupleDetails,
+    loadCoupleDays,
+    loadRecentMemory,
+    loadThrowbackMemory,
+    loadLatestMessage,
+    loadNextMilestone,
+  });
+  callbacksRef.current = {
+    loadCoupleDetails,
+    loadCoupleDays,
+    loadRecentMemory,
+    loadThrowbackMemory,
+    loadLatestMessage,
+    loadNextMilestone,
+  };
 
   useEffect(() => {
-    if (!user || !coupleId) return;
+    if (!coupleId) return;
 
     loadAllData();
 
@@ -468,34 +770,34 @@ export default function HomeScreen() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'couple_members', filter: `couple_id=eq.${coupleId}` },
-        () => loadCoupleDetails()
+        () => callbacksRef.current.loadCoupleDetails()
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'couples', filter: `id=eq.${coupleId}` },
-        () => loadCoupleDays()
+        () => callbacksRef.current.loadCoupleDays()
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'memories', filter: `couple_id=eq.${coupleId}` },
-        () => loadRecentMemory()
+        () => callbacksRef.current.loadRecentMemory()
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'messages', filter: `couple_id=eq.${coupleId}` },
-        () => loadLatestMessage()
+        () => callbacksRef.current.loadLatestMessage()
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'special_dates', filter: `couple_id=eq.${coupleId}` },
-        () => loadNextMilestone()
+        () => callbacksRef.current.loadNextMilestone()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, coupleId, loadAllData, loadCoupleDetails, loadCoupleDays, loadRecentMemory, loadLatestMessage, loadNextMilestone]);
+  }, [coupleId, loadAllData]);
 
   // Ação de Pull-to-Refresh
   const onRefresh = async () => {
@@ -503,11 +805,6 @@ export default function HomeScreen() {
     await loadAllData();
     setRefreshing(false);
   };
-
-  // Totais acumulados calculados dinamicamente
-  const timeTotals = useMemo(() => {
-    return calculateAccumulatedTime(effectiveStartDateStr);
-  }, [effectiveStartDateStr]);
 
   const handleOpenMemories = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -533,7 +830,7 @@ export default function HomeScreen() {
           styles.scrollContent,
           {
             paddingTop: insets.top + (Platform.OS === 'ios' ? 88 : 82),
-            paddingBottom: 130,
+            paddingBottom: tabBarPaddingBottom,
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -599,342 +896,434 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View>
-            {/* ── Hero Card: Photo + Journey Counter ── */}
-            <LiquidGlassView variant="hero" style={styles.heroGlassCard} borderRadius={28}>
-              <AnimatedTouchable
-                style={styles.heroImageContainer}
-                onPress={handleOpenMemories}
-                scaleTo={0.97}
+            {/* Saudação afetuosa contextual com o primeiro nome do parceiro(a) */}
+            <View style={styles.greetingContainer}>
+              <Text style={[styles.greetingText, { color: isDark ? '#F3F1FB' : '#1E1A33' }]}>
+                {contextualGreeting}
+              </Text>
+            </View>
+
+            {/* Card Comemorativo de Marco Especial / Aniversário com Confete */}
+            {celebration ? (
+              <Animated.View
+                entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(0) : undefined}
+                style={styles.celebrationWrapper}
               >
-                {recentMemory?.displayUrl || recentMemory?.image_url ? (
-                  <Image
-                    source={{
-                      uri: (recentMemory.displayUrl || recentMemory.image_url) as string,
-                    }}
-                    style={styles.heroImage}
-                    resizeMode="cover"
+                <View
+                  style={[
+                    styles.celebrationCard,
+                    {
+                      backgroundColor: isDark ? '#261F45' : '#FFF5F8',
+                      borderColor: isDark ? 'rgba(245, 143, 168, 0.35)' : 'rgba(245, 143, 168, 0.45)',
+                      shadowColor: '#F58FA8',
+                    },
+                  ]}
+                >
+                  {showConfetti && <ConfettiView onComplete={() => setShowConfetti(false)} />}
+                  <View style={styles.celebrationHeader}>
+                    <View
+                      style={[
+                        styles.celebrationBadge,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(245, 143, 168, 0.22)'
+                            : 'rgba(245, 143, 168, 0.16)',
+                        },
+                      ]}
+                    >
+                      <Ionicons name="sparkles" size={13} color={themeTokens.accent} />
+                      <Text style={[styles.celebrationBadgeText, { color: themeTokens.accent }]}>
+                        {celebration.badge}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.celebrationTitle,
+                      { color: isDark ? '#FFFFFF' : '#1E1A33' },
+                    ]}
+                  >
+                    {celebration.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.celebrationSubtitle,
+                      { color: isDark ? '#DDD6FE' : '#5B5675' },
+                    ]}
+                  >
+                    {celebration.subtitle}
+                  </Text>
+                </View>
+              </Animated.View>
+            ) : null}
+
+            {/* 1. Hero Card: "Nossa jornada" com foto grande, degradê escuro e contador */}
+            <Animated.View
+              entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(0) : undefined}
+            >
+              <PressableScale
+                style={[
+                  styles.heroCard,
+                  {
+                    backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
+                    shadowColor: '#7C6FE0',
+                  },
+                ]}
+                onPress={handleOpenMemories}
+                activeOpacity={0.92}
+              >
+                {/* Foto grande da memória ou fallback suave */}
+                {heroImageUri ? (
+                  <ExpoImage
+                    source={{ uri: heroImageUri }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
                   />
                 ) : (
                   <LinearGradient
                     colors={
                       isDark
-                        ? [themeTokens.orbLavender, themeTokens.orbPink]
-                        : ['#EDE9FE', '#DDD6FE', '#FCE7F3']
+                        ? ['#2E2554', '#1F1B3A']
+                        : ['#EDE9FE', '#DDD6FE']
                     }
-                    style={styles.heroImagePlaceholder}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <View
-                      style={[
-                        styles.placeholderIconCircle,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(167,151,255,0.2)'
-                            : 'rgba(255,255,255,0.7)',
-                          borderColor: isDark
-                            ? 'rgba(167,151,255,0.3)'
-                            : 'rgba(255,255,255,0.9)',
-                        },
-                      ]}
-                    >
-                      <Ionicons name="camera" size={28} color={themeTokens.primary} />
-                    </View>
-                    <Text
-                      style={[styles.placeholderTitle, { color: isDark ? themeTokens.textPrimary : '#1E1B4B' }]}
-                    >
-                      Eternize sua primeira memória
-                    </Text>
-                    <Text style={[styles.placeholderSub, { color: themeTokens.textSecondary }]}>
-                      Toque para adicionar uma foto de vocês
-                    </Text>
-                  </LinearGradient>
+                    style={StyleSheet.absoluteFill}
+                  />
                 )}
 
-                {/* Floating badge */}
-                <View
-                  style={[
-                    styles.photoBadge,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(167,151,255,0.55)'
-                        : 'rgba(124,58,237,0.6)',
-                      borderColor: isDark
-                        ? 'rgba(255,255,255,0.2)'
-                        : 'rgba(255,255,255,0.5)',
-                    },
+                {/* Degradê escuro da esquerda para a direita (sem blur, contraste AA perfeito) */}
+                <LinearGradient
+                  colors={[
+                    'rgba(15, 12, 28, 0.94)',
+                    'rgba(15, 12, 28, 0.78)',
+                    'rgba(15, 12, 28, 0.32)',
+                    'rgba(15, 12, 28, 0.02)',
                   ]}
-                >
-                  <View>
-                    <Ionicons name="heart" size={12} color="#FFFFFF" />
-                  </View>
+                  locations={[0, 0.44, 0.76, 1]}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={StyleSheet.absoluteFill}
+                />
+
+                {/* Chip "♥ Nós" no topo esquerdo */}
+                <View style={styles.photoBadge}>
+                  <Ionicons name="heart" size={13} color="#FFFFFF" />
                   <Text style={styles.photoBadgeText}>Nós</Text>
                 </View>
-              </AnimatedTouchable>
 
-              {/* Journey Counter */}
-              <View style={styles.journeySection}>
-                <Text style={[styles.journeyLabel, { color: themeTokens.textSecondary }]}>
-                  NOSSA JORNADA
-                </Text>
+                {/* Contador "Nossa Jornada" */}
+                <CoupleJourneyCounter
+                  startDate={effectiveStartDateStr}
+                  isDark={isDark}
+                  themeTokens={themeTokens}
+                />
+              </PressableScale>
+            </Animated.View>
 
-                <View
+            {/* 2. Três atalhos (Recado, Memória, Datas) */}
+            <Animated.View
+              entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(60) : undefined}
+              style={styles.shortcutsRow}
+            >
+              <PressableScale
+                style={[
+                  styles.shortcutCard,
+                  {
+                    backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+                  },
+                ]}
+                onPress={handleOpenMessages}
+              >
+                <Ionicons name="chatbubble" size={17} color={themeTokens.primary} />
+                <Text style={[styles.shortcutText, { color: themeTokens.primary }]}>Recado</Text>
+              </PressableScale>
+
+              <PressableScale
+                style={[
+                  styles.shortcutCard,
+                  {
+                    backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+                  },
+                ]}
+                onPress={handleOpenMemories}
+              >
+                <Ionicons name="camera" size={18} color={themeTokens.primary} />
+                <Text style={[styles.shortcutText, { color: themeTokens.primary }]}>Memória</Text>
+              </PressableScale>
+
+              <PressableScale
+                style={[
+                  styles.shortcutCard,
+                  {
+                    backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+                  },
+                ]}
+                onPress={handleOpenDates}
+              >
+                <Ionicons name="calendar" size={17} color={themeTokens.primary} />
+                <Text style={[styles.shortcutText, { color: themeTokens.primary }]}>Datas</Text>
+              </PressableScale>
+            </Animated.View>
+
+            {/* 3. Card "Próximo momento" */}
+            {nextMilestone ? (
+              <Animated.View
+                entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(120) : undefined}
+              >
+                <PressableScale
                   style={[
-                    styles.journeyPill,
+                    styles.milestoneCard,
                     {
-                      backgroundColor: isDark
-                        ? 'rgba(167,151,255,0.1)'
-                        : 'rgba(142,124,232,0.06)',
-                      borderColor: isDark
-                        ? 'rgba(167,151,255,0.2)'
-                        : 'rgba(142,124,232,0.15)',
+                      backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
                     },
                   ]}
+                  onPress={handleOpenDates}
                 >
-                  <Text style={[styles.journeyDays, { color: themeTokens.primary }]}>
-                    Juntos há {timeTotals.days} dias
-                  </Text>
-                  <Text style={[styles.journeyBreakdown, { color: isDark ? themeTokens.primary : '#8E7CE8' }]}>
-                    {timeTotals.breakdownMonths}{' '}
-                    {timeTotals.breakdownMonths === 1 ? 'mês' : 'meses'} •{' '}
-                    {timeTotals.breakdownDays}{' '}
-                    {timeTotals.breakdownDays === 1 ? 'dia' : 'dias'} •{' '}
-                    {timeTotals.breakdownHours}h
-                  </Text>
-                </View>
-              </View>
-            </LiquidGlassView>
-
-            {/* ── Quick Actions ── */}
-            <View style={styles.quickActionsRow}>
-              {[
-                { icon: 'chatbubble-ellipses' as const, label: 'Recado', onPress: handleOpenMessages },
-                { icon: 'camera' as const, label: 'Memória', onPress: handleOpenMemories },
-                { icon: 'calendar' as const, label: 'Datas', onPress: handleOpenDates },
-              ].map((action) => (
-                <AnimatedTouchable
-                  key={action.label}
-                  style={styles.quickActionTouch}
-                  onPress={action.onPress}
-                  scaleTo={0.95}
-                >
-                  <LiquidGlassView variant="pill" style={styles.quickActionPill} borderRadius={16}>
-                    <Ionicons name={action.icon} size={15} color={themeTokens.primary} />
-                    <Text style={[styles.quickActionText, { color: themeTokens.primary }]}>
-                      {action.label}
-                    </Text>
-                  </LiquidGlassView>
-                </AnimatedTouchable>
-              ))}
-            </View>
-
-            {/* ── Next Milestone ── */}
-            {nextMilestone && (
-              <AnimatedTouchable onPress={handleOpenDates} scaleTo={0.97}>
-                <LiquidGlassView variant="card" style={styles.milestoneCard} borderRadius={20}>
                   <View
                     style={[
-                      styles.milestoneIcon,
+                      styles.milestoneIconBox,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(167,151,255,0.15)'
-                          : 'rgba(142,124,232,0.1)',
+                        backgroundColor: isDark ? 'rgba(157, 146, 240, 0.16)' : '#EFECFC',
                       },
                     ]}
                   >
-                    <View>
-                      <Ionicons name="sparkles" size={17} color={themeTokens.primary} />
-                    </View>
+                    <Ionicons name="sparkles" size={20} color={themeTokens.primary} />
                   </View>
-                  <View style={styles.milestoneInfo}>
-                    <Text style={[styles.milestoneLabel, { color: themeTokens.textSecondary }]}>
+
+                  <View style={styles.milestoneContent}>
+                    <Text style={[styles.milestoneLabel, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
                       PRÓXIMO MOMENTO
                     </Text>
                     <Text
-                      style={[styles.milestoneTitle, { color: themeTokens.textPrimary }]}
-                      numberOfLines={1}
+                      style={[styles.milestoneTitle, { color: isDark ? '#F3F1FB' : '#1E1A33' }]}
+                      numberOfLines={2}
                     >
                       {nextMilestone.title}
                     </Text>
                   </View>
+
                   <View
                     style={[
-                      styles.milestoneBadge,
+                      styles.milestoneChip,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(167,151,255,0.15)'
-                          : '#EDE9FE',
+                        backgroundColor: isDark ? 'rgba(157, 146, 240, 0.20)' : '#F3E8FF',
                       },
                     ]}
                   >
-                    <Text style={[styles.milestoneBadgeText, { color: themeTokens.primary }]}>
+                    <Text style={[styles.milestoneChipText, { color: isDark ? '#C4B5FD' : '#7C3AED' }]}>
                       {nextMilestone.daysRemaining === 0
                         ? 'É hoje!'
                         : `em ${nextMilestone.daysRemaining}d`}
                     </Text>
                   </View>
-                </LiquidGlassView>
-              </AnimatedTouchable>
-            )}
+                </PressableScale>
+              </Animated.View>
+            ) : null}
 
-            {/* ── Recent Memory ── */}
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionLabel, { color: themeTokens.textSecondary }]}>
-                MEMÓRIA RECENTE
-              </Text>
-              <AnimatedTouchable onPress={handleOpenMemories} scaleTo={0.95}>
-                <Text style={[styles.sectionLink, { color: themeTokens.primary }]}>Ver todas</Text>
-              </AnimatedTouchable>
-            </View>
+            {/* 4. Seção "Memória recente" */}
+            <Animated.View
+              entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(180) : undefined}
+            >
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[styles.sectionHeaderTitle, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
+                  MEMÓRIA RECENTE
+                </Text>
+                <PressableScale onPress={handleOpenMemories}>
+                  <Text style={[styles.sectionHeaderLink, { color: themeTokens.primary }]}>
+                    Ver todas
+                  </Text>
+                </PressableScale>
+              </View>
 
-            {recentMemory ? (
-              <AnimatedTouchable onPress={handleOpenMemories} scaleTo={0.97}>
-                <LiquidGlassView variant="card" style={styles.memoryCard} borderRadius={20}>
+              {recentMemory ? (
+                <PressableScale
+                  style={[
+                    styles.memoryCard,
+                    {
+                      backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+                    },
+                  ]}
+                  onPress={handleOpenMemories}
+                >
                   <View
                     style={[
-                      styles.memoryThumb,
+                      styles.memoryThumbBox,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(167,151,255,0.12)'
-                          : '#EDE9FE',
-                        borderColor: isDark
-                          ? themeTokens.glassBorder
-                          : 'rgba(255,255,255,0.9)',
+                        backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : '#EFECFC',
                       },
                     ]}
                   >
                     {recentMemory.displayUrl || recentMemory.image_url ? (
-                      <Image
-                        source={{
-                          uri: (recentMemory.displayUrl || recentMemory.image_url) as string,
-                        }}
+                      <ExpoImage
+                        source={{ uri: (recentMemory.displayUrl || recentMemory.image_url) as string }}
                         style={styles.memoryThumbImage}
-                        resizeMode="cover"
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={200}
                       />
                     ) : (
                       <Ionicons name="images-outline" size={22} color={themeTokens.primary} />
                     )}
                   </View>
-                  <View style={styles.memoryMeta}>
-                    <Text style={[styles.memoryDate, { color: themeTokens.textSecondary }]}>
-                      {formatMemoryDate(recentMemory.memory_date)}
-                    </Text>
+
+                  <View style={styles.memoryContent}>
                     <Text
-                      style={[styles.memoryTitle, { color: themeTokens.textPrimary }]}
-                      numberOfLines={1}
+                      style={[styles.memoryTitleText, { color: isDark ? '#F3F1FB' : '#1E1A33' }]}
+                      numberOfLines={2}
                     >
                       {recentMemory.title}
                     </Text>
+                    <Text style={[styles.memoryDateText, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
+                      {formatMemoryDate(recentMemory.memory_date)}
+                    </Text>
                   </View>
+
                   <View
                     style={[
-                      styles.chevron,
+                      styles.memoryChevronBox,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(167,151,255,0.12)'
-                          : 'rgba(142,124,232,0.08)',
+                        backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : 'rgba(124, 111, 224, 0.08)',
                       },
                     ]}
                   >
                     <Ionicons name="chevron-forward" size={15} color={themeTokens.primary} />
                   </View>
-                </LiquidGlassView>
-              </AnimatedTouchable>
-            ) : (
-              <AnimatedTouchable onPress={handleOpenMemories} scaleTo={0.97}>
-                <LiquidGlassView variant="card" style={styles.memoryCard} borderRadius={20}>
+                </PressableScale>
+              ) : (
+                <PressableScale
+                  style={[
+                    styles.memoryCard,
+                    {
+                      backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+                    },
+                  ]}
+                  onPress={handleOpenMemories}
+                >
                   <View
                     style={[
-                      styles.memoryThumb,
+                      styles.memoryThumbBox,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(167,151,255,0.12)'
-                          : 'rgba(142,124,232,0.08)',
+                        backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : '#EFECFC',
                       },
                     ]}
                   >
                     <Ionicons name="sparkles-outline" size={22} color={themeTokens.primary} />
                   </View>
-                  <View style={styles.memoryMeta}>
-                    <Text style={[styles.emptyTitle, { color: themeTokens.textPrimary }]}>
+
+                  <View style={styles.memoryContent}>
+                    <Text style={[styles.memoryTitleText, { color: isDark ? '#F3F1FB' : '#1E1A33' }]}>
                       Guarde sua primeira memória
                     </Text>
-                    <Text style={[styles.emptySub, { color: themeTokens.textSecondary }]}>
+                    <Text style={[styles.memoryDateText, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
                       Eternize os melhores momentos de vocês
                     </Text>
                   </View>
+
                   <View
                     style={[
-                      styles.chevron,
+                      styles.memoryChevronBox,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(167,151,255,0.12)'
-                          : 'rgba(142,124,232,0.08)',
+                        backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : 'rgba(124, 111, 224, 0.08)',
                       },
                     ]}
                   >
                     <Ionicons name="add" size={17} color={themeTokens.primary} />
                   </View>
-                </LiquidGlassView>
-              </AnimatedTouchable>
-            )}
+                </PressableScale>
+              )}
+            </Animated.View>
 
-            {/* ── Latest Message ── */}
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionLabel, { color: themeTokens.textSecondary }]}>
-                RECADO DO CASAL
-              </Text>
-              <AnimatedTouchable onPress={handleOpenMessages} scaleTo={0.95}>
-                <Text style={[styles.sectionLink, { color: themeTokens.primary }]}>Abrir chat</Text>
-              </AnimatedTouchable>
-            </View>
+            {/* 5. Seção "Faz tempo..." sugerindo recordação de meses atrás */}
+            {throwbackMemory ? (
+              <Animated.View
+                entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(240) : undefined}
+                style={{ marginTop: 20 }}
+              >
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={[styles.sectionHeaderTitle, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
+                    FAZ TEMPO...
+                  </Text>
+                  <PressableScale onPress={handleOpenMemories}>
+                    <Text style={[styles.sectionHeaderLink, { color: themeTokens.primary }]}>
+                      Ver todas
+                    </Text>
+                  </PressableScale>
+                </View>
 
-            <AnimatedTouchable onPress={handleOpenMessages} scaleTo={0.97}>
-              <LiquidGlassView variant="card" style={styles.noteCard} borderRadius={20}>
-                <View style={styles.noteHeader}>
+                <PressableScale
+                  style={[
+                    styles.memoryCard,
+                    {
+                      backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+                    },
+                  ]}
+                  onPress={handleOpenMemories}
+                >
                   <View
                     style={[
-                      styles.noteAuthorBadge,
+                      styles.memoryThumbBox,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(167,151,255,0.12)'
-                          : 'rgba(142,124,232,0.08)',
+                        backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : '#EFECFC',
                       },
                     ]}
                   >
-                    <Ionicons name="chatbubble-ellipses" size={13} color={themeTokens.primary} />
-                    <Text style={[styles.noteAuthorText, { color: themeTokens.primary }]}>
-                      {latestMessage ? latestMessage.authorName : 'Deixe um bilhete'}
+                    {throwbackMemory.displayUrl ? (
+                      <ExpoImage
+                        source={{ uri: throwbackMemory.displayUrl }}
+                        style={StyleSheet.absoluteFill}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={200}
+                      />
+                    ) : (
+                      <Ionicons name="time-outline" size={22} color={themeTokens.primary} />
+                    )}
+                  </View>
+
+                  <View style={styles.memoryContent}>
+                    <Text style={[styles.throwbackTag, { color: themeTokens.accent }]}>
+                      {throwbackMemory.label}
+                    </Text>
+                    <Text
+                      style={[styles.memoryTitleText, { color: isDark ? '#F3F1FB' : '#1E1A33' }]}
+                      numberOfLines={1}
+                    >
+                      {throwbackMemory.title}
+                    </Text>
+                    <Text style={[styles.memoryDateText, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
+                      {throwbackMemory.memory_date.split('-').reverse().join('/')}
                     </Text>
                   </View>
-                  {latestMessage && (
-                    <Text style={[styles.noteTime, { color: themeTokens.textSecondary }]}>
-                      {formatMessageTime(latestMessage.created_at)}
-                    </Text>
-                  )}
-                </View>
 
-                <Text
-                  style={[
-                    styles.noteContent,
-                    { color: latestMessage ? themeTokens.textPrimary : themeTokens.textSecondary },
-                    !latestMessage && styles.noteContentEmpty,
-                  ]}
-                  numberOfLines={2}
-                >
-                  {latestMessage
-                    ? `"${latestMessage.content}"`
-                    : 'Surpreenda seu amor com um bilhete carinhoso hoje ❤️'}
-                </Text>
-              </LiquidGlassView>
-            </AnimatedTouchable>
+                  <View
+                    style={[
+                      styles.memoryChevronBox,
+                      {
+                        backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : 'rgba(124, 111, 224, 0.08)',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="chevron-forward" size={17} color={themeTokens.primary} />
+                  </View>
+                </PressableScale>
+              </Animated.View>
+            ) : null}
           </View>
         )}
       </ScrollView>
 
       {/* Cabeçalho Fixo com Blur e Transparência Apple Liquid Glass */}
       <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
-        <BlurView
+        <GlassSurface
           intensity={Platform.OS === 'ios' ? 70 : 85}
           tint={isDark ? 'dark' : 'light'}
           style={StyleSheet.absoluteFill}
@@ -988,22 +1377,27 @@ const styles = StyleSheet.create({
   },
   skeletonHeroCard: {
     width: '100%',
-    height: 340,
+    height: 245,
     borderRadius: 28,
+    borderWidth: 1,
     padding: 16,
     justifyContent: 'space-between',
-    borderWidth: 1,
   },
   skeletonImage: {
     width: '100%',
-    height: 220,
-    borderRadius: 20,
+    height: 130,
+    borderRadius: 18,
   },
   skeletonPill: {
     width: '65%',
-    height: 44,
-    borderRadius: 22,
-    alignSelf: 'center',
+    height: 38,
+    borderRadius: 19,
+    alignSelf: 'flex-start',
+  },
+  skeletonShortcut: {
+    flex: 1,
+    height: 52,
+    borderRadius: 18,
   },
   skeletonRowCard: {
     width: '100%',
@@ -1012,268 +1406,287 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 
-  /* ── Hero Card ── */
-  heroGlassCard: {
-    padding: 12,
-    marginBottom: 12,
+  /* ── Greeting ── */
+  greetingContainer: {
+    paddingTop: 4,
+    paddingBottom: 12,
   },
-  heroImageContainer: {
-    width: '100%',
-    height: width > 400 ? 240 : 210,
-    borderRadius: 20,
-    overflow: 'hidden',
-    position: 'relative',
+  greetingText: {
+    fontSize: 20,
+    fontWeight: '800',
+    fontFamily: Platform.select({ ios: 'Nunito', android: 'Nunito', default: 'sans-serif' }),
+    letterSpacing: -0.3,
   },
-  heroImage: {
-    width: '100%',
-    height: '100%',
+
+  /* ── Celebration Card ── */
+  celebrationWrapper: {
+    marginBottom: 16,
   },
-  heroImagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  placeholderIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
+  celebrationCard: {
+    borderRadius: 24,
     borderWidth: 1,
+    padding: 16,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    elevation: 4,
   },
-  placeholderTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: -0.2,
-  },
-  placeholderSub: {
-    fontSize: 12,
-    fontWeight: '500',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  photoBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
+  celebrationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    marginBottom: 8,
+  },
+  celebrationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 10,
+    borderRadius: 999,
+  },
+  celebrationBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: Platform.select({ ios: 'Nunito', android: 'Nunito', default: 'sans-serif' }),
+    letterSpacing: 0.2,
+  },
+  celebrationTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: Platform.select({ ios: 'Nunito', android: 'Nunito', default: 'sans-serif' }),
+    marginBottom: 4,
+    letterSpacing: -0.2,
+  },
+  celebrationSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    fontFamily: Platform.select({ ios: 'Nunito', android: 'Nunito', default: 'sans-serif' }),
+    lineHeight: 18,
+  },
+  throwbackTag: {
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: Platform.select({ ios: 'Nunito', android: 'Nunito', default: 'sans-serif' }),
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+
+  /* ── Hero Card ── */
+  heroCard: {
+    width: '100%',
+    height: 245,
+    borderRadius: 28,
+    overflow: 'hidden',
+    padding: 20,
+    justifyContent: 'space-between',
+    marginBottom: 16,
     borderWidth: 1,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  photoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#7C6FE0',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    gap: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
   },
   photoBadgeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },
 
   /* ── Journey Counter ── */
-  journeySection: {
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 4,
+  journeyContent: {
+    alignSelf: 'flex-start',
   },
   journeyLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.4,
-    marginBottom: 8,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginBottom: 2,
   },
-  journeyPill: {
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  journeyTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
+  },
+  journeyDaysDisplay: {
+    fontSize: 40,
+    fontWeight: '800',
+    color: '#DDD6FE',
+    letterSpacing: -0.8,
+    lineHeight: 44,
+    marginBottom: 10,
+    fontVariant: ['tabular-nums'],
+  },
+  journeyBreakdownPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  journeyBreakdownText: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+
+  /* ── Atalhos (Shortcuts) ── */
+  shortcutsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  shortcutCard: {
+    flex: 1,
+    height: 52,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#7C6FE0',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  shortcutText: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+
+  /* ── Próximo Momento ── */
+  milestoneCard: {
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 20,
+    shadowColor: '#7C6FE0',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  milestoneIconBox: {
+    width: 48,
+    height: 48,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
   },
-  journeyDays: {
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-    fontVariant: ['tabular-nums'],
-  },
-  journeyBreakdown: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 2,
-    letterSpacing: 0.1,
-    fontVariant: ['tabular-nums'],
-  },
-
-  /* ── Quick Actions ── */
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  quickActionTouch: {
-    flex: 1,
-  },
-  quickActionPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    gap: 5,
-  },
-  quickActionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-  },
-
-  /* ── Milestone ── */
-  milestoneCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    marginBottom: 20,
-    gap: 12,
-  },
-  milestoneIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  milestoneInfo: {
+  milestoneContent: {
     flex: 1,
   },
   milestoneLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.8,
+    marginBottom: 3,
   },
   milestoneTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginTop: 1,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    lineHeight: 21,
   },
-  milestoneBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+  milestoneChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
   },
-  milestoneBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
+  milestoneChipText: {
+    fontSize: 13,
+    fontWeight: '800',
     fontVariant: ['tabular-nums'],
   },
 
-  /* ── Section Headers ── */
-  sectionHeader: {
+  /* ── Memória Recente ── */
+  sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
     paddingHorizontal: 4,
   },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.2,
+  sectionHeaderTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
   },
-  sectionLink: {
+  sectionHeaderLink: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-
-  /* ── Memory Card ── */
   memoryCard: {
+    borderRadius: 20,
+    padding: 12,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    marginBottom: 20,
     gap: 12,
+    marginBottom: 20,
+    shadowColor: '#7C6FE0',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
   },
-  memoryThumb: {
+  memoryThumbBox: {
     width: 52,
     height: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 1,
   },
   memoryThumbImage: {
     width: '100%',
     height: '100%',
   },
-  memoryMeta: {
+  memoryContent: {
     flex: 1,
   },
-  memoryDate: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  memoryTitle: {
+  memoryTitleText: {
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
+    lineHeight: 20,
   },
-  emptyTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 1,
+  memoryDateText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 3,
   },
-  emptySub: {
-    fontSize: 11,
-  },
-  chevron: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  memoryChevronBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  /* ── Note Card ── */
-  noteCard: {
-    padding: 14,
-  },
-  noteHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  noteAuthorBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  noteAuthorText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  noteTime: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  noteContent: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '500',
-    fontStyle: 'italic',
-  },
-  noteContentEmpty: {
-    fontStyle: 'normal',
   },
 });
 

@@ -7,6 +7,9 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CoupleProvider } from '../context/CoupleContext';
 import { ThemeProvider, useAppTheme } from '../context/ThemeContext';
+import { ToastProvider } from '../context/ToastContext';
+import { Toast } from '../components/ui/Toast';
+import { UpdateBanner } from '../components/ui/UpdateBanner';
 
 LogBox.ignoreAllLogs(true);
 
@@ -32,6 +35,8 @@ function RootLayoutNav() {
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false }} />
+      <UpdateBanner />
+      <Toast />
     </>
   );
 }
@@ -41,11 +46,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <CoupleProvider>
-              <RootLayoutNav />
-            </CoupleProvider>
-          </AuthProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <CoupleProvider>
+                <RootLayoutNav />
+              </CoupleProvider>
+            </AuthProvider>
+          </ToastProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

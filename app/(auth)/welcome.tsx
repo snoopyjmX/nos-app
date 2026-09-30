@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
 import { AnimatedTouchable } from '../../components/AnimatedTouchable';
@@ -195,11 +195,13 @@ export default function WelcomeScreen() {
                   },
                 ]}
               >
-                <BlurView
-                  intensity={Platform.OS === 'ios' ? 60 : 80}
-                  tint={isDark ? 'dark' : 'light'}
-                  style={StyleSheet.absoluteFill}
-                />
+                {Platform.OS !== 'web' && (
+                  <BlurView
+                    intensity={Platform.OS === 'ios' ? 60 : 80}
+                    tint={isDark ? 'dark' : 'light'}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
                 <Text
                   style={[
                     styles.secondaryButtonText,

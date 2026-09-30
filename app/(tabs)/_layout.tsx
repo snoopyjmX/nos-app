@@ -3,7 +3,7 @@ import { Tabs, useRouter, usePathname } from 'expo-router';
 import { LiquidTabBar } from '../../components/LiquidTabBar';
 import { Gesture, GestureDetector, Directions } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 export default function TabsLayout() {
@@ -12,18 +12,35 @@ export default function TabsLayout() {
 
   const tabOrder = ['/', '/messages', '/memories', '/dates', '/profile'];
 
+  // Normaliza o pathname para coincidir com tabOrder ('/index', '/(tabs)', etc.)
+  const normalizedPath = React.useMemo(() => {
+    if (!pathname || pathname === '/' || pathname === '/index' || pathname === '/(tabs)' || pathname === '/(tabs)/index') {
+      return '/';
+    }
+    const clean = pathname.replace('/(tabs)', '');
+    return clean.startsWith('/') ? clean : `/${clean}`;
+  }, [pathname]);
+
   const handleSwipeLeft = () => {
-    const currentIndex = tabOrder.indexOf(pathname);
+    const currentIndex = tabOrder.indexOf(normalizedPath);
     if (currentIndex >= 0 && currentIndex < tabOrder.length - 1) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (Platform.OS !== 'web') {
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } catch {}
+      }
       router.navigate(tabOrder[currentIndex + 1] as any);
     }
   };
 
   const handleSwipeRight = () => {
-    const currentIndex = tabOrder.indexOf(pathname);
+    const currentIndex = tabOrder.indexOf(normalizedPath);
     if (currentIndex > 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (Platform.OS !== 'web') {
+        try {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } catch {}
+      }
       router.navigate(tabOrder[currentIndex - 1] as any);
     }
   };

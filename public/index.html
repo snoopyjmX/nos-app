@@ -14,28 +14,28 @@
     <!-- iOS Safari PWA Standalone -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <!-- 'default' garante status bar nativa com texto escuro e sem degradê preto no topo do iPhone -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="nós." />
 
-    <!-- Cor da barra de status sincronizada com o fundo do app (sem barra preta em modo escuro do sistema) -->
-    <meta name="theme-color" content="#F8F9FC" />
+    <!-- Cor da barra de status sincronizada com o fundo do app (claro e escuro) -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F8F6FE" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15122A" />
+    <meta name="theme-color" content="#F8F6FE" />
 
-    <!-- Ícones para iOS Add to Home Screen e PWA com novo arquivo v5 garantindo limpeza de cache -->
+    <!-- Ícones para iOS Add to Home Screen e PWA -->
     <link rel="apple-touch-icon" href="/apple-touch-icon-v5.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-v5.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon.png" />
-    <link rel="icon" type="image/png" href="/apple-touch-icon-v5.png" />
     <link rel="manifest" href="/manifest.json" />
 
     <style id="expo-reset">
       :root {
-        --app-bg: #F8F9FC;
+        --app-bg: #F8F6FE;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --app-bg: #0F0D18;
+          --app-bg: #15122A;
         }
       }
 
@@ -69,10 +69,11 @@
         overscroll-behavior-y: none;
       }
 
-      /* Garante contraste e visibilidade de inputs no Safari iOS e Android Chrome */
-      input, textarea {
+      /* Garante contraste e previne zoom acidental no Safari iOS ao focar campos */
+      input, select, textarea {
         user-select: auto;
         -webkit-user-select: auto;
+        font-size: 16px !important;
       }
 
       input::placeholder,

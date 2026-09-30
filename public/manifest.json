@@ -26,8 +26,8 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#F8F9FC",
-  "background_color": "#F8F9FC",
+  "theme_color": "#F8F6FE",
+  "background_color": "#F8F6FE",
   "categories": ["lifestyle", "social"],
   "lang": "pt-BR",
   "dir": "ltr"
