@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useAppTheme } from '../../context/ThemeContext';
 import { COLORS, DARK_COLORS } from '../../constants/theme';
@@ -68,6 +68,7 @@ export function AtmosphereBackground() {
             height: width * 1.05,
             backgroundColor: themeTokens.orbLavender,
             opacity: isDark ? 0.35 : 0.5,
+            ...(Platform.OS === 'web' ? { filter: 'blur(80px)' } as any : {}),
           },
         ]}
       />
@@ -83,16 +84,21 @@ export function AtmosphereBackground() {
             height: width * 0.95,
             backgroundColor: themeTokens.orbPink,
             opacity: isDark ? 0.35 : 0.5,
+            ...(Platform.OS === 'web' ? { filter: 'blur(80px)' } as any : {}),
           },
         ]}
       />
 
       {/* Diffuse blur overlay to melt orbs into the Liquid Glass atmosphere */}
-      <BlurView
-        intensity={isDark ? 85 : 75}
-        tint={isDark ? 'dark' : 'light'}
-        style={StyleSheet.absoluteFill}
-      />
+      {Platform.OS !== 'web' ? (
+        <BlurView
+          intensity={isDark ? 85 : 75}
+          tint={isDark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(15, 13, 24, 0.4)' : 'rgba(248, 249, 252, 0.4)' }]} pointerEvents="none" />
+      )}
     </View>
   );
 }

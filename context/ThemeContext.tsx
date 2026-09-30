@@ -57,6 +57,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const isDark = themeMode === 'dark';
 
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const bg = isDark ? '#0F0D18' : '#F8F9FC';
+      if (document.documentElement) {
+        document.documentElement.style.backgroundColor = bg;
+      }
+      if (document.body) {
+        document.body.style.backgroundColor = bg;
+      }
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', bg);
+      }
+      const statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (statusBarMeta) {
+        statusBarMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
+      }
+    }
+  }, [isDark]);
+
   return (
     <ThemeContext.Provider
       value={{
