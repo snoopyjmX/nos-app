@@ -357,8 +357,8 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
           <LinearGradient
             colors={
               isDark
-                ? ['rgba(167, 151, 255, 0.22)', 'rgba(139, 92, 246, 0.14)', 'rgba(196, 167, 255, 0.10)']
-                : ['rgba(142, 124, 232, 0.16)', 'rgba(124, 58, 237, 0.10)', 'rgba(252, 231, 243, 0.12)']
+                ? ['rgba(167, 151, 255, 0.40)', 'rgba(139, 92, 246, 0.30)', 'rgba(139, 92, 246, 0.25)']
+                : ['rgba(142, 124, 232, 0.35)', 'rgba(124, 58, 237, 0.25)', 'rgba(124, 58, 237, 0.20)']
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -367,8 +367,8 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
           <LinearGradient
             colors={
               isDark
-                ? ['rgba(255, 255, 255, 0.18)', 'transparent']
-                : ['rgba(255, 255, 255, 0.60)', 'transparent']
+                ? ['rgba(255, 255, 255, 0.10)', 'transparent']
+                : ['rgba(255, 255, 255, 0.40)', 'transparent']
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 0.7 }}
@@ -403,11 +403,11 @@ const styles = StyleSheet.create({
   dockContainer: {
     position: 'absolute',
     height: DOCK_HEIGHT,
-    borderRadius: DOCK_RADIUS,
+    borderRadius: 999,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
     elevation: 8,
     justifyContent: 'center',
     overflow: 'hidden',
@@ -436,11 +436,11 @@ const styles = StyleSheet.create({
   indicatorInner: {
     width: '100%',
     height: '100%',
-    borderRadius: 24,
+    borderRadius: 999,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
     overflow: 'hidden',
   },
   indicatorGlint: {
@@ -448,8 +448,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: '60%',
-    borderRadius: 24,
+    height: '50%',
+    borderRadius: 999,
   },
   tabsRow: {
     flexDirection: 'row',
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
-    gap: 2,
+    gap: 3,
   },
   iconContainer: {
     alignItems: 'center',
@@ -472,8 +472,8 @@ const styles = StyleSheet.create({
     height: 24,
   },
   tabLabel: {
-    fontSize: 10.5,
-    letterSpacing: -0.2,
-    fontWeight: '600',
+    fontSize: 10,
+    letterSpacing: -0.1,
+    fontWeight: '500',
   },
 });

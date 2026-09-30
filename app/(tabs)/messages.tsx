@@ -540,6 +540,7 @@ export default function MessagesScreen() {
                 borderColor: isDark
                   ? themeTokens.glassBorder
                   : 'rgba(255,255,255,0.6)',
+              }
             ]}
           >
             <Text style={[styles.messageTextPartner, { color: themeTokens.textPrimary }]}>

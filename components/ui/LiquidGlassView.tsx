@@ -106,11 +106,6 @@ export function LiquidGlassView({
               style={StyleSheet.absoluteFill}
             />
           )
-        )}          <BlurView
-            tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
-            intensity={Platform.OS === 'ios' ? defaultIntensity : 100}
-            style={StyleSheet.absoluteFill}
-          />
         )}
 
         <View
