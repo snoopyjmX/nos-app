@@ -782,7 +782,7 @@ export default function HomeScreen() {
         { event: '*', schema: 'public', table: 'memories', filter: `couple_id=eq.${coupleId}` },
         () => {
           callbacksRef.current.loadRecentMemory();
-          callbacksRef.current.loadPastMemories();
+          callbacksRef.current.loadThrowbackMemory();
         }
       )
       .on(
