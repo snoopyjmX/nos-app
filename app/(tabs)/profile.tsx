@@ -102,7 +102,7 @@ export default function ProfileScreen() {
   const styles = getStyles(themeTokens, isDark);
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { coupleId, clearCouple } = useCouple();
+  const { coupleId, clearCouple, updateAnniversaryDate } = useCouple();
   const { mode, setMode } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { paddingBottom: tabBarPaddingBottom } = useTabBarHeight();
@@ -489,6 +489,7 @@ export default function ProfileScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setAnniversaryDate(isoDate);
+      updateAnniversaryDate(isoDate);
       setIsDateModalVisible(false);
       await loadProfileData();
 

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -355,7 +355,7 @@ export default function HomeScreen() {
   const themeTokens = getThemeTokens(isDark);
   const router = useRouter();
   const { user } = useAuth();
-  const { coupleId } = useCouple();
+  const { coupleId, anniversaryDate } = useCouple();
   const insets = useSafeAreaInsets();
   const { paddingBottom: tabBarPaddingBottom } = useTabBarHeight();
 
@@ -371,7 +371,13 @@ export default function HomeScreen() {
     () => homeDataCache?.ownerFirstName || getFirstName(user?.user_metadata?.display_name || user?.email?.split('@')[0]) || ''
   );
   const [partnerFirstName, setPartnerFirstName] = useState<string>(() => homeDataCache?.partnerFirstName || '');
-  const [effectiveStartDateStr, setEffectiveStartDateStr] = useState<string | null>(() => homeDataCache?.effectiveStartDateStr ?? null);
+  const [effectiveStartDateStr, setEffectiveStartDateStr] = useState<string | null>(() => anniversaryDate || homeDataCache?.effectiveStartDateStr || null);
+
+  useEffect(() => {
+    if (anniversaryDate) {
+      setEffectiveStartDateStr(anniversaryDate);
+    }
+  }, [anniversaryDate]);
   const [recentMemory, setRecentMemory] = useState<RecentMemory | null>(() => homeDataCache?.recentMemory ?? null);
   const [throwbackMemory, setThrowbackMemory] = useState<{
     id: string;
@@ -829,6 +835,16 @@ export default function HomeScreen() {
       supabase.removeChannel(channel);
     };
   }, [coupleId, loadAllData]);
+
+  // Recarrega os dados ao focar na tela (garante que alterações feitas em Perfil/outras abas apareçam imediatamente)
+  useFocusEffect(
+    useCallback(() => {
+      if (coupleId) {
+        callbacksRef.current.loadCoupleDays();
+        callbacksRef.current.loadCoupleDetails();
+      }
+    }, [coupleId])
+  );
 
   // Ação de Pull-to-Refresh
   const onRefresh = async () => {

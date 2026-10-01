@@ -6,7 +6,9 @@ interface CoupleContextData {
   coupleId: string | null;
   hasCouple: boolean;
   isLoadingCouple: boolean;
+  anniversaryDate: string | null;
   refreshCoupleStatus: () => Promise<string | null>;
+  updateAnniversaryDate: (newDate: string) => void;
   clearCouple: () => void;
 }
 
@@ -15,11 +17,13 @@ const CoupleContext = createContext<CoupleContextData>({} as CoupleContextData);
 export function CoupleProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [anniversaryDate, setAnniversaryDate] = useState<string | null>(null);
   const [isLoadingCouple, setIsLoadingCouple] = useState<boolean>(true);
 
   const refreshCoupleStatus = useCallback(async (): Promise<string | null> => {
     if (!user) {
       setCoupleId(null);
+      setAnniversaryDate(null);
       setIsLoadingCouple(false);
       return null;
     }
@@ -35,23 +39,44 @@ export function CoupleProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.warn('Erro ao consultar couple_members:', error.message);
         setCoupleId(null);
+        setAnniversaryDate(null);
         return null;
       }
 
       const id = data?.couple_id ?? null;
       setCoupleId(id);
+
+      if (id) {
+        const { data: cData } = await supabase
+          .from('couples')
+          .select('anniversary_date')
+          .eq('id', id)
+          .maybeSingle();
+        if (cData?.anniversary_date) {
+          setAnniversaryDate(cData.anniversary_date);
+        }
+      } else {
+        setAnniversaryDate(null);
+      }
+
       return id;
     } catch (err) {
       console.warn('Exceção ao verificar status de casal:', err);
       setCoupleId(null);
+      setAnniversaryDate(null);
       return null;
     } finally {
       setIsLoadingCouple(false);
     }
   }, [user]);
 
+  const updateAnniversaryDate = useCallback((newDate: string) => {
+    setAnniversaryDate(newDate);
+  }, []);
+
   const clearCouple = useCallback(() => {
     setCoupleId(null);
+    setAnniversaryDate(null);
     setIsLoadingCouple(false);
   }, []);
 
@@ -69,7 +94,9 @@ export function CoupleProvider({ children }: { children: React.ReactNode }) {
         coupleId,
         hasCouple: !!coupleId,
         isLoadingCouple,
+        anniversaryDate,
         refreshCoupleStatus,
+        updateAnniversaryDate,
         clearCouple,
       }}
     >

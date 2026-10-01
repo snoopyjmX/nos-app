@@ -778,10 +778,9 @@ export default function MemoriesScreen() {
               source={{ uri: imageUrl }}
               style={[styles.cardImage, isHero && styles.heroCardImage]}
               contentFit="cover"
-              transition={200}
+              transition={Platform.OS === 'web' ? 0 : 150}
               cachePolicy="memory-disk"
-              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-              recyclingKey={item.id}
+              priority="high"
             />
 
             <View style={styles.cardContent}>
@@ -870,9 +869,10 @@ export default function MemoriesScreen() {
           scrollEventThrottle={16}
           onEndReached={loadMoreMemories}
           onEndReachedThreshold={0.5}
-          initialNumToRender={6}
-          maxToRenderPerBatch={8}
-          windowSize={5}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={11}
+          removeClippedSubviews={Platform.OS !== 'web'}
           ListFooterComponent={
             loadingMore ? (
               <View style={{ paddingVertical: 24, alignItems: 'center' }}>
