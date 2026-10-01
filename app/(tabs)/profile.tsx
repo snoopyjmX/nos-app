@@ -1107,6 +1107,7 @@ export default function ProfileScreen() {
                         fontSize: '16px',
                         backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(124, 111, 224, 0.05)',
                         color: isDark ? '#F7F5FF' : '#1E1A33',
+                        WebkitTextFillColor: isDark ? '#F7F5FF' : '#1E1A33',
                         colorScheme: isDark ? 'dark' : 'light',
                         outline: 'none',
                         width: '100%',

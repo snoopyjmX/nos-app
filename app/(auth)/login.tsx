@@ -113,7 +113,7 @@ export default function LoginScreen() {
                   style={[
                     styles.input,
                     { color: isDark ? '#F7F5FF' : '#16151E' },
-                    Platform.OS === 'web' && ({ outlineStyle: 'none', WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E' } as any),
+                    Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
                   ]}
                   placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
                   selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
@@ -143,7 +143,7 @@ export default function LoginScreen() {
                   style={[
                     styles.input,
                     { color: isDark ? '#F7F5FF' : '#16151E' },
-                    Platform.OS === 'web' && ({ outlineStyle: 'none', WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E' } as any),
+                    Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
                   ]}
                   placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
                   selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: '100%',
+    minHeight: 54,
     fontSize: 15,
     fontWeight: '500',
   },
