@@ -2,7 +2,7 @@
 // Cache stale-while-revalidate para assets estáticos.
 // NUNCA cacheia requisições ao Supabase, APIs dinâmicas ou URLs assinadas de fotos.
 
-const CACHE_NAME = 'nos-static-v1';
+const CACHE_NAME = 'nos-static-v2';
 
 const STATIC_EXTENSIONS = [
   '.js',
