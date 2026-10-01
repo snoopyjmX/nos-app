@@ -74,6 +74,29 @@
         user-select: auto;
         -webkit-user-select: auto;
         font-size: 16px !important;
+        color: #16151E;
+        -webkit-text-fill-color: #16151E;
+      }
+
+      /* Dark mode: texto e números brancos/claros e nítidos */
+      @media (prefers-color-scheme: dark) {
+        input, select, textarea {
+          color: #F7F5FF !important;
+          -webkit-text-fill-color: #F7F5FF !important;
+        }
+      }
+
+      html.dark input,
+      html.dark select,
+      html.dark textarea,
+      body.dark input,
+      body.dark select,
+      body.dark textarea,
+      [data-theme="dark"] input,
+      [data-theme="dark"] select,
+      [data-theme="dark"] textarea {
+        color: #F7F5FF !important;
+        -webkit-text-fill-color: #F7F5FF !important;
       }
 
       input::placeholder,
@@ -81,6 +104,42 @@
         color: #8A879A !important;
         opacity: 1 !important;
         -webkit-text-fill-color: #8A879A !important;
+      }
+
+      html.dark input::placeholder,
+      html.dark textarea::placeholder,
+      body.dark input::placeholder,
+      body.dark textarea::placeholder,
+      [data-theme="dark"] input::placeholder,
+      [data-theme="dark"] textarea::placeholder {
+        color: rgba(247, 245, 255, 0.45) !important;
+        -webkit-text-fill-color: rgba(247, 245, 255, 0.45) !important;
+      }
+
+      /* Autofill no Chrome/Safari: impede fundo amarelo e texto preto */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus,
+      input:-webkit-autofill:active {
+        -webkit-text-fill-color: #16151E !important;
+        transition: background-color 5000s ease-in-out 0s;
+      }
+
+      html.dark input:-webkit-autofill,
+      html.dark input:-webkit-autofill:hover, 
+      html.dark input:-webkit-autofill:focus,
+      html.dark input:-webkit-autofill:active,
+      body.dark input:-webkit-autofill,
+      body.dark input:-webkit-autofill:hover, 
+      body.dark input:-webkit-autofill:focus,
+      body.dark input:-webkit-autofill:active,
+      [data-theme="dark"] input:-webkit-autofill,
+      [data-theme="dark"] input:-webkit-autofill:hover, 
+      [data-theme="dark"] input:-webkit-autofill:focus,
+      [data-theme="dark"] input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 1000px rgba(30, 28, 42, 0.95) inset !important;
+        -webkit-text-fill-color: #F7F5FF !important;
+        caret-color: #A797FF !important;
       }
     </style>
   </head>

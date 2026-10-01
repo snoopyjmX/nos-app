@@ -19,8 +19,21 @@ const THEME_STORAGE_KEY = '@nos_theme_mode';
 const ThemeContext = createContext<ThemeContextData>({} as ThemeContextData);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
+  const deviceColorScheme = useDeviceColorScheme();
+
+  const getInitialTheme = (): ThemeMode => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+    }
+    const colorScheme = Appearance.getColorScheme();
+    return colorScheme === 'dark' ? 'dark' : 'light';
+  };
+
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(getInitialTheme);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasUserPreference, setHasUserPreference] = useState(false);
 
   useEffect(() => {
     async function loadStoredTheme() {
@@ -28,12 +41,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const stored = await AsyncStorage.getItem(THEME_STORAGE_KEY);
         if (stored === 'light' || stored === 'dark') {
           setThemeModeState(stored);
+          setHasUserPreference(true);
         } else {
-          // Se for legado 'system' ou vazio, define 'light'
-          setThemeModeState('light');
+          // Se não há preferência manual gravada, acompanha o sistema
+          setThemeModeState(getInitialTheme());
+          setHasUserPreference(false);
         }
       } catch {
-        setThemeModeState('light');
+        setThemeModeState(getInitialTheme());
       } finally {
         setIsLoaded(true);
       }
@@ -41,7 +56,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     loadStoredTheme();
   }, []);
 
+  useEffect(() => {
+    if (hasUserPreference) return;
+
+    if (deviceColorScheme === 'dark' || deviceColorScheme === 'light') {
+      setThemeModeState(deviceColorScheme);
+    }
+
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = (e: MediaQueryListEvent) => {
+        if (!hasUserPreference) {
+          setThemeModeState(e.matches ? 'dark' : 'light');
+        }
+      };
+      mediaQuery.addEventListener?.('change', handler);
+      return () => mediaQuery.removeEventListener?.('change', handler);
+    }
+  }, [deviceColorScheme, hasUserPreference]);
+
   const setThemeMode = async (mode: ThemeMode) => {
+    setHasUserPreference(true);
     setThemeModeState(mode);
     try {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
@@ -62,9 +97,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const bg = isDark ? '#0F0D18' : '#F8F9FC';
       if (document.documentElement) {
         document.documentElement.style.backgroundColor = bg;
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
       }
       if (document.body) {
         document.body.style.backgroundColor = bg;
+        document.body.classList.toggle('dark', isDark);
       }
       const themeColorMeta = document.querySelector('meta[name="theme-color"]');
       if (themeColorMeta) {

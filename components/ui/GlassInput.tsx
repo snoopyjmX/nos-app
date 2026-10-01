@@ -8,6 +8,7 @@ import {
   TextInputProps,
   StyleProp,
   ViewStyle,
+  Platform,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAppTheme } from '../../context/ThemeContext';
@@ -76,10 +77,21 @@ export function GlassInput({
           {...props}
           style={[
             styles.input,
-            { color: theme.textPrimary },
+            {
+              color: isDark ? '#F7F5FF' : theme.textPrimary,
+              ...(Platform.OS === 'web'
+                ? ({
+                    color: isDark ? '#F7F5FF' : theme.textPrimary,
+                    WebkitTextFillColor: isDark ? '#F7F5FF' : theme.textPrimary,
+                    outlineStyle: 'none',
+                  } as any)
+                : {}),
+            },
             style,
           ]}
-          placeholderTextColor={theme.textMuted}
+          placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : theme.textMuted}
+          selectionColor={isDark ? '#A797FF' : theme.primary}
+          cursorColor={isDark ? '#A797FF' : theme.primary}
           secureTextEntry={showTextAsSecure}
           onFocus={(e) => {
             setIsFocused(true);

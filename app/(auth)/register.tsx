@@ -101,29 +101,43 @@ export default function RegisterScreen() {
                 resizeMode="contain"
               />
             </View>
-            <Text style={[styles.brandTitle, { color: theme.primary }]}>nós.</Text>
-            <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
+            <Text style={[styles.brandTitle, { color: isDark ? '#A797FF' : theme.primary }]}>nós.</Text>
+            <Text style={[styles.brandSubtitle, { color: isDark ? '#AAA5B8' : theme.textSecondary }]}>
               Crie seu perfil
             </Text>
           </View>
 
           {/* Form Card */}
           <LiquidGlassView variant="hero" style={styles.formCard} borderRadius={28}>
-            <Text style={[styles.formTitle, { color: theme.textPrimary }]}>
+            <Text style={[styles.formTitle, { color: isDark ? '#F7F5FF' : theme.textPrimary }]}>
               Criar Conta
             </Text>
 
             <View style={styles.inputWrapper}>
-              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Nome</Text>
+              <Text style={[styles.inputLabel, { color: isDark ? '#AAA5B8' : theme.textSecondary }]}>Nome</Text>
               <LiquidGlassView 
                 variant="control" 
                 style={[styles.inputGlass, isNameFocused && { borderColor: theme.primary }]} 
                 borderRadius={16}
               >
-                <Ionicons name="person-outline" size={20} color={isNameFocused ? theme.primary : theme.textSecondary} style={styles.inputIcon} />
+                <Ionicons name="person-outline" size={20} color={isNameFocused ? theme.primary : (isDark ? '#AAA5B8' : theme.textSecondary)} style={styles.inputIcon} />
                 <TextInput
-                  style={[styles.input, { color: theme.textPrimary }]}
-                  placeholderTextColor={theme.textSecondary}
+                  style={[
+                    styles.input,
+                    {
+                      color: isDark ? '#F7F5FF' : '#16151E',
+                      ...(Platform.OS === 'web'
+                        ? ({
+                            color: isDark ? '#F7F5FF' : '#16151E',
+                            WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E',
+                            outlineStyle: 'none',
+                          } as any)
+                        : {}),
+                    },
+                  ]}
+                  placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
+                  selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
+                  cursorColor={isDark ? '#A797FF' : '#7C6FE0'}
                   placeholder="Como seu amor te chama?"
                   autoCapitalize="words"
                   value={name}
@@ -135,16 +149,30 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>E-mail</Text>
+              <Text style={[styles.inputLabel, { color: isDark ? '#AAA5B8' : theme.textSecondary }]}>E-mail</Text>
               <LiquidGlassView 
                 variant="control" 
                 style={[styles.inputGlass, isEmailFocused && { borderColor: theme.primary }]} 
                 borderRadius={16}
               >
-                <Ionicons name="mail-outline" size={20} color={isEmailFocused ? theme.primary : theme.textSecondary} style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={20} color={isEmailFocused ? theme.primary : (isDark ? '#AAA5B8' : theme.textSecondary)} style={styles.inputIcon} />
                 <TextInput
-                  style={[styles.input, { color: theme.textPrimary }]}
-                  placeholderTextColor={theme.textSecondary}
+                  style={[
+                    styles.input,
+                    {
+                      color: isDark ? '#F7F5FF' : '#16151E',
+                      ...(Platform.OS === 'web'
+                        ? ({
+                            color: isDark ? '#F7F5FF' : '#16151E',
+                            WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E',
+                            outlineStyle: 'none',
+                          } as any)
+                        : {}),
+                    },
+                  ]}
+                  placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
+                  selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
+                  cursorColor={isDark ? '#A797FF' : '#7C6FE0'}
                   placeholder="seu@email.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -159,16 +187,30 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Senha</Text>
+              <Text style={[styles.inputLabel, { color: isDark ? '#AAA5B8' : theme.textSecondary }]}>Senha</Text>
               <LiquidGlassView 
                 variant="control" 
                 style={[styles.inputGlass, isPasswordFocused && { borderColor: theme.primary }]} 
                 borderRadius={16}
               >
-                <Ionicons name="lock-closed-outline" size={20} color={isPasswordFocused ? theme.primary : theme.textSecondary} style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color={isPasswordFocused ? theme.primary : (isDark ? '#AAA5B8' : theme.textSecondary)} style={styles.inputIcon} />
                 <TextInput
-                  style={[styles.input, { color: theme.textPrimary }]}
-                  placeholderTextColor={theme.textSecondary}
+                  style={[
+                    styles.input,
+                    {
+                      color: isDark ? '#F7F5FF' : '#16151E',
+                      ...(Platform.OS === 'web'
+                        ? ({
+                            color: isDark ? '#F7F5FF' : '#16151E',
+                            WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E',
+                            outlineStyle: 'none',
+                          } as any)
+                        : {}),
+                    },
+                  ]}
+                  placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
+                  selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
+                  cursorColor={isDark ? '#A797FF' : '#7C6FE0'}
                   placeholder="Mínimo de 6 caracteres"
                   secureTextEntry={!isPasswordVisible}
                   autoCapitalize="none"
@@ -179,7 +221,7 @@ export default function RegisterScreen() {
                   onBlur={() => setIsPasswordFocused(false)}
                 />
                 <Pressable onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeButton}>
-                  <Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.textSecondary} />
+                  <Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={20} color={isDark ? '#AAA5B8' : theme.textSecondary} />
                 </Pressable>
               </LiquidGlassView>
             </View>
@@ -210,9 +252,9 @@ export default function RegisterScreen() {
               onPress={() => router.back()}
               scaleTo={0.98}
             >
-              <Text style={[styles.switchText, { color: theme.textSecondary }]}>
+              <Text style={[styles.switchText, { color: isDark ? '#AAA5B8' : theme.textSecondary }]}>
                 Já tem uma conta?{' '}
-                <Text style={[styles.switchHighlight, { color: theme.primary }]}>
+                <Text style={[styles.switchHighlight, { color: isDark ? '#A797FF' : theme.primary }]}>
                   Entrar
                 </Text>
               </Text>
