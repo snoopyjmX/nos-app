@@ -92,10 +92,19 @@ const getCategoryMeta = (catName?: string): CategoryOption => {
   );
 };
 
+const parseEventDate = (dateString?: string): Date => {
+  if (!dateString) return new Date();
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return new Date();
+  if (dateString.includes('T00:00:00')) {
+    return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+  }
+  return d;
+};
+
 const formatFullDatePTBR = (dateString?: string): string => {
   if (!dateString) return '';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return '';
+  const d = parseEventDate(dateString);
   return d.toLocaleDateString('pt-BR', {
     weekday: 'short',
     day: 'numeric',
@@ -106,8 +115,8 @@ const formatFullDatePTBR = (dateString?: string): string => {
 
 const formatTimePTBR = (dateString?: string): string => {
   if (!dateString) return '';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return '';
+  if (dateString.includes('T00:00:00')) return '';
+  const d = parseEventDate(dateString);
   return d.toLocaleTimeString('pt-BR', {
     hour: '2-digit',
     minute: '2-digit',
@@ -116,8 +125,7 @@ const formatTimePTBR = (dateString?: string): string => {
 
 const formatHeroDatePTBR = (dateString?: string): string => {
   if (!dateString) return '';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return '';
+  const d = parseEventDate(dateString);
   const dateStr = d.toLocaleDateString('pt-BR', {
     weekday: 'short',
     day: 'numeric',
@@ -137,8 +145,7 @@ const formatHeroDatePTBR = (dateString?: string): string => {
 
 const formatListItemDateTime = (dateString?: string): string => {
   if (!dateString) return '';
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return '';
+  const d = parseEventDate(dateString);
   const dateStr = d.toLocaleDateString('pt-BR', {
     weekday: 'short',
     day: 'numeric',
@@ -255,7 +262,15 @@ const AnimatedDigitString = React.memo(function AnimatedDigitString({
 }: AnimatedDigitStringProps) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={[style, { fontVariant: ['tabular-nums'] }]}>{value}</Text>
+      <Animated.Text
+        key={value}
+        entering={reducedMotion ? undefined : FadeInDown.duration(200)}
+        exiting={reducedMotion ? undefined : FadeOutDown.duration(200)}
+        style={[style, { fontVariant: ['tabular-nums'], position: 'absolute' }]}
+      >
+        {value}
+      </Animated.Text>
+      <Text style={[style, { opacity: 0, fontVariant: ['tabular-nums'] }]}>{value}</Text>
     </View>
   );
 });
@@ -267,7 +282,7 @@ const CountdownDigits = React.memo(function CountdownDigits({ targetDate, create
   const reducedMotion = useReducedMotion();
 
   const calculateDiff = useCallback(() => {
-    const target = new Date(targetDate).getTime();
+    const target = parseEventDate(targetDate).getTime();
     const diff = target - Date.now();
 
     if (diff <= 0) {
@@ -552,7 +567,7 @@ export default function DatesScreen() {
     const past: SpecialDate[] = [];
 
     dates.forEach((item) => {
-      const eventTime = new Date(item.event_date).getTime();
+      const eventTime = parseEventDate(item.event_date).getTime();
       if (eventTime >= nowTime) {
         upcoming.push(item);
       } else {
@@ -561,11 +576,11 @@ export default function DatesScreen() {
     });
 
     upcoming.sort(
-      (a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+      (a, b) => parseEventDate(a.event_date).getTime() - parseEventDate(b.event_date).getTime()
     );
 
     past.sort(
-      (a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+      (a, b) => parseEventDate(b.event_date).getTime() - parseEventDate(a.event_date).getTime()
     );
 
     return {
@@ -641,18 +656,19 @@ export default function DatesScreen() {
     }
   };
 
-  const handleEditDate = (item: any) => {
+  const handleEditDate = useCallback((item: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditingDateId(item.id);
     setNewTitle(item.title);
     setNewCategory(item.category || 'Comemoração');
-    const d = new Date(item.event_date);
+    const d = parseEventDate(item.event_date);
     setSelectedDate(d);
-    setSelectedTime(d);
+    const isMidnightUtc = item.event_date.includes('T00:00:00');
+    setSelectedTime(isMidnightUtc ? null : d);
     setIsAddModalVisible(true);
-  };
+  }, []);
 
-  const handleDeleteDate = (id: string, title: string) => {
+  const handleDeleteDate = useCallback((id: string, title: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const proceedDelete = async () => {
       setDates((prev) => prev.filter((d) => d.id !== id));
@@ -673,7 +689,7 @@ export default function DatesScreen() {
         { text: 'Excluir', style: 'destructive', onPress: proceedDelete },
       ]);
     }
-  };
+  }, [loadDates, showToast]);
 
   const onDateChange = (_event: DateTimePickerChangeEvent, date?: Date) => {
     if (Platform.OS === 'android') {
@@ -778,7 +794,7 @@ export default function DatesScreen() {
         </Animated.View>
       );
     },
-    [activeTab, themeTokens.textSecondary, themeTokens.primary, isDark, styles, handleDeleteDate]
+    [activeTab, themeTokens.textSecondary, themeTokens.primary, isDark, styles, handleEditDate, handleDeleteDate]
   );
 
   const listHeader = useMemo(() => {

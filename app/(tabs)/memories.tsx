@@ -521,7 +521,15 @@ export default function MemoriesScreen() {
               cleanPath = cleanPath.split('/memories/')[1].split('?')[0];
             }
             cleanPath = cleanPath.replace(/^\/+/, '');
-            await supabase.storage.from('memories').remove([cleanPath]);
+
+            const pathsToRemove = [cleanPath];
+            if (item.thumb_path) {
+                let cleanThumb = item.thumb_path;
+                if (cleanThumb.includes('/memories/')) cleanThumb = cleanThumb.split('/memories/')[1].split('?')[0];
+                cleanThumb = cleanThumb.replace(/^\/+/, '');
+                pathsToRemove.push(cleanThumb);
+            }
+            await supabase.storage.from('memories').remove(pathsToRemove);
           }
 
           // Delete from database
@@ -622,21 +630,25 @@ export default function MemoriesScreen() {
         { compress: 0.75, format: SaveFormat.JPEG }
       );
 
-      // 3. Converte URIs manipulados em Blob nativo sem passar por strings base64
-      const [mainRes, thumbRes] = await Promise.all([
-        fetch(mainManipulated.uri),
-        fetch(thumbManipulated.uri),
-      ]);
-      const [mainBlob, thumbBlob] = await Promise.all([
-        mainRes.blob(),
-        thumbRes.blob(),
-      ]);
+      // 3. Converte URIs manipulados para FormData (padrão recomendado para React Native + Supabase)
+      const formDataMain = new FormData();
+      formDataMain.append('file', {
+        uri: mainManipulated.uri,
+        name: 'image.jpg',
+        type: 'image/jpeg',
+      } as any);
 
-      // 4. Envia imagem principal e thumbnail ao Storage
+      const formDataThumb = new FormData();
+      formDataThumb.append('file', {
+        uri: thumbManipulated.uri,
+        name: 'thumb.jpg',
+        type: 'image/jpeg',
+      } as any);
+
+      // 4. Envia imagem principal e thumbnail ao Storage usando FormData
       const { error: mainUploadError } = await supabase.storage
         .from('memories')
-        .upload(fileName, mainBlob, {
-          contentType: 'image/jpeg',
+        .upload(fileName, formDataMain, {
           upsert: false,
         });
 
@@ -646,8 +658,7 @@ export default function MemoriesScreen() {
 
       const { error: thumbUploadError } = await supabase.storage
         .from('memories')
-        .upload(thumbFileName, thumbBlob, {
-          contentType: 'image/jpeg',
+        .upload(thumbFileName, formDataThumb, {
           upsert: false,
         });
 
@@ -1060,64 +1071,65 @@ export default function MemoriesScreen() {
             onPress={() => setPreviewMemory(null)}
           />
 
-          <View style={styles.previewTopActionsRow} pointerEvents="box-none">
-            {previewMemory && (
-              <TouchableOpacity
-                style={[styles.previewActionCircle, { marginRight: 12 }]}
-                onPress={() => handleDeleteMemory(previewMemory)}
-                hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
-                accessibilityLabel="Remover memória"
-                activeOpacity={0.7}
-              >
-                <Ionicons name="trash-outline" size={20} color="#F58FA8" />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={styles.previewActionCircle}
-              onPress={() => setPreviewMemory(null)}
-              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
-              accessibilityLabel="Fechar visualização"
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
           {previewMemory && (
-            <View style={styles.previewCard}>
-              <Image
-                source={{ uri: previewMemory.displayUrl || previewMemory.image_url }}
-                style={styles.previewImage}
-                contentFit="contain"
-                transition={200}
-                cachePolicy="memory-disk"
-                placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-              />
-              <LinearGradient
-                colors={['transparent', 'rgba(0, 0, 0, 0.88)']}
-                style={styles.previewInfo}
-              >
-                <Text style={styles.previewTitle}>{previewMemory.title}</Text>
-                <View style={styles.previewMetaPills}>
-                  <View style={styles.previewPill}>
-                    <Ionicons name="calendar-outline" size={13} color="#FFFFFF" />
-                    <Text style={styles.previewDate}>
-                      {formatFullDatePTBR(previewMemory.memory_date)}
-                    </Text>
-                  </View>
-                  <View style={styles.previewPill}>
-                    <Ionicons name="sparkles" size={12} color="#DDD6FE" />
-                    <Text style={styles.previewSignature}>
-                      Eternizado por {previewMemory.created_by === user?.id ? 'Você' : (profileMap.get(previewMemory.created_by || '')?.name || 'Parceiro(a)')}
-                    </Text>
-                  </View>
+            <View style={styles.previewCard} pointerEvents="box-none">
+              <View style={styles.previewImageContainer}>
+                <Image
+                  source={{ uri: previewMemory.displayUrl || previewMemory.image_url }}
+                  style={styles.previewImage}
+                  contentFit="cover"
+                  transition={300}
+                  cachePolicy="memory-disk"
+                  placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+                />
+
+                <View style={styles.previewTopActionsRow}>
+                  <TouchableOpacity
+                    style={styles.previewActionCircle}
+                    onPress={() => handleDeleteMemory(previewMemory)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    accessibilityLabel="Remover memória"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#F58FA8" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.previewActionCircle}
+                    onPress={() => setPreviewMemory(null)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    accessibilityLabel="Fechar visualização"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="close" size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
                 </View>
-                {previewMemory.created_at ? (
-                  <Text style={styles.previewSavedAt}>
-                    Salvo em {formatSavedAtDateTime(previewMemory.created_at)}
-                  </Text>
-                ) : null}
-              </LinearGradient>
+
+                <View style={styles.previewInfoWrapper}>
+                  <GlassSurface intensity={Platform.OS === 'ios' ? 70 : 90} tint="systemThinMaterialDark" style={styles.previewInfoGlass}>
+                    <Text style={styles.previewTitle}>{previewMemory.title}</Text>
+                    <View style={styles.previewMetaPills}>
+                      <View style={styles.previewPill}>
+                        <Ionicons name="calendar-outline" size={13} color="#FFFFFF" />
+                        <Text style={styles.previewDate}>
+                          {formatFullDatePTBR(previewMemory.memory_date)}
+                        </Text>
+                      </View>
+                      <View style={styles.previewPill}>
+                        <Ionicons name="sparkles" size={12} color="#DDD6FE" />
+                        <Text style={styles.previewSignature}>
+                          Eternizado por {previewMemory.created_by === user?.id ? 'Você' : (profileMap.get(previewMemory.created_by || '')?.name || 'Parceiro(a)')}
+                        </Text>
+                      </View>
+                    </View>
+                    {previewMemory.created_at ? (
+                      <Text style={styles.previewSavedAt}>
+                        Salvo em {formatSavedAtDateTime(previewMemory.created_at)}
+                      </Text>
+                    ) : null}
+                  </GlassSurface>
+                </View>
+              </View>
             </View>
           )}
         </LiquidGlassView>
@@ -1484,34 +1496,58 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
   },
   previewTopActionsRow: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    right: 20,
+    top: 16,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 999,
+    gap: 10,
+    zIndex: 10,
   },
   previewActionCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   previewCard: {
     width: '90%',
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: themeTokens.shadow,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  previewImageContainer: {
+    width: '100%',
+    borderRadius: 36,
+    overflow: 'hidden',
+    backgroundColor: isDark ? '#1C1A2E' : '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   previewImage: {
     width: '100%',
-    height: 420,
-    borderRadius: 24,
+    height: 540,
   },
-  previewInfo: {
-    marginTop: 16,
+  previewInfoWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+  },
+  previewInfoGlass: {
+    borderRadius: 24,
+    padding: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   previewTitle: {
     fontSize: 20,

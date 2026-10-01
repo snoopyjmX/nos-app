@@ -109,16 +109,8 @@ export default function LoginScreen() {
                 <TextInput
                   style={[
                     styles.input,
-                    {
-                      color: isDark ? '#F7F5FF' : '#16151E',
-                      ...(Platform.OS === 'web'
-                        ? ({
-                            color: isDark ? '#F7F5FF' : '#16151E',
-                            WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E',
-                            outlineStyle: 'none',
-                          } as any)
-                        : {}),
-                    },
+                    { color: isDark ? '#F7F5FF' : '#16151E' },
+                    Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
                   ]}
                   placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
                   selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
@@ -147,16 +139,8 @@ export default function LoginScreen() {
                 <TextInput
                   style={[
                     styles.input,
-                    {
-                      color: isDark ? '#F7F5FF' : '#16151E',
-                      ...(Platform.OS === 'web'
-                        ? ({
-                            color: isDark ? '#F7F5FF' : '#16151E',
-                            WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E',
-                            outlineStyle: 'none',
-                          } as any)
-                        : {}),
-                    },
+                    { color: isDark ? '#F7F5FF' : '#16151E' },
+                    Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
                   ]}
                   placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
                   selectionColor={isDark ? '#A797FF' : '#7C6FE0'}

@@ -502,6 +502,7 @@ export default function HomeScreen() {
         .from('memories')
         .select('id, title, memory_date, image_url, created_at')
         .eq('couple_id', coupleId)
+        .order('memory_date', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
