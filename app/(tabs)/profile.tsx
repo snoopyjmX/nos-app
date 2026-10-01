@@ -1085,16 +1085,43 @@ export default function ProfileScreen() {
             )}
 
             {/* Picker nativo no iOS ou quando ativado no Android */}
-            {(Platform.OS === 'ios' || showAndroidPicker) && (
+            {(Platform.OS === 'ios' || showAndroidPicker || Platform.OS === 'web') && (
               <View style={styles.pickerBox}>
-                <DateTimePicker
-                  value={tempDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  maximumDate={new Date()}
-                  onValueChange={onDateChange}
-                  textColor={themeTokens.textPrimary}
-                />
+                {Platform.OS === 'web' ? (
+                    React.createElement('input', {
+                      type: 'date',
+                      value: tempDate.toISOString().split('T')[0],
+                      onChange: (e: any) => {
+                        const newDateStr = e.target.value;
+                        if (newDateStr) {
+                          const [year, month, day] = newDateStr.split('-');
+                          const newDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
+                          onDateChange(null as any, newDate);
+                        }
+                      },
+                      style: {
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(124, 111, 224, 0.2)'}`,
+                        fontSize: '16px',
+                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(124, 111, 224, 0.05)',
+                        color: isDark ? '#F7F5FF' : '#1E1A33',
+                        colorScheme: isDark ? 'dark' : 'light',
+                        outline: 'none',
+                        width: '100%',
+                        fontFamily: 'inherit',
+                      }
+                    })
+                ) : (
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    maximumDate={new Date()}
+                    onValueChange={onDateChange}
+                    textColor={themeTokens.textPrimary}
+                  />
+                )}
               </View>
             )}
 

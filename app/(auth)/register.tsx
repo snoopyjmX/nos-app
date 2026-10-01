@@ -24,11 +24,14 @@ import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
 import { PressableScale } from '../../components/ui/PressableScale';
 
+import { useToast } from '../../context/ToastContext';
+
 export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const theme = getThemeTokens(isDark);
+  const { showToast } = useToast();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -42,12 +45,12 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
-      Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
+      showToast({ message: 'Por favor, preencha todos os campos.', type: 'error' });
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Senha fraca', 'A senha deve ter pelo menos 6 caracteres.');
+      showToast({ message: 'A senha deve ter pelo menos 6 caracteres.', type: 'error' });
       return;
     }
 
@@ -64,11 +67,10 @@ export default function RegisterScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erro no cadastro', error.message);
+      showToast({ message: error.message, type: 'error' });
     } else {
-      Alert.alert('Sucesso', 'Conta criada com sucesso!', [
-        { text: 'Continuar', onPress: () => router.replace('/') },
-      ]);
+      showToast({ message: 'Conta criada com sucesso!', type: 'success' });
+      router.replace('/');
     }
   };
 
@@ -125,7 +127,7 @@ export default function RegisterScreen() {
                   style={[
                     styles.input,
                     { color: isDark ? '#F7F5FF' : '#16151E' },
-                    Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
+                    Platform.OS === 'web' && ({ outlineStyle: 'none', WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E' } as any),
                   ]}
                   placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
                   selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
@@ -152,7 +154,7 @@ export default function RegisterScreen() {
                   style={[
                     styles.input,
                     { color: isDark ? '#F7F5FF' : '#16151E' },
-                    Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
+                    Platform.OS === 'web' && ({ outlineStyle: 'none', WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E' } as any),
                   ]}
                   placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
                   selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
@@ -182,7 +184,7 @@ export default function RegisterScreen() {
                   style={[
                     styles.input,
                     { color: isDark ? '#F7F5FF' : '#16151E' },
-                    Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
+                    Platform.OS === 'web' && ({ outlineStyle: 'none', WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E' } as any),
                   ]}
                   placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
                   selectionColor={isDark ? '#A797FF' : '#7C6FE0'}

@@ -24,11 +24,14 @@ import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
 import { PressableScale } from '../../components/ui/PressableScale';
 
+import { useToast } from '../../context/ToastContext';
+
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const theme = getThemeTokens(isDark);
+  const { showToast } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,7 +42,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Atenção', 'Por favor, preencha o e-mail e a senha.');
+      showToast({ message: 'Por favor, preencha o e-mail e a senha.', type: 'error' });
       return;
     }
 
@@ -51,7 +54,7 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erro ao entrar', error.message);
+      showToast({ message: 'E-mail ou senha incorretos. Tente novamente.', type: 'error' });
     } else {
       router.replace('/');
     }
@@ -110,7 +113,7 @@ export default function LoginScreen() {
                   style={[
                     styles.input,
                     { color: isDark ? '#F7F5FF' : '#16151E' },
-                    Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
+                    Platform.OS === 'web' && ({ outlineStyle: 'none', WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E' } as any),
                   ]}
                   placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
                   selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
@@ -140,7 +143,7 @@ export default function LoginScreen() {
                   style={[
                     styles.input,
                     { color: isDark ? '#F7F5FF' : '#16151E' },
-                    Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
+                    Platform.OS === 'web' && ({ outlineStyle: 'none', WebkitTextFillColor: isDark ? '#F7F5FF' : '#16151E' } as any),
                   ]}
                   placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
                   selectionColor={isDark ? '#A797FF' : '#7C6FE0'}

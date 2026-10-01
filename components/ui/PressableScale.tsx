@@ -77,17 +77,18 @@ export function PressableScale({
     if (onPressOut) onPressOut(e);
   };
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
   return (
-    <Pressable
+    <AnimatedPressable
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled}
+      style={[style, animatedStyle]}
       {...rest}
     >
-      <Animated.View style={[style, animatedStyle]}>
-        {children}
-      </Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   );
 }
 

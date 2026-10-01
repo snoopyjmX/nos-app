@@ -1157,17 +1157,44 @@ export default function DatesScreen() {
               </View>
 
               {/* DatePicker sem botão de concluir */}
-              {showDatePicker && (
+              {(showDatePicker || Platform.OS === 'web') && (
                 <View style={styles.pickerBox}>
-                  <Text style={styles.pickerTitle}>Selecione a Data</Text>
-                  <DateTimePicker
-                    value={selectedDate}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onValueChange={onDateChange}
-                    textColor={isDark ? '#F7F5FF' : '#16151E'}
-                    themeVariant={isDark ? 'dark' : 'light'}
-                  />
+                  {Platform.OS !== 'web' && <Text style={styles.pickerTitle}>Selecione a Data</Text>}
+                  {Platform.OS === 'web' ? (
+                    React.createElement('input', {
+                      type: 'date',
+                      value: selectedDate.toISOString().split('T')[0],
+                      onChange: (e: any) => {
+                        const newDateStr = e.target.value;
+                        if (newDateStr) {
+                          const [year, month, day] = newDateStr.split('-');
+                          const newDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
+                          onDateChange(null as any, newDate);
+                        }
+                      },
+                      style: {
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(124, 111, 224, 0.2)'}`,
+                        fontSize: '16px',
+                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(124, 111, 224, 0.05)',
+                        color: isDark ? '#F7F5FF' : '#1E1A33',
+                        colorScheme: isDark ? 'dark' : 'light',
+                        outline: 'none',
+                        width: '100%',
+                        fontFamily: 'inherit',
+                      }
+                    })
+                  ) : (
+                    <DateTimePicker
+                      value={selectedDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onValueChange={onDateChange}
+                      textColor={isDark ? '#F7F5FF' : '#16151E'}
+                      themeVariant={isDark ? 'dark' : 'light'}
+                    />
+                  )}
                 </View>
               )}
 
@@ -1224,17 +1251,47 @@ export default function DatesScreen() {
               </View>
 
               {/* TimePicker sem botão de concluir */}
-              {showTimePicker && (
+              {(showTimePicker || Platform.OS === 'web') && (
                 <View style={styles.pickerBox}>
-                  <Text style={styles.pickerTitle}>Selecione o Horário</Text>
-                  <DateTimePicker
-                    value={selectedTime || new Date()}
-                    mode="time"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onValueChange={onTimeChange}
-                    textColor={isDark ? '#F7F5FF' : '#16151E'}
-                    themeVariant={isDark ? 'dark' : 'light'}
-                  />
+                  {Platform.OS !== 'web' && <Text style={styles.pickerTitle}>Selecione o Horário</Text>}
+                  {Platform.OS === 'web' ? (
+                    React.createElement('input', {
+                      type: 'time',
+                      value: selectedTime ? `${String(selectedTime.getHours()).padStart(2, '0')}:${String(selectedTime.getMinutes()).padStart(2, '0')}` : '',
+                      onChange: (e: any) => {
+                        const newTimeStr = e.target.value;
+                        if (newTimeStr) {
+                          const [hours, minutes] = newTimeStr.split(':');
+                          const newTime = new Date();
+                          newTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                          onTimeChange(null as any, newTime);
+                        } else {
+                          setSelectedTime(null);
+                        }
+                      },
+                      style: {
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(124, 111, 224, 0.2)'}`,
+                        fontSize: '16px',
+                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(124, 111, 224, 0.05)',
+                        color: isDark ? '#F7F5FF' : '#1E1A33',
+                        colorScheme: isDark ? 'dark' : 'light',
+                        outline: 'none',
+                        width: '100%',
+                        fontFamily: 'inherit',
+                      }
+                    })
+                  ) : (
+                    <DateTimePicker
+                      value={selectedTime || new Date()}
+                      mode="time"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onValueChange={onTimeChange}
+                      textColor={isDark ? '#F7F5FF' : '#16151E'}
+                      themeVariant={isDark ? 'dark' : 'light'}
+                    />
+                  )}
                 </View>
               )}
 
