@@ -503,59 +503,54 @@ export default function MemoriesScreen() {
   const handleDeleteMemory = useCallback(
     (item: MemoryItem) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      Alert.alert(
-        'Remover memória',
-        `Tem certeza que deseja excluir "${item.title}"?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Excluir',
-            style: 'destructive',
-            onPress: () => {
-              setPreviewMemory(null);
-              const removedItem = item;
-              // Remoção otimista com LinearTransition na lista
-              setMemories((prev) => prev.filter((m) => m.id !== item.id));
 
-              // Timer de 5s para confirmação no banco de dados
-              const timer = setTimeout(async () => {
-                pendingDeleteRef.current.delete(item.id);
-                try {
-                  const { error } = await supabase
-                    .from('memories')
-                    .delete()
-                    .eq('id', item.id);
+      const proceedDelete = async () => {
+        setPreviewMemory(null);
+        // Optimistic UI
+        setMemories((prev) => prev.filter((m) => m.id !== item.id));
 
-                  if (error) throw error;
-                } catch (err: any) {
-                  showToast({
-                    message: 'Não conseguimos remover agora. Tente de novo?',
-                    type: 'error',
-                  });
-                  loadMemories(true);
-                }
-              }, 5000);
+        try {
+          // Delete from storage if it exists
+          if (item.image_url) {
+            let cleanPath = item.image_url;
+            if (cleanPath.includes('/memories/')) {
+              cleanPath = cleanPath.split('/memories/')[1].split('?')[0];
+            }
+            cleanPath = cleanPath.replace(/^\/+/, '');
+            await supabase.storage.from('memories').remove([cleanPath]);
+          }
 
-              pendingDeleteRef.current.set(item.id, timer);
+          // Delete from database
+          const { error } = await supabase.from('memories').delete().eq('id', item.id);
+          if (error) throw error;
+          
+          showToast({
+             message: `"${item.title}" removida`,
+          });
+        } catch (err: any) {
+          // Revert optimistic UI
+          loadMemories(true);
+          showToast({
+            message: 'Erro ao apagar. Tente novamente.',
+            type: 'error',
+          });
+        }
+      };
 
-              // Exibe toast afetuoso com botão "Desfazer"
-              showToast({
-                message: `"${item.title}" removida`,
-                actionLabel: 'Desfazer',
-                duration: 5000,
-                onAction: () => {
-                  const activeTimer = pendingDeleteRef.current.get(item.id);
-                  if (activeTimer) {
-                    clearTimeout(activeTimer);
-                    pendingDeleteRef.current.delete(item.id);
-                  }
-                  setMemories((prev) => [removedItem, ...prev]);
-                },
-              });
-            },
-          },
-        ]
-      );
+      if (Platform.OS === 'web') {
+        if (window.confirm(`Tem certeza que deseja excluir "${item.title}"?`)) {
+          proceedDelete();
+        }
+      } else {
+        Alert.alert(
+          'Remover memória',
+          `Tem certeza que deseja excluir "${item.title}"?`,
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Excluir', style: 'destructive', onPress: proceedDelete },
+          ]
+        );
+      }
     },
     [showToast, loadMemories]
   );
@@ -1053,8 +1048,8 @@ export default function MemoriesScreen() {
         animationType="fade"
         onRequestClose={() => setPreviewMemory(null)}
       >
-        <View style={styles.previewOverlay}>
-          {/* Fundo escuro com opacidade que fecha ao toque em qualquer lugar fora */}
+        <LiquidGlassView variant="hero" intensity={80} style={styles.previewOverlay}>
+          {/* Fundo que fecha ao toque em qualquer lugar fora */}
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
@@ -1121,7 +1116,7 @@ export default function MemoriesScreen() {
               </LinearGradient>
             </View>
           )}
-        </View>
+        </LiquidGlassView>
       </Modal>
     </View>
   );
@@ -1481,7 +1476,7 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(10, 8, 22, 0.94)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   previewTopActionsRow: {
     position: 'absolute',

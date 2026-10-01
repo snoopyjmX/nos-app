@@ -485,14 +485,10 @@ export default function ProfileScreen() {
 
   const handleOpenDateModal = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
-      'Editar data do casal',
-      'Deseja alterar a data que marca o início oficial da jornada de vocês? Isso atualizará o contador da tela Início.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Continuar', onPress: () => setIsDateModalVisible(true) },
-      ]
-    );
+    if (anniversaryDate) {
+      setTempDate(new Date(anniversaryDate));
+    }
+    setIsDateModalVisible(true);
   };
 
   const copyCoupleCode = async () => {

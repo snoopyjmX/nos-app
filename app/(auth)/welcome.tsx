@@ -2,13 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+
 import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
-import { AnimatedTouchable } from '../../components/AnimatedTouchable';
+import { PressableScale } from '../../components/ui/PressableScale';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getThemeTokens } from '../../constants/theme';
 
@@ -19,12 +18,10 @@ export default function WelcomeScreen() {
   const themeTokens = getThemeTokens(isDark);
 
   const handleLoginPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/(auth)/login');
   };
 
   const handleRegisterPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/(auth)/register');
   };
 
@@ -59,25 +56,17 @@ export default function WelcomeScreen() {
 
             <View style={styles.heroContent}>
               {/* Badge Topo: UM ESPAÇO SÓ NOSSO */}
-              <View
-                style={[
-                  styles.pillBadge,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(167, 151, 255, 0.15)'
-                      : 'rgba(255, 255, 255, 0.70)',
-                    borderColor: isDark
-                      ? 'rgba(255, 255, 255, 0.20)'
-                      : 'rgba(255, 255, 255, 0.85)',
-                  },
-                ]}
+              <LiquidGlassView
+                variant="pill"
+                borderRadius={999}
+                style={styles.pillBadge}
               >
                 <Ionicons name="sparkles" size={12} color={themeTokens.primary} />
                 <Text style={[styles.pillBadgeText, { color: themeTokens.primary }]}>
                   UM ESPAÇO SÓ NOSSO
                 </Text>
                 <Ionicons name="sparkles" size={12} color={themeTokens.primary} />
-              </View>
+              </LiquidGlassView>
 
               {/* Logo Oficial do Usuário */}
               <View style={styles.logoWrapper}>
@@ -116,18 +105,10 @@ export default function WelcomeScreen() {
 
           {/* Badges Fusionados com Vidro Líquido */}
           <View style={styles.fusedBadgesRow}>
-            <View
-              style={[
-                styles.fusedPillGroup,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(30, 28, 42, 0.55)'
-                    : 'rgba(255, 255, 255, 0.70)',
-                  borderColor: isDark
-                    ? 'rgba(255, 255, 255, 0.15)'
-                    : 'rgba(255, 255, 255, 0.85)',
-                },
-              ]}
+            <LiquidGlassView
+              variant="pill"
+              borderRadius={999}
+              style={styles.fusedPillGroup}
             >
               <View style={styles.fusedPillHalf}>
                 <Ionicons name="key" size={13} color={themeTokens.primary} />
@@ -153,19 +134,19 @@ export default function WelcomeScreen() {
                   Exclusivo
                 </Text>
               </View>
-            </View>
+            </LiquidGlassView>
           </View>
 
           {/* Botões de Ação */}
           <View style={styles.actionContainer}>
-            <AnimatedTouchable activeOpacity={0.88} onPress={handleLoginPress} scaleTo={0.97}>
-              <LinearGradient
-                colors={['#8E7CE8', '#7C3AED', '#6D28D9']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.primaryButton}
-              >
-                {/* Reflexo superior do botão líquido */}
+            <PressableScale activeOpacity={0.88} onPress={handleLoginPress} scaleTo={0.97}>
+              <LiquidGlassView variant="control" borderRadius={29} style={styles.primaryButtonGlass}>
+                <LinearGradient
+                  colors={isDark ? ['rgba(142, 124, 232, 0.8)', 'rgba(124, 58, 237, 0.8)'] : ['rgba(142, 124, 232, 0.9)', 'rgba(109, 40, 217, 0.9)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
                 <LinearGradient
                   colors={['rgba(255, 255, 255, 0.38)', 'transparent']}
                   start={{ x: 0, y: 0 }}
@@ -178,30 +159,11 @@ export default function WelcomeScreen() {
                 <View style={styles.arrowCircle}>
                   <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
                 </View>
-              </LinearGradient>
-            </AnimatedTouchable>
+              </LiquidGlassView>
+            </PressableScale>
 
-            <AnimatedTouchable activeOpacity={0.85} onPress={handleRegisterPress} scaleTo={0.97}>
-              <View
-                style={[
-                  styles.secondaryGlassButton,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(255, 255, 255, 0.07)'
-                      : 'rgba(255, 255, 255, 0.65)',
-                    borderColor: isDark
-                      ? 'rgba(255, 255, 255, 0.16)'
-                      : 'rgba(255, 255, 255, 0.85)',
-                  },
-                ]}
-              >
-                {Platform.OS !== 'web' && (
-                  <BlurView
-                    intensity={Platform.OS === 'ios' ? 60 : 80}
-                    tint={isDark ? 'dark' : 'light'}
-                    style={StyleSheet.absoluteFill}
-                  />
-                )}
+            <PressableScale activeOpacity={0.85} onPress={handleRegisterPress} scaleTo={0.97}>
+              <LiquidGlassView variant="control" borderRadius={27} style={styles.secondaryButtonGlass}>
                 <Text
                   style={[
                     styles.secondaryButtonText,
@@ -210,8 +172,8 @@ export default function WelcomeScreen() {
                 >
                   Criar Nosso Espaço
                 </Text>
-              </View>
-            </AnimatedTouchable>
+              </LiquidGlassView>
+            </PressableScale>
           </View>
         </View>
       </View>
@@ -242,14 +204,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    shadowColor: '#6B21A8',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.14,
-    shadowRadius: 30,
-    elevation: 8,
     borderWidth: 1.5,
-    position: 'relative',
-    overflow: 'hidden',
   },
   cardSpecularTop: {
     position: 'absolute',
@@ -271,13 +226,6 @@ const styles = StyleSheet.create({
     gap: 7,
     paddingHorizontal: 16,
     paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 1,
-    shadowColor: '#8E7CE8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
   },
   pillBadgeText: {
     fontSize: 11,
@@ -337,13 +285,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
   },
   fusedPillHalf: {
     flexDirection: 'row',
@@ -363,22 +304,13 @@ const styles = StyleSheet.create({
     gap: 12,
     width: '100%',
   },
-  primaryButton: {
+  primaryButtonGlass: {
     width: '100%',
     height: 58,
-    borderRadius: 29,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    shadowColor: '#6D28D9',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
-    position: 'relative',
     overflow: 'hidden',
   },
   buttonGlint: {
@@ -402,13 +334,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryGlassButton: {
+  secondaryButtonGlass: {
     width: '100%',
     height: 54,
-    borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
     overflow: 'hidden',
   },
   secondaryButtonText: {

@@ -9,18 +9,20 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TextInput,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { supabase } from '../../lib/supabase';
 import { useAppTheme } from '../../context/ThemeContext';
 import { getThemeTokens } from '../../constants/theme';
 import { AtmosphereBackground } from '../../components/ui/AtmosphereBackground';
 import { LiquidGlassView } from '../../components/ui/LiquidGlassView';
-import { AnimatedTouchable } from '../../components/AnimatedTouchable';
-import { GlassInput } from '../../components/ui/GlassInput';
+import { PressableScale } from '../../components/ui/PressableScale';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -32,6 +34,11 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -106,58 +113,99 @@ export default function RegisterScreen() {
               Criar Conta
             </Text>
 
-            <GlassInput
-              label="Nome"
-              iconName="person-outline"
-              placeholder="Como seu amor te chama?"
-              autoCapitalize="words"
-              value={name}
-              onChangeText={setName}
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Nome</Text>
+              <LiquidGlassView 
+                variant="control" 
+                style={[styles.inputGlass, isNameFocused && { borderColor: theme.primary }]} 
+                borderRadius={16}
+              >
+                <Ionicons name="person-outline" size={20} color={isNameFocused ? theme.primary : theme.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.textPrimary }]}
+                  placeholderTextColor={theme.textSecondary}
+                  placeholder="Como seu amor te chama?"
+                  autoCapitalize="words"
+                  value={name}
+                  onChangeText={setName}
+                  onFocus={() => setIsNameFocused(true)}
+                  onBlur={() => setIsNameFocused(false)}
+                />
+              </LiquidGlassView>
+            </View>
 
-            <GlassInput
-              label="E-mail"
-              iconName="mail-outline"
-              placeholder="seu@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              value={email}
-              onChangeText={setEmail}
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>E-mail</Text>
+              <LiquidGlassView 
+                variant="control" 
+                style={[styles.inputGlass, isEmailFocused && { borderColor: theme.primary }]} 
+                borderRadius={16}
+              >
+                <Ionicons name="mail-outline" size={20} color={isEmailFocused ? theme.primary : theme.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.textPrimary }]}
+                  placeholderTextColor={theme.textSecondary}
+                  placeholder="seu@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setIsEmailFocused(true)}
+                  onBlur={() => setIsEmailFocused(false)}
+                />
+              </LiquidGlassView>
+            </View>
 
-            <GlassInput
-              label="Senha"
-              iconName="lock-closed-outline"
-              placeholder="Mínimo de 6 caracteres"
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete="new-password"
-              value={password}
-              onChangeText={setPassword}
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Senha</Text>
+              <LiquidGlassView 
+                variant="control" 
+                style={[styles.inputGlass, isPasswordFocused && { borderColor: theme.primary }]} 
+                borderRadius={16}
+              >
+                <Ionicons name="lock-closed-outline" size={20} color={isPasswordFocused ? theme.primary : theme.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.textPrimary }]}
+                  placeholderTextColor={theme.textSecondary}
+                  placeholder="Mínimo de 6 caracteres"
+                  secureTextEntry={!isPasswordVisible}
+                  autoCapitalize="none"
+                  autoComplete="new-password"
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setIsPasswordFocused(true)}
+                  onBlur={() => setIsPasswordFocused(false)}
+                />
+                <Pressable onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeButton}>
+                  <Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.textSecondary} />
+                </Pressable>
+              </LiquidGlassView>
+            </View>
 
-            <AnimatedTouchable
-              style={[styles.button, loading && styles.buttonDisabled]}
+            <PressableScale
+              style={[styles.buttonContainer, loading && styles.buttonDisabled]}
               onPress={handleRegister}
               disabled={loading}
               scaleTo={0.97}
             >
-              <LinearGradient
-                colors={isDark ? ['#A797FF', '#8B5CF6'] : ['#8E7CE8', '#7C3AED']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFill}
-              />
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.buttonText}>Cadastrar</Text>
-              )}
-            </AnimatedTouchable>
+              <LiquidGlassView variant="control" style={styles.button} borderRadius={16}>
+                <LinearGradient
+                  colors={isDark ? ['rgba(142, 124, 232, 0.8)', 'rgba(124, 58, 237, 0.8)'] : ['rgba(142, 124, 232, 0.9)', 'rgba(109, 40, 217, 0.9)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>Cadastrar</Text>
+                )}
+              </LiquidGlassView>
+            </PressableScale>
 
-            <AnimatedTouchable
+            <PressableScale
               style={styles.switchButton}
               onPress={() => router.back()}
               scaleTo={0.98}
@@ -168,7 +216,7 @@ export default function RegisterScreen() {
                   Entrar
                 </Text>
               </Text>
-            </AnimatedTouchable>
+            </PressableScale>
           </LiquidGlassView>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -226,18 +274,44 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
     marginBottom: 20,
   },
+  inputWrapper: {
+    marginBottom: 16,
+    width: '100%',
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+    marginLeft: 2,
+    letterSpacing: -0.1,
+  },
+  inputGlass: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 54,
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    height: '100%',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  eyeButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  buttonContainer: {
+    marginTop: 8,
+  },
   button: {
     height: 52,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
     overflow: 'hidden',
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 3,
   },
   buttonDisabled: {
     opacity: 0.7,

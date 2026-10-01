@@ -253,20 +253,9 @@ const AnimatedDigitString = React.memo(function AnimatedDigitString({
   style,
   reducedMotion,
 }: AnimatedDigitStringProps) {
-  const chars = value.split('');
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-      {chars.map((char, index) => (
-        <View key={index} style={{ overflow: 'hidden' }}>
-          <Animated.View
-            key={`${index}-${char}`}
-            entering={reducedMotion ? undefined : FadeInDown.duration(180)}
-            exiting={reducedMotion ? undefined : FadeOutDown.duration(160)}
-          >
-            <Text style={style}>{char}</Text>
-          </Animated.View>
-        </View>
-      ))}
+      <Text style={[style, { fontVariant: ['tabular-nums'] }]}>{value}</Text>
     </View>
   );
 });
@@ -482,8 +471,9 @@ export default function DatesScreen() {
   // Filtro de exibição ('upcoming' | 'past')
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
-  // Estados para Adicionar Nova Data
+  // Estados para Adicionar/Editar Nova Data
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState<string>('Comemoração');
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -609,18 +599,27 @@ export default function DatesScreen() {
         finalIso = d.toISOString();
       }
 
-      const { error } = await supabase.from('special_dates').insert({
-        couple_id: coupleId,
-        created_by: user.id,
-        title: newTitle.trim(),
-        category: newCategory,
-        event_date: finalIso,
-      });
-
-      if (error) throw error;
+      if (editingDateId) {
+        const { error } = await supabase.from('special_dates').update({
+          title: newTitle.trim(),
+          category: newCategory,
+          event_date: finalIso,
+        }).eq('id', editingDateId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('special_dates').insert({
+          couple_id: coupleId,
+          created_by: user.id,
+          title: newTitle.trim(),
+          category: newCategory,
+          event_date: finalIso,
+        });
+        if (error) throw error;
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsAddModalVisible(false);
+      setEditingDateId(null);
       setNewTitle('');
       setNewCategory('Comemoração');
       const resetD = new Date();
@@ -639,67 +638,38 @@ export default function DatesScreen() {
     }
   };
 
-  // 4. Excluir data com confirmação e timer de 5s para Desfazer
+  const handleEditDate = (item: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setEditingDateId(item.id);
+    setNewTitle(item.title);
+    setNewCategory(item.category || 'Comemoração');
+    const d = new Date(item.event_date);
+    setSelectedDate(d);
+    setSelectedTime(d);
+    setIsAddModalVisible(true);
+  };
+
   const handleDeleteDate = (id: string, title: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      'Remover data especial',
-      `Tem certeza que deseja remover "${title}"?`,
-      [
+    const proceedDelete = async () => {
+      setDates((prev) => prev.filter((d) => d.id !== id));
+      try {
+        const { error } = await supabase.from('special_dates').delete().eq('id', id);
+        if (error) throw error;
+        showToast({ message: `"${title}" removida` });
+      } catch (err: any) {
+        loadDates(true);
+        showToast({ message: 'Erro ao remover.', type: 'error' });
+      }
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Tem certeza que deseja remover "${title}"?`)) { proceedDelete(); }
+    } else {
+      Alert.alert('Remover', `Deseja excluir "${title}"?`, [
         { text: 'Cancelar', style: 'cancel' },
-        {
-           text: 'Excluir',
-           style: 'destructive',
-           onPress: () => {
-             const removedItem = dates.find((d) => d.id === id);
-             // Remoção otimista com LinearTransition na lista
-             setDates((prev) => prev.filter((d) => d.id !== id));
-
-             // Timer de 5s para confirmação no banco de dados
-             const timer = setTimeout(async () => {
-               pendingDeleteRef.current.delete(id);
-               try {
-                 const { error } = await supabase
-                   .from('special_dates')
-                   .delete()
-                   .eq('id', id);
-
-                 if (error) throw error;
-               } catch (err: any) {
-                 showToast({
-                   message: 'Não conseguimos remover agora. Tente de novo?',
-                   type: 'error',
-                 });
-                 loadDates(true);
-               }
-             }, 5000);
-
-             pendingDeleteRef.current.set(id, timer);
-
-             // Exibe toast com opção de "Desfazer"
-             showToast({
-               message: `"${title}" removida`,
-               actionLabel: 'Desfazer',
-               duration: 5000,
-               onAction: () => {
-                 const activeTimer = pendingDeleteRef.current.get(id);
-                 if (activeTimer) {
-                   clearTimeout(activeTimer);
-                   pendingDeleteRef.current.delete(id);
-                 }
-                 if (removedItem) {
-                   setDates((prev) =>
-                     [...prev, removedItem].sort(
-                       (a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
-                     )
-                   );
-                 }
-               },
-             });
-           },
-         },
-      ]
-    );
+        { text: 'Excluir', style: 'destructive', onPress: proceedDelete },
+      ]);
+    }
   };
 
   const onDateChange = (_event: DateTimePickerChangeEvent, date?: Date) => {
@@ -736,7 +706,7 @@ export default function DatesScreen() {
         >
           <PressableScale
             style={styles.eventCardTouchable}
-            onPress={() => handleDeleteDate(item.id, item.title)}
+            onPress={() => handleEditDate(item)}
             onLongPress={() => handleDeleteDate(item.id, item.title)}
           >
             <View style={[styles.eventCard, isPast && styles.pastEventCard]}>
@@ -906,75 +876,35 @@ export default function DatesScreen() {
         {/* 2. Filtro de Abas: Próximos vs Histórico */}
         <View style={{ marginBottom: 16 }}>
           <View style={styles.segmentedContainer}>
-            <PressableScale
-              style={[
-                styles.segmentItem,
-                activeTab === 'upcoming' && styles.segmentItemActive,
-              ]}
-              onPress={() => {
-                setActiveTab('upcoming');
-              }}
+            <TouchableOpacity
+              style={[styles.segmentItem, activeTab === 'upcoming' && styles.segmentItemActive]}
+              onPress={() => setActiveTab('upcoming')}
+              activeOpacity={0.7}
             >
-              {activeTab === 'upcoming' ? (
-                <LinearGradient
-                  colors={['#7C6FE0', '#6366F1']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.activeSegmentGradient}
-                >
-                  <Ionicons name="calendar" size={15} color="#FFFFFF" />
-                  <Text style={styles.segmentTextActive}>
-                    Próximos ({upcomingEvents.length})
-                  </Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.inactiveSegmentContent}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={15}
-                    color={themeTokens.textSecondary}
-                  />
-                  <Text style={styles.segmentText}>
-                    Próximos ({upcomingEvents.length})
-                  </Text>
-                </View>
-              )}
-            </PressableScale>
+              <Ionicons 
+                name={activeTab === 'upcoming' ? "calendar" : "calendar-outline"} 
+                size={15} 
+                color={activeTab === 'upcoming' ? '#FFFFFF' : themeTokens.textSecondary} 
+              />
+              <Text style={activeTab === 'upcoming' ? styles.segmentTextActive : styles.segmentText}>
+                Próximos ({upcomingEvents.length})
+              </Text>
+            </TouchableOpacity>
 
-            <PressableScale
-              style={[
-                styles.segmentItem,
-                activeTab === 'past' && styles.segmentItemActive,
-              ]}
-              onPress={() => {
-                setActiveTab('past');
-              }}
+            <TouchableOpacity
+              style={[styles.segmentItem, activeTab === 'past' && styles.segmentItemActive]}
+              onPress={() => setActiveTab('past')}
+              activeOpacity={0.7}
             >
-              {activeTab === 'past' ? (
-                <LinearGradient
-                  colors={['#7C6FE0', '#6366F1']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.activeSegmentGradient}
-                >
-                  <Ionicons name="time" size={15} color="#FFFFFF" />
-                  <Text style={styles.segmentTextActive}>
-                    Histórico ({pastEvents.length})
-                  </Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.inactiveSegmentContent}>
-                  <Ionicons
-                    name="time-outline"
-                    size={15}
-                    color={themeTokens.textSecondary}
-                  />
-                  <Text style={styles.segmentText}>
-                    Histórico ({pastEvents.length})
-                  </Text>
-                </View>
-              )}
-            </PressableScale>
+              <Ionicons 
+                name={activeTab === 'past' ? "time" : "time-outline"} 
+                size={15} 
+                color={activeTab === 'past' ? '#FFFFFF' : themeTokens.textSecondary} 
+              />
+              <Text style={activeTab === 'past' ? styles.segmentTextActive : styles.segmentText}>
+                Histórico ({pastEvents.length})
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -1606,17 +1536,15 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
   },
   segmentItem: {
     flex: 1,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  segmentItemActive: {},
-  activeSegmentGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
     borderRadius: 20,
+  },
+  segmentItemActive: {
+    backgroundColor: themeTokens.primary,
   },
   inactiveSegmentContent: {
     flexDirection: 'row',

@@ -489,9 +489,9 @@ export default function HomeScreen() {
     try {
       const { data: memoryData } = await supabase
         .from('memories')
-        .select('id, title, memory_date, image_url')
+        .select('id, title, memory_date, image_url, created_at')
         .eq('couple_id', coupleId)
-        .order('memory_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -780,7 +780,10 @@ export default function HomeScreen() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'memories', filter: `couple_id=eq.${coupleId}` },
-        () => callbacksRef.current.loadRecentMemory()
+        () => {
+          callbacksRef.current.loadRecentMemory();
+          callbacksRef.current.loadPastMemories();
+        }
       )
       .on(
         'postgres_changes',
