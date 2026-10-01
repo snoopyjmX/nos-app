@@ -266,17 +266,15 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
       const route = state.routes[index];
       if (!route) return;
 
-      requestAnimationFrame(() => {
-        const event = navigation.emit({
-          type: 'tabPress',
-          target: route.key,
-          canPreventDefault: true,
-        });
-
-        if (!event.defaultPrevented) {
-          navigation.navigate(route.name);
-        }
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
       });
+
+      if (!event.defaultPrevented) {
+        navigation.navigate(route.name);
+      }
     },
     [state.routes, navigation]
   );

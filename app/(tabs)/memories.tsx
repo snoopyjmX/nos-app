@@ -262,6 +262,8 @@ const resolveBatchMemoryUrls = async (items: MemoryItem[]): Promise<MemoryItem[]
   );
 };
 
+let cachedMemories: MemoryItem[] | null = null;
+
 export default function MemoriesScreen() {
   const { isDark } = useAppTheme();
   const themeTokens = getThemeTokens(isDark);
@@ -274,8 +276,8 @@ export default function MemoriesScreen() {
   const { showToast } = useToast();
   const pendingDeleteRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  const [memories, setMemories] = useState<MemoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [memories, setMemories] = useState<MemoryItem[]>(() => cachedMemories || []);
+  const [loading, setLoading] = useState(() => !cachedMemories);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -344,7 +346,7 @@ export default function MemoriesScreen() {
     if (!coupleId) return;
 
     try {
-      if (!silent) setLoading(true);
+      if (!silent && !cachedMemories) setLoading(true);
 
       let { data, error } = await supabase
         .from('memories')
@@ -394,12 +396,14 @@ export default function MemoriesScreen() {
           }
           return newItem;
         });
-        return [...optimisticItems, ...mergedList];
+        const combined = [...optimisticItems, ...mergedList];
+        cachedMemories = combined;
+        return combined;
       });
     } catch (err) {
       console.warn('Erro ao carregar memórias:', err);
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
   }, [coupleId]);
 

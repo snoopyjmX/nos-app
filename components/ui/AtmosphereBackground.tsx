@@ -21,9 +21,14 @@ export function AtmosphereBackground() {
             right: -width * 0.25,
             width: width * 1.05,
             height: width * 1.05,
-            backgroundColor: themeTokens.orbLavender,
-            opacity: isDark ? 0.35 : 0.5,
-            ...(Platform.OS === 'web' ? { filter: 'blur(80px)' } as any : {}),
+            backgroundColor: Platform.OS === 'web' ? 'transparent' : themeTokens.orbLavender,
+            opacity: isDark ? 0.45 : 0.55,
+            ...(Platform.OS === 'web'
+              ? ({
+                  background: `radial-gradient(circle, ${themeTokens.orbLavender} 0%, transparent 68%)`,
+                  willChange: 'transform',
+                } as any)
+              : {}),
           },
         ]}
       />
@@ -37,9 +42,14 @@ export function AtmosphereBackground() {
             left: -width * 0.25,
             width: width * 0.95,
             height: width * 0.95,
-            backgroundColor: themeTokens.orbPink,
-            opacity: isDark ? 0.35 : 0.5,
-            ...(Platform.OS === 'web' ? { filter: 'blur(80px)' } as any : {}),
+            backgroundColor: Platform.OS === 'web' ? 'transparent' : themeTokens.orbPink,
+            opacity: isDark ? 0.45 : 0.55,
+            ...(Platform.OS === 'web'
+              ? ({
+                  background: `radial-gradient(circle, ${themeTokens.orbPink} 0%, transparent 68%)`,
+                  willChange: 'transform',
+                } as any)
+              : {}),
           },
         ]}
       />

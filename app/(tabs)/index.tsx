@@ -337,6 +337,17 @@ const CoupleJourneyCounter = React.memo(function CoupleJourneyCounter({
   );
 });
 
+let homeDataCache: {
+  coupleTitle: string;
+  ownerFirstName: string;
+  partnerFirstName: string;
+  effectiveStartDateStr: string | null;
+  recentMemory: RecentMemory | null;
+  throwbackMemory: any;
+  latestMessage: LatestMessage | null;
+  nextMilestone: NextMilestone | null;
+} | null = null;
+
 let hasPlayedHomeEntranceInSession = false;
 
 export default function HomeScreen() {
@@ -355,23 +366,23 @@ export default function HomeScreen() {
     hasPlayedHomeEntranceInSession = true;
   }, []);
 
-  const [coupleTitle, setCoupleTitle] = useState<string>('Você & Meu Amor');
+  const [coupleTitle, setCoupleTitle] = useState<string>(() => homeDataCache?.coupleTitle || 'Você & Meu Amor');
   const [ownerFirstName, setOwnerFirstName] = useState<string>(
-    () => getFirstName(user?.user_metadata?.display_name || user?.email?.split('@')[0]) || ''
+    () => homeDataCache?.ownerFirstName || getFirstName(user?.user_metadata?.display_name || user?.email?.split('@')[0]) || ''
   );
-  const [partnerFirstName, setPartnerFirstName] = useState<string>('');
-  const [effectiveStartDateStr, setEffectiveStartDateStr] = useState<string | null>(null);
-  const [recentMemory, setRecentMemory] = useState<RecentMemory | null>(null);
+  const [partnerFirstName, setPartnerFirstName] = useState<string>(() => homeDataCache?.partnerFirstName || '');
+  const [effectiveStartDateStr, setEffectiveStartDateStr] = useState<string | null>(() => homeDataCache?.effectiveStartDateStr ?? null);
+  const [recentMemory, setRecentMemory] = useState<RecentMemory | null>(() => homeDataCache?.recentMemory ?? null);
   const [throwbackMemory, setThrowbackMemory] = useState<{
     id: string;
     title: string;
     memory_date: string;
     displayUrl: string | null;
     label: string;
-  } | null>(null);
-  const [latestMessage, setLatestMessage] = useState<LatestMessage | null>(null);
-  const [nextMilestone, setNextMilestone] = useState<NextMilestone | null>(null);
-  const [loading, setLoading] = useState(true);
+  } | null>(() => homeDataCache?.throwbackMemory ?? null);
+  const [latestMessage, setLatestMessage] = useState<LatestMessage | null>(() => homeDataCache?.latestMessage ?? null);
+  const [nextMilestone, setNextMilestone] = useState<NextMilestone | null>(() => homeDataCache?.nextMilestone ?? null);
+  const [loading, setLoading] = useState(() => !homeDataCache);
   const [refreshing, setRefreshing] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -726,8 +737,24 @@ export default function HomeScreen() {
     }
   }, [coupleId]);
 
-  // Carrega todos os dados simultaneamente
-  const loadAllData = useCallback(async () => {
+  useEffect(() => {
+    homeDataCache = {
+      coupleTitle,
+      ownerFirstName,
+      partnerFirstName,
+      effectiveStartDateStr,
+      recentMemory,
+      throwbackMemory,
+      latestMessage,
+      nextMilestone,
+    };
+  }, [coupleTitle, ownerFirstName, partnerFirstName, effectiveStartDateStr, recentMemory, throwbackMemory, latestMessage, nextMilestone]);
+
+  // Carrega todos os dados simultaneamente (SWR: sem travar a tela se já houver cache)
+  const loadAllData = useCallback(async (silent = false) => {
+    if (!silent && !homeDataCache) {
+      setLoading(true);
+    }
     try {
       await Promise.all([
         loadCoupleDetails(),

@@ -445,6 +445,8 @@ const CountdownDigits = React.memo(function CountdownDigits({ targetDate, create
   );
 });
 
+let cachedDates: SpecialDate[] | null = null;
+
 export default function DatesScreen() {
   const { isDark } = useAppTheme();
   const themeTokens = getThemeTokens(isDark);
@@ -457,8 +459,8 @@ export default function DatesScreen() {
   const { showToast } = useToast();
   const pendingDeleteRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  const [dates, setDates] = useState<SpecialDate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dates, setDates] = useState<SpecialDate[]>(() => cachedDates || []);
+  const [loading, setLoading] = useState(() => !cachedDates);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -493,7 +495,7 @@ export default function DatesScreen() {
     if (!coupleId) return;
 
     try {
-      if (!silent) setLoading(true);
+      if (!silent && !cachedDates) setLoading(true);
       const { data, error } = await supabase
         .from('special_dates')
         .select('id, couple_id, title, event_date, category, created_at, created_by')
@@ -501,11 +503,12 @@ export default function DatesScreen() {
         .order('event_date', { ascending: true });
 
       if (error) throw error;
+      cachedDates = data || [];
       setDates(data || []);
     } catch {
       // Ignora silenciosamente
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
   }, [coupleId]);
 

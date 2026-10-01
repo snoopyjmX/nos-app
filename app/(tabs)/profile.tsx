@@ -88,6 +88,14 @@ const formatFullDatePTBR = (dateString?: string | null): string => {
   });
 };
 
+let cachedProfileData: {
+  myProfile: ProfileData | null;
+  partnerProfile: ProfileData | null;
+  partnerId: string | null;
+  anniversaryDate: string | null;
+  coupleCode: string | null;
+} | null = null;
+
 export default function ProfileScreen() {
   const { isDark } = useAppTheme();
   const themeTokens = getThemeTokens(isDark);
@@ -100,11 +108,11 @@ export default function ProfileScreen() {
   const { paddingBottom: tabBarPaddingBottom } = useTabBarHeight();
 
   // Estados de perfis
-  const [myProfile, setMyProfile] = useState<ProfileData | null>(null);
-  const [partnerProfile, setPartnerProfile] = useState<ProfileData | null>(null);
-  const [partnerId, setPartnerId] = useState<string | null>(null);
-  const [anniversaryDate, setAnniversaryDate] = useState<string | null>(null);
-  const [coupleCode, setCoupleCode] = useState<string | null>(null);
+  const [myProfile, setMyProfile] = useState<ProfileData | null>(() => cachedProfileData?.myProfile ?? null);
+  const [partnerProfile, setPartnerProfile] = useState<ProfileData | null>(() => cachedProfileData?.partnerProfile ?? null);
+  const [partnerId, setPartnerId] = useState<string | null>(() => cachedProfileData?.partnerId ?? null);
+  const [anniversaryDate, setAnniversaryDate] = useState<string | null>(() => cachedProfileData?.anniversaryDate ?? null);
+  const [coupleCode, setCoupleCode] = useState<string | null>(() => cachedProfileData?.coupleCode ?? null);
   const [copiedCode, setCopiedCode] = useState(false);
 
   // Animação de pulso lento no coração do casal (1 -> 1.06), pausada fora de foco
@@ -138,9 +146,21 @@ export default function ProfileScreen() {
     transform: [{ scale: heartScale.value }],
   }));
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cachedProfileData);
   const [refreshing, setRefreshing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  useEffect(() => {
+    if (myProfile || partnerProfile || coupleCode) {
+      cachedProfileData = {
+        myProfile,
+        partnerProfile,
+        partnerId,
+        anniversaryDate,
+        coupleCode,
+      };
+    }
+  }, [myProfile, partnerProfile, partnerId, anniversaryDate, coupleCode]);
 
   // Estados para Modal de Edição de Aniversário
   const [isDateModalVisible, setIsDateModalVisible] = useState(false);
@@ -190,7 +210,7 @@ export default function ProfileScreen() {
     if (!user || !coupleId) return;
 
     try {
-      if (!silent) setLoading(true);
+      if (!silent && !cachedProfileData) setLoading(true);
 
       const { data: members, error: membersError } = await supabase
         .from('couple_members')
@@ -277,7 +297,7 @@ export default function ProfileScreen() {
     } catch {
       // Ignora silenciosamente
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
   }, [user, coupleId]);
 
