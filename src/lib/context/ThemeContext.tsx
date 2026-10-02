@@ -104,14 +104,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         document.body.style.backgroundColor = bg;
         document.body.classList.toggle('dark', isDark);
       }
-      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-      if (themeColorMeta) {
-        themeColorMeta.setAttribute('content', bg);
+      let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (!themeColorMeta) {
+        themeColorMeta = document.createElement('meta');
+        themeColorMeta.setAttribute('name', 'theme-color');
+        document.head.appendChild(themeColorMeta);
       }
-      const statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-      if (statusBarMeta) {
-        statusBarMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
+      themeColorMeta.setAttribute('content', bg);
+
+      let statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (!statusBarMeta) {
+        statusBarMeta = document.createElement('meta');
+        statusBarMeta.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
+        document.head.appendChild(statusBarMeta);
       }
+      statusBarMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
     }
   }, [isDark]);
 
