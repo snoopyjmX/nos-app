@@ -13,6 +13,7 @@ interface IconButtonProps {
   size?: number;
   disabled?: boolean;
   loading?: boolean;
+  accessibilityLabel?: string;
 }
 
 export function IconButton({
@@ -22,6 +23,7 @@ export function IconButton({
   size = 24,
   disabled = false,
   loading = false,
+  accessibilityLabel,
 }: IconButtonProps) {
   const { colors, radii } = useTheme();
 
@@ -59,6 +61,7 @@ export function IconButton({
         },
       ]}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
     >
       {loading ? (
         <ActivityIndicator color={getIconColor()} size="small" />
