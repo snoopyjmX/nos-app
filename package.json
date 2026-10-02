@@ -37,6 +37,9 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-native-a11y": "^3.5.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "sharp": "^0.35.4",
     "typescript": "~6.0.3"
   },
@@ -45,7 +48,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "expo export -p web"
+    "build": "expo export -p web",
+    "typecheck": "tsc --noEmit",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint .",
+    "check": "npm run typecheck && npm run lint"
   },
   "private": true
 }
