@@ -29,8 +29,8 @@ export function Screen({
         {
           backgroundColor: colors.background,
           paddingTop: insets.top,
-          paddingLeft: Math.max(insets.left, spacing[16]),
-          paddingRight: Math.max(insets.right, spacing[16]),
+          paddingLeft: Math.max(insets.left, spacing[12]),
+          paddingRight: Math.max(insets.right, spacing[12]),
           paddingBottom: tabBarHeight,
         },
         style,
