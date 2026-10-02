@@ -423,7 +423,7 @@ export default function ProfileScreen() {
       const asset = result.assets[0];
       setUploadingAvatar(true);
 
-      const manipulatedUri = await normalizeAndCompressImage(asset.uri, 512, 0.8);
+      const manipulatedUri = await normalizeAndCompressImage(asset.uri, 512, 0.8, true, asset.width, asset.height);
 
       const response = await fetch(manipulatedUri);
       const fileBody = await response.blob();

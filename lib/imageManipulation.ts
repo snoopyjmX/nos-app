@@ -1,52 +1,55 @@
-import { logger } from './lib/logger';
+import { logger } from './logger';
 import { Platform } from 'react-native';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { manipulateAsync, SaveFormat, Action } from 'expo-image-manipulator';
 
-/**
- * Normaliza a imagem (orientação EXIF e proporção) e a comprime.
- * - No nativo: `manipulateAsync` já aplica a orientação nos pixels e remove os metadados EXIF na saída.
- * - Na web: `createImageBitmap` com `imageOrientation: 'from-image'` aplica a orientação EXIF.
- * Em ambos, preserva-se a proporção original omitindo a altura no redimensionamento.
- */
 export async function normalizeAndCompressImage(
   uri: string,
   targetWidth: number,
-  quality: number = 0.8
+  quality: number = 0.8,
+  cropSquare: boolean = false,
+  originalWidth: number = 0,
+  originalHeight: number = 0
 ): Promise<string> {
   if (Platform.OS === 'web') {
     try {
       const response = await fetch(uri);
       const blob = await response.blob();
 
-      // createImageBitmap com 'from-image' resolve a orientação EXIF nos pixels no navegador.
       const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
 
-      // Calcula as dimensões mantendo a proporção original
-      const scale = targetWidth / bitmap.width;
+      let sourceX = 0;
+      let sourceY = 0;
+      let sourceSize = bitmap.width;
+
+      if (cropSquare) {
+        sourceSize = Math.min(bitmap.width, bitmap.height);
+        sourceX = Math.round((bitmap.width - sourceSize) / 2);
+        sourceY = Math.round((bitmap.height - sourceSize) / 2);
+      } else {
+        sourceSize = bitmap.width;
+      }
+
       const finalWidth = targetWidth;
-      const finalHeight = Math.round(bitmap.height * scale);
+      const finalHeight = cropSquare ? targetWidth : Math.round(bitmap.height * (targetWidth / bitmap.width));
 
       const canvas = document.createElement('canvas');
       canvas.width = finalWidth;
       canvas.height = finalHeight;
       
       const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        throw new Error('Canvas 2D não suportado neste navegador.');
+      if (!ctx) throw new Error('Canvas 2D não suportado.');
+
+      if (cropSquare) {
+        ctx.drawImage(bitmap, sourceX, sourceY, sourceSize, sourceSize, 0, 0, finalWidth, finalHeight);
+      } else {
+        ctx.drawImage(bitmap, 0, 0, finalWidth, finalHeight);
       }
 
-      ctx.drawImage(bitmap, 0, 0, finalWidth, finalHeight);
-
-      // Converte o canvas para Blob JPEG (sem EXIF)
       return new Promise<string>((resolve, reject) => {
         canvas.toBlob(
           (newBlob) => {
-            if (newBlob) {
-              // Retorna uma URI temporária para o blob processado
-              resolve(URL.createObjectURL(newBlob));
-            } else {
-              reject(new Error('Falha ao gerar o blob da imagem.'));
-            }
+            if (newBlob) resolve(URL.createObjectURL(newBlob));
+            else reject(new Error('Falha ao gerar o blob da imagem.'));
           },
           'image/jpeg',
           quality
@@ -54,21 +57,30 @@ export async function normalizeAndCompressImage(
       });
     } catch (error) {
       logger.warn('Erro ao processar imagem no web:', error);
-      // Fallback: tenta rodar o manipulateAsync caso o createImageBitmap falhe (embora no web o manipulateAsync possa ter o bug do EXIF dependendo da engine)
-      const fallback = await manipulateAsync(
-        uri,
-        [{ resize: { width: targetWidth } }],
-        { compress: quality, format: SaveFormat.JPEG }
-      );
-      return fallback.uri;
+      return uri; // fallback simples
     }
   } else {
-    // Nativo (iOS/Android): manipulateAsync lê a imagem, rotaciona conforme o EXIF, redimensiona mantendo aspecto e salva sem EXIF.
-    const manipulated = await manipulateAsync(
-      uri,
-      [{ resize: { width: targetWidth } }],
-      { compress: quality, format: SaveFormat.JPEG }
-    );
+    const actions: Action[] = [];
+
+    // Se precisamos forçar o quadrado e temos dimensões reais
+    if (cropSquare && originalWidth > 0 && originalHeight > 0) {
+      const minDim = Math.min(originalWidth, originalHeight);
+      const originX = Math.round((originalWidth - minDim) / 2);
+      const originY = Math.round((originalHeight - minDim) / 2);
+      
+      actions.push({
+        crop: {
+          originX,
+          originY,
+          width: minDim,
+          height: minDim,
+        }
+      });
+    }
+
+    actions.push({ resize: { width: targetWidth } });
+
+    const manipulated = await manipulateAsync(uri, actions, { compress: quality, format: SaveFormat.JPEG });
     return manipulated.uri;
   }
 }
