@@ -78,3 +78,19 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - **Tornar a Rota Fina:** `memories.tsx` reduzida de 1615 para cerca de 270 linhas, limpando toda a interface para componentes especialistas e a lógica de banco de dados para o hook `useMemories`.
 - **Pendente para o Usuário:** 
   - Testar a aba de **Memórias** e confirmar que a listagem, pull-to-refresh, modal ampliado, exclusão e a adição de foto continuam funcionando como antes.
+
+### Fase 2B: 3ª tela (profile.tsx)
+- **O que foi feito:** Refatorada a tela `profile.tsx`.
+- **Arquivos criados:**
+  - `src/features/profile/types.ts`
+  - `src/features/profile/utils/formatting.ts`
+  - `src/features/profile/api/useProfile.ts` (Hook com Supabase e Realtime)
+  - `src/features/profile/components/ProfileHero.tsx` (Com animação de pulso)
+  - `src/features/profile/components/RelationshipSection.tsx`
+  - `src/features/profile/components/ThemeSection.tsx`
+  - `src/features/profile/components/SecuritySection.tsx`
+  - `src/features/profile/components/AccountActions.tsx`
+  - `src/features/profile/components/AnniversaryModal.tsx`
+- **Tornar a Rota Fina:** `profile.tsx` reduzida de 1644 para cerca de 295 linhas.
+- **Pendente para o Usuário:** 
+  - Testar a aba de **Ajustes (Perfil)** e confirmar que as alterações de tema, cópia do código, avatar e logout funcionam perfeitamente.

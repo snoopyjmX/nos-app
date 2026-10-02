@@ -71,7 +71,7 @@ export function MemoryPreviewModal({
               </View>
 
               <View style={styles.previewInfoWrapper}>
-                <GlassSurface
+                <GlassSurface borderRadius={24}
                   intensity={Platform.OS === 'ios' ? 70 : 90}
                   tint="systemThinMaterialDark"
                   style={styles.previewInfoGlass}
