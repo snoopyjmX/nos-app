@@ -17,8 +17,8 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] Fase 4: Casca do app, dock e PWA
 - [x] **PARADA 4**: usuário vê /dev/design-system e a dock no iPhone
 - [x] Fase 5: Início
-- [ ] **PARADA 5**: usuário aprova o visual
-- [ ] Fase 6: Recados
+- [x] **PARADA 5**: usuário aprova o visual
+- [x] Fase 6: Recados
 - [ ] Fase 7: Memórias
 - [ ] Fase 8: Datas
 - [ ] Fase 9: Ajustes e vínculo
@@ -157,3 +157,11 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - Removido dependência do `AppHeader`, `GlassSurface` e `AtmosphereBackground` da rota `/`, inserindo cabeçalho minimalista em sintonia com a identidade nova e implementando tokens via `useTheme()`.
   - Atualizado todos os ícones da Home para `Feather` com ajustes de tamanhos.
 - **Pendências para o Usuário (PARADA 5):** Navegar para a tela "Início", avaliar os espaços, a nova tipografia, as bordas, as cores quentes, e como as animações de cascata/entrada ocorrem.
+
+### Fase 6: Recados
+- **O que foi feito:**
+  - Migrada toda a estrutura da tela de Mensagens para utilizar o tema e `colors` direto do novo core de UI.
+  - Refatorados o Header (substituindo o antigo desfoque de `GlassSurface` por um visual minimalista e sólido que otimiza performance web), a barra de Input e as bolhas do Chat (`MessageBubble`).
+  - O Chat agora usa os Feather Icons e possui os marcadores de dia de maneira padronizada.
+  - Refatorado o "Skeleton" de carregamento e o `EmptyState` central.
+- **Pendências:** Validar com o usuário se o Chat ficou fluido e sem resíduos visuais do design velho.
