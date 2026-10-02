@@ -3,6 +3,7 @@ import { LogBox, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Stack, useRouter, useSegments, ErrorBoundaryProps } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { AuthProvider, useAuth } from '@/lib/context/AuthContext';
 import { CoupleProvider } from '@/lib/context/CoupleContext';
@@ -12,6 +13,8 @@ import { Toast } from '@/components/ui/Toast';
 import { UpdateBanner } from '@/components/ui/UpdateBanner';
 
 LogBox.ignoreAllLogs(true);
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
@@ -32,6 +35,7 @@ function RootLayoutNav() {
   
   useEffect(() => {
     if (isLoading) return;
+    SplashScreen.hideAsync().catch(() => {});
 
     const inAuthGroup = segments[0] === '(auth)';
     const isResetPassword = segments.includes('reset-password');
