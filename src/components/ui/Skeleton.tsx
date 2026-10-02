@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { StyleProp, ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withRepeat,

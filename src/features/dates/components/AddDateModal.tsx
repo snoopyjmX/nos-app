@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  ActivityIndicator,
   KeyboardAvoidingView,
   ScrollView,
   Platform,

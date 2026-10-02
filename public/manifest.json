@@ -4,22 +4,28 @@
   "description": "Um espaço íntimo e afetuoso para guardar memórias, recados e datas do casal.",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icon-192-any.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "/icon.png",
+      "src": "/icon-512-any.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/apple-touch-icon-v5.png",
+      "src": "/icon-192-maskable.png",
       "type": "image/png",
-      "sizes": "180x180",
-      "purpose": "any"
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",

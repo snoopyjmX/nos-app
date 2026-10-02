@@ -205,7 +205,7 @@ export const CountdownDigits = React.memo(function CountdownDigits({ targetDate,
       </View>
 
       <View style={styles.progressBarContainer}>
-        <View style={[styles.progressBarTrack, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.08)' }]}>
+        <View style={[styles.progressBarTrack, { backgroundColor: isDark ? colors.countdownFillLight : colors.countdownFillDark }]}>
           <Animated.View style={[styles.progressBarFill, { backgroundColor: colors.primary }, progressStyle]} />
         </View>
       </View>

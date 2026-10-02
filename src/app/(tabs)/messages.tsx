@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDockInset } from '@/lib/hooks/useDockInset';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
 import { useTheme } from '@/theme';
-import { useTabBarHeight } from '@/lib/hooks/useTabBarHeight';
 
 import { useMessages } from '@/features/messages/api/useMessages';
 import { MessagesHeader } from '@/features/messages/components/MessagesHeader';
@@ -19,8 +19,8 @@ export default function MessagesScreen() {
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
+  const dockInset = useDockInset();
   const { colors, typography, isDark } = useTheme();
-  const { tabBarHeight } = useTabBarHeight();
   const reducedMotion = useReducedMotion();
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -148,7 +148,7 @@ export default function MessagesScreen() {
   const partnerId = Array.from(profileMap.keys()).find(id => id !== user?.id);
   const partnerProfile = partnerId ? profileMap.get(partnerId) : null;
   const partnerName = partnerProfile?.name ? partnerProfile.name.split(' ')[0] : 'Meu Amor';
-  const presenceText = 'Online agora'; // Presença opcional exibida
+  
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -160,9 +160,11 @@ export default function MessagesScreen() {
       >
         <View style={styles.contentFlex}>
           {loading ? (
-            <MessagesSkeleton insets={insets} />
+            <MessagesSkeleton insets={insets}
+          />
           ) : (
             <MessageList
+              dockInset={dockInset}
               messages={messages}
               user={user}
               profileMap={profileMap}
@@ -171,7 +173,7 @@ export default function MessagesScreen() {
               initialMessageIdsRef={initialMessageIdsRef}
               reducedMotion={reducedMotion}
               insets={insets}
-              flatListRef={flatListRef}
+                        flatListRef={flatListRef}
               handleScroll={handleScroll}
               handleContentSizeChange={handleContentSizeChange}
             />
@@ -180,20 +182,20 @@ export default function MessagesScreen() {
 
         <MessagesHeader
           insets={insets}
-          onGoBack={handleGoBack}
+                    onGoBack={handleGoBack}
           partnerName={partnerName}
-          presenceText={presenceText}
+          
         />
 
         <MessageInput
+          dockInset={dockInset}
           inputText={inputText}
           setInputText={setInputText}
           sending={sending}
           onSend={() => handleSendMessage(flatListRef)}
           isKeyboardVisible={isKeyboardVisible}
           visualKeyboardHeight={visualKeyboardHeight}
-          tabBarHeight={tabBarHeight}
-        />
+          />
       </KeyboardAvoidingView>
     </View>
   );

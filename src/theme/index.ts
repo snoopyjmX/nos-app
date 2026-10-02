@@ -1,6 +1,5 @@
-import { createContext, useContext } from 'react';
 import { useColorScheme } from 'react-native';
-import { colors, ColorTheme } from './colors';
+import { colors } from './colors';
 import { typography } from './typography';
 import { spacing, radii } from './spacing';
 import { shadows } from './shadows';

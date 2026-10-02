@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 
 export function SecuritySection() {
   const { colors, typography, radii, isDark } = useTheme();
-  const [showPresence, setShowPresence] = useState(true);
+  
 
   return (
     <View style={styles.sectionBlock}>
@@ -71,37 +71,6 @@ export function SecuritySection() {
               Suas fotos, memórias e recados são estritamente confidenciais.
             </Text>
           </View>
-        </View>
-
-        <View style={[styles.securityDivider, { backgroundColor: colors.border }]} />
-
-        <View style={styles.securityRow}>
-          <View
-            style={[
-              styles.securityIconBox,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(157, 146, 240, 0.15)'
-                  : 'rgba(124, 111, 224, 0.10)',
-              },
-            ]}
-          >
-            <Feather name="eye" size={20} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.securityTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-              Status de Presença
-            </Text>
-            <Text style={[styles.securitySubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
-              Mostrar "Online agora" ou "Visto há..." para seu parceiro(a).
-            </Text>
-          </View>
-          <Switch
-            value={showPresence}
-            onValueChange={setShowPresence}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : (showPresence ? colors.primarySoft : '#f4f3f4')}
-          />
         </View>
 
       </View>

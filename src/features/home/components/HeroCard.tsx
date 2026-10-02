@@ -60,7 +60,7 @@ export function HeroCard({
 
         <LinearGradient
           colors={[
-            'rgba(15, 12, 28, 0.94)',
+            colors.overlayLight,
             'rgba(15, 12, 28, 0.78)',
             'rgba(15, 12, 28, 0.32)',
             'rgba(15, 12, 28, 0.02)',
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   photoBadgeText: {
-    color: '#FFFFFF',
+    
     fontSize: 12,
     letterSpacing: -0.2,
   },

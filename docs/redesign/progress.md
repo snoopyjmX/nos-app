@@ -202,3 +202,15 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 ### Correções extras de UI e Lógica (Fase 9A/9B)
 - PWA e Web Fallback: Criado o `WebDatePicker` usando `createElement('input')` para contornar a ausência de pickers nativos na web (Safari iOS). Inserido em `AddDateModal`, `AddMemoryModal` e `AnniversaryModal`.
 - Status de Presença (Mock): Inserida indicação visual de parceiro ("Online agora" / bolinha verde "Online") no cabeçalho das telas de Início e Recados, para dar utilidade à preferência de Privacidade criada no perfil.
+
+### Fase 9C: Adherence
+- **O que foi feito:**
+  - `AGENTS.md` localizados em `./AGENTS.md` e orientações seguidas rigorosamente.
+  - Criados os hooks `useDockInset`, `useReducedMotion`, e `useReducedTransparency`. Utilizado o inset dinâmico para substituir o padding solto (ex. `tabBarPaddingBottom + 40`) nas principais telas.
+  - Modificado `public/index.html` para PWA (`viewport-fit=cover`, meta tags apple-mobile-web-app). Ícones novos gerados (any/maskable) usando `sharp` e linkados em `manifest.json`.
+  - Criado documento `docs/redesign/04-pwa-host.md` com cabeçalhos de segurança (CSP, HSTS).
+  - Removido o mock do recurso de presença "Online agora" da barra do Chat (`messages.tsx`) e a opção "Status de Presença" de `SecuritySection.tsx`.
+  - Ajustado o fluxo de convite em `src/app/onboarding.tsx` para forçar código no formato 10 caracteres sem I, O, 0 e 1, e formatar o display como `XXXXX-XXXXX`.
+  - Modificado aviso de erro para o convite ser sempre genérico ("Código inválido ou expirado").
+  - Descomentado o seletor de tema (`ThemeSection.tsx`) no painel de Configurações.
+  - Tipagem corrigida e lint rodado sem erros.

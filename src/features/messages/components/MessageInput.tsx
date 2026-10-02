@@ -12,7 +12,7 @@ interface MessageInputProps {
   onSend: () => void;
   isKeyboardVisible: boolean;
   visualKeyboardHeight: number;
-  tabBarHeight: number;
+  dockInset: number;
 }
 
 export function MessageInput({
@@ -22,7 +22,7 @@ export function MessageInput({
   onSend,
   isKeyboardVisible,
   visualKeyboardHeight,
-  tabBarHeight,
+  dockInset,
 }: MessageInputProps) {
   const { colors, typography, radii, shadows } = useTheme();
 
@@ -36,7 +36,7 @@ export function MessageInput({
           borderTopColor: colors.border,
           paddingBottom: isKeyboardVisible
             ? (Platform.OS === 'ios' ? 10 : 12)
-            : tabBarHeight + 10,
+            : dockInset,
           marginBottom: Platform.OS === 'web' ? visualKeyboardHeight : 0,
         },
       ]}

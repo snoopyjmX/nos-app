@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { IconButton } from '@/components/ui';
 import { useTheme } from '@/theme';
 
@@ -8,10 +7,10 @@ interface MessagesHeaderProps {
   insets: any;
   onGoBack: () => void;
   partnerName?: string;
-  presenceText?: string;
+  
 }
 
-export function MessagesHeader({ insets, onGoBack, partnerName, presenceText }: MessagesHeaderProps) {
+export function MessagesHeader({ insets, onGoBack, partnerName, }: MessagesHeaderProps) {
   const { colors, typography, shadows } = useTheme();
 
   return (
@@ -43,7 +42,7 @@ export function MessagesHeader({ insets, onGoBack, partnerName, presenceText }: 
             style={[styles.headerCoupleSubtitle, { color: colors.primary, fontFamily: typography.fontFamily.medium }]}
             numberOfLines={1}
           >
-            {presenceText || 'Bilhetes carinhosos'}
+            'Bilhetes carinhosos'
           </Text>
         </View>
       </View>

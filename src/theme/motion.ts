@@ -1,4 +1,3 @@
-import { ViewStyle, TextStyle, ImageStyle } from 'react-native';
 
 export const motion = {
   duration: {

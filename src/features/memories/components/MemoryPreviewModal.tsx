@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
@@ -30,7 +30,7 @@ export function MemoryPreviewModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={[styles.previewOverlay, { backgroundColor: 'rgba(0,0,0,0.85)' }]}>
+      <View style={[styles.previewOverlay, { backgroundColor: colors.overlayDark }]}>
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
           activeOpacity={1}
@@ -51,7 +51,7 @@ export function MemoryPreviewModal({
 
               <View style={styles.previewTopActionsRow}>
                 <TouchableOpacity
-                  style={[styles.previewActionCircle, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+                  style={[styles.previewActionCircle, { backgroundColor: colors.overlayMedium }]}
                   onPress={() => onDelete(previewMemory)}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   accessibilityLabel="Remover memória"
@@ -61,7 +61,7 @@ export function MemoryPreviewModal({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.previewActionCircle, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+                  style={[styles.previewActionCircle, { backgroundColor: colors.overlayMedium }]}
                   onPress={onClose}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   accessibilityLabel="Fechar visualização"
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   },
   previewTitle: {
     fontSize: 24,
-    color: '#FFFFFF',
+    
     marginBottom: 8,
     letterSpacing: -0.4,
   },
@@ -190,11 +190,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   previewDate: {
-    color: '#FFFFFF',
+    
     fontSize: 13,
   },
   previewSignature: {
-    color: '#FFFFFF',
+    
     fontSize: 12,
   },
   previewSavedAt: {

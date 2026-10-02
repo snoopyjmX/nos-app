@@ -1,3 +1,5 @@
+import { useDockInset } from '@/lib/hooks/useDockInset';
+
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
@@ -12,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
-import { Screen, Skeleton, IconButton } from '@/components/ui';
+import { Screen, Skeleton } from '@/components/ui';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
 import { useTheme } from '@/theme';
@@ -31,6 +33,7 @@ let hasPlayedHomeEntranceInSession = false;
 export default function HomeScreen() {
   const { colors, typography, radii, shadows, isDark } = useTheme();
   const router = useRouter();
+  const dockInset = useDockInset();
   const { user } = useAuth();
   const { coupleId } = useCouple();
 
@@ -106,7 +109,7 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: dockInset }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -244,7 +247,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 40,
+    
   },
   greetingContainer: {
     marginBottom: 20,

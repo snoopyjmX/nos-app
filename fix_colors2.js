@@ -1,16 +1,7 @@
-export const colors = {
-  light: {
-    primary: '#7C6FE0',
-    primarySoft: '#EFECFC',
-    accent: '#F58FA8',
-    accentSoft: '#FDEEF2',
-    background: '#F8F6FE',
-    surface: '#FFFFFF',
-    textPrimary: '#1E1A33',
-    textSecondary: '#5B5675',
-    success: '#34C759',
-    danger: '#FF3B30',
+const fs = require('fs');
+let txt = fs.readFileSync('src/theme/colors.ts', 'utf8');
 
+const additionalLight = `
     border: '#EFECFC',
     catTravel: '#2B6CB0',
     catTravelBg: 'rgba(43, 108, 176, 0.12)',
@@ -28,20 +19,9 @@ export const colors = {
     countdownFillLight: 'rgba(255, 255, 255, 0.08)',
     countdownFillDark: 'rgba(124, 111, 224, 0.08)',
     white: '#FFFFFF',
+`;
 
-  },
-  dark: {
-    primary: '#9D92F0',
-    primarySoft: '#2A2545',
-    accent: '#F7A6BB',
-    accentSoft: '#3A2634',
-    background: '#15122A',
-    surface: '#1F1B3A',
-    textPrimary: '#F3F1FB',
-    textSecondary: '#B7B2D0',
-    success: '#30D158',
-    danger: '#FF453A',
-
+const additionalDark = `
     border: '#2A2545',
     catTravel: '#2B6CB0',
     catTravelBg: 'rgba(43, 108, 176, 0.12)',
@@ -59,9 +39,8 @@ export const colors = {
     countdownFillLight: 'rgba(255, 255, 255, 0.08)',
     countdownFillDark: 'rgba(124, 111, 224, 0.08)',
     white: '#FFFFFF',
+`;
 
-  },
-} as const;
-
-export type ColorTheme = typeof colors.light;
-export type ColorToken = keyof ColorTheme;
+txt = txt.replace("    border: '#EFECFC',", additionalLight);
+txt = txt.replace("    border: '#2A2545',", additionalDark);
+fs.writeFileSync('src/theme/colors.ts', txt);

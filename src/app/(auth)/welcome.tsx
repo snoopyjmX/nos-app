@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
-import { PressableScale, Button, Chip } from '@/components/ui';
+import { Button, Chip } from '@/components/ui';
 import { useTheme } from '@/theme';
 
 export default function WelcomeScreen() {

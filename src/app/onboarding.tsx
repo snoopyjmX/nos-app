@@ -86,7 +86,7 @@ export default function OnboardingScreen() {
 
   // 2. Fluxo de Resgate de Convite com Código
   const handleRedeemInvite = async () => {
-    const formattedCode = inputCode.trim().toUpperCase();
+    const formattedCode = inputCode.trim().toUpperCase().replace(/-/g, "");
 
     if (!formattedCode) {
       Alert.alert('Atenção', 'Por favor, digite o código de convite.');
@@ -116,7 +116,7 @@ export default function OnboardingScreen() {
     } catch (err: any) {
       Alert.alert(
         'Código inválido',
-        'Não foi possível vincular este código. Verifique se digitou corretamente ou se o convite já foi utilizado.'
+        'Código inválido ou expirado'
       );
     } finally {
       setLoading(false);
@@ -129,7 +129,7 @@ export default function OnboardingScreen() {
 
     try {
       await Share.share({
-        message: `Amor, criei o nosso espaço no NÓS! Baixe o aplicativo e utilize o nosso código: ${inviteCode}`,
+        message: `Amor, criei o nosso espaço no NÓS! Baixe o aplicativo e utilize o nosso código: ${inviteCode?.replace(/(\w{5})(?=\w)/g, "$1-")}`,
       });
     } catch (err) {
       logger.warn('Erro ao compartilhar convite:', err);
@@ -246,7 +246,7 @@ export default function OnboardingScreen() {
             </Text>
 
             <View style={styles.codeBox}>
-              <Text style={styles.codeText}>{inviteCode}</Text>
+              <Text style={styles.codeText}>{inviteCode?.replace(/(\w{5})(?=\w)/g, '$1-')}</Text>
             </View>
 
             <TouchableOpacity
@@ -284,7 +284,15 @@ export default function OnboardingScreen() {
               autoCapitalize="characters"
               autoCorrect={false}
               value={inputCode}
-              onChangeText={setInputCode}
+              onChangeText={(text) => {
+                const clean = text.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, '');
+                let formatted = clean;
+                if (clean.length > 5) {
+                  formatted = clean.slice(0, 5) + '-' + clean.slice(5, 10);
+                }
+                setInputCode(formatted);
+              }}
+              maxLength={11}
             />
 
             <TouchableOpacity

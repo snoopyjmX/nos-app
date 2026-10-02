@@ -15,6 +15,7 @@ interface MessageListProps {
   initialMessageIdsRef: React.MutableRefObject<Set<string>>;
   reducedMotion: boolean;
   insets: any;
+  dockInset: number;
   flatListRef: React.RefObject<any>;
   handleScroll: (event: any) => void;
   handleContentSizeChange: (w: number, h: number) => void;
@@ -29,6 +30,7 @@ export function MessageList({
   initialMessageIdsRef,
   reducedMotion,
   insets,
+  dockInset,
   flatListRef,
   handleScroll,
   handleContentSizeChange,
@@ -117,7 +119,7 @@ export function MessageList({
         styles.scrollContent,
         {
           paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
-          paddingBottom: 24,
+          paddingBottom: dockInset + 60,
         },
       ]}
       keyboardShouldPersistTaps="handled"

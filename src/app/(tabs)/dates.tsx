@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Platform, RefreshControl, Alert, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDockInset } from '@/lib/hooks/useDockInset';
 import * as Haptics from 'expo-haptics';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -18,7 +19,6 @@ import { FilterTabs } from '@/features/dates/components/FilterTabs';
 import { DatesHeroCard } from '@/features/dates/components/DatesHeroCard';
 import { DateListItem } from '@/features/dates/components/DateListItem';
 import { AddDateModal } from '@/features/dates/components/AddDateModal';
-import { Feather } from '@expo/vector-icons';
 import { IconButton } from '@/components/ui';
 
 export default function DatesScreen() {
@@ -26,6 +26,7 @@ export default function DatesScreen() {
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
+  const dockInset = useDockInset();
   const { paddingBottom: tabBarPaddingBottom } = useTabBarHeight();
   const reducedMotion = useReducedMotion();
   const { showToast } = useToast();
@@ -189,7 +190,7 @@ export default function DatesScreen() {
       <ScrollView
         contentContainerStyle={{
           paddingTop: insets.top + (Platform.OS === 'ios' ? 88 : 82),
-          paddingBottom: tabBarPaddingBottom + 40,
+          paddingBottom: dockInset,
           paddingHorizontal: 20,
         }}
         showsVerticalScrollIndicator={false}

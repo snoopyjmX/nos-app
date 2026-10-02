@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Platform, RefreshControl, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDockInset } from '@/lib/hooks/useDockInset';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -30,6 +31,7 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { coupleId, clearCouple } = useCouple();
   const insets = useSafeAreaInsets();
+  const dockInset = useDockInset();
   const { paddingBottom: tabBarPaddingBottom } = useTabBarHeight();
 
   const {
@@ -268,10 +270,10 @@ export default function ProfileScreen() {
             />
 
             {/* Ocultando seletor de tema temporariamente conforme pedido */}
-            {/* <ThemeSection
+            <ThemeSection
               mode={mode}
               setMode={setMode}
-            /> */}
+            />
 
             <SecuritySection />
 

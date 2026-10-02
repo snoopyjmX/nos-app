@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, Platform, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDockInset } from '@/lib/hooks/useDockInset';
 import { useReducedMotion } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -27,6 +28,7 @@ export default function MemoriesScreen() {
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
+  const dockInset = useDockInset();
   const { tabBarHeight } = useTabBarHeight();
   const reducedMotion = useReducedMotion();
   const { showToast } = useToast();

@@ -1,11 +1,13 @@
 import { CategoryOption } from '../types';
+import { colors as themeColors } from '@/theme/colors';
+const colors = themeColors.light;
 
 export const CATEGORIES: CategoryOption[] = [
-  { id: 'Viagem', label: 'Viagem', icon: 'airplane-outline', color: '#2B6CB0', bg: 'rgba(43, 108, 176, 0.12)' },
-  { id: 'Encontro', label: 'Encontro', icon: 'restaurant-outline', color: '#C53030', bg: 'rgba(197, 48, 48, 0.12)' },
-  { id: 'Comemoração', label: 'Comemoração', icon: 'sparkles', color: '#8E7CE8', bg: 'rgba(142, 124, 232, 0.15)' },
-  { id: 'Aniversário', label: 'Aniversário', icon: 'gift-outline', color: '#DD6B20', bg: 'rgba(221, 107, 32, 0.12)' },
-  { id: 'Outro', label: 'Outro', icon: 'bookmark-outline', color: '#4A5568', bg: 'rgba(74, 85, 104, 0.12)' },
+  { id: 'Viagem', label: 'Viagem', icon: 'airplane-outline', color: colors.catTravel, bg: colors.catTravelBg },
+  { id: 'Encontro', label: 'Encontro', icon: 'restaurant-outline', color: colors.catDate, bg: colors.catDateBg },
+  { id: 'Comemoração', label: 'Comemoração', icon: 'sparkles', color: colors.catCeleb, bg: colors.catCelebBg },
+  { id: 'Aniversário', label: 'Aniversário', icon: 'gift-outline', color: colors.catBday, bg: colors.catBdayBg },
+  { id: 'Outro', label: 'Outro', icon: 'bookmark-outline', color: colors.catOther, bg: colors.catOtherBg },
 ];
 
 export const getCategoryMeta = (catName?: string): CategoryOption => {
@@ -15,8 +17,8 @@ export const getCategoryMeta = (catName?: string): CategoryOption => {
       id: catName || 'Outro',
       label: catName || 'Outro',
       icon: 'sparkles',
-      color: '#8E7CE8',
-      bg: 'rgba(142, 124, 232, 0.12)',
+      color: colors.catCeleb,
+      bg: colors.catCelebBg,
     }
   );
 };

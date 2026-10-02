@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, KeyboardAvoidingView, ScrollView, TextInput, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Modal, KeyboardAvoidingView, ScrollView, TextInput, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';

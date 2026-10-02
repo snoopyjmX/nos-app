@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, ScrollView } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import {
   Screen,
   SectionTitle,

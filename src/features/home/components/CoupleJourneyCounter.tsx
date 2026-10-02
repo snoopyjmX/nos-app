@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, AppState, AppStateStatus } from 'react-native';
 import { calculateAccumulatedTime } from '../utils/time';
 
-let hasAnimatedHeroCounterThisSession = false;
-
 import { useTheme } from '@/theme';
+
+let hasAnimatedHeroCounterThisSession = false;
 
 interface CoupleJourneyCounterProps {
   startDate: string | null;
