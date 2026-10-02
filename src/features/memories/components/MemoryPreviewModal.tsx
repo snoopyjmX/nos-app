@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   previewInfoGlass: {
-    borderRadius: 24,
+    borderRadius: 24, overflow: "hidden",
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
