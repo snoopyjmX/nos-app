@@ -61,3 +61,20 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - **Pendente para o Usuário (PARADA 2):** 
   - Limpar o cache do bundler (que está causando o erro "Cannot find native module 'ExpoAsset'").
   - Testar a aba de Recados (messages) e confirmar que funciona **exatamente** igual a antes (renderização, animações, blur, chat realtime e visual).
+
+### Fase 2B: 2ª tela (memories.tsx)
+- **O que foi feito:** Refatorada a tela `memories.tsx`.
+- **Arquivos criados:**
+  - `src/features/memories/types.ts`
+  - `src/features/memories/utils/formatting.ts`
+  - `src/features/memories/utils/storage.ts`
+  - `src/features/memories/api/useMemories.ts` (Hook com Supabase, Batch URL Signing e Realtime)
+  - `src/features/memories/components/MemoryCard.tsx`
+  - `src/features/memories/components/MemoryList.tsx`
+  - `src/features/memories/components/MemoriesHeader.tsx`
+  - `src/features/memories/components/MemoryFAB.tsx`
+  - `src/features/memories/components/AddMemoryModal.tsx`
+  - `src/features/memories/components/MemoryPreviewModal.tsx`
+- **Tornar a Rota Fina:** `memories.tsx` reduzida de 1615 para cerca de 270 linhas, limpando toda a interface para componentes especialistas e a lógica de banco de dados para o hook `useMemories`.
+- **Pendente para o Usuário:** 
+  - Testar a aba de **Memórias** e confirmar que a listagem, pull-to-refresh, modal ampliado, exclusão e a adição de foto continuam funcionando como antes.
