@@ -8,8 +8,8 @@ import { AuthProvider, useAuth } from '@/lib/context/AuthContext';
 import { CoupleProvider } from '@/lib/context/CoupleContext';
 import { ThemeProvider, useAppTheme } from '@/lib/context/ThemeContext';
 import { ToastProvider } from '@/lib/context/ToastContext';
-import { Toast } from '@/design/ui/Toast';
-import { UpdateBanner } from '@/design/ui/UpdateBanner';
+import { Toast } from '@/components/ui/Toast';
+import { UpdateBanner } from '@/components/ui/UpdateBanner';
 
 LogBox.ignoreAllLogs(true);
 

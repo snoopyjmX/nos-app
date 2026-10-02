@@ -1,75 +1,165 @@
 import React from 'react';
-import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import Animated, {
+  FadeInDown,
+  FadeOutDown,
+  FadeIn,
+  FadeOut,
+  useReducedMotion,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
+import { useToast } from '@/lib/context/ToastContext';
 import { useTheme } from '@/theme';
+import { PressableScale } from './PressableScale';
 
-type IconName = keyof typeof Feather.glyphMap;
+export function Toast() {
+  const { toast, hideToast } = useToast();
+  const { colors, typography, spacing, radii, shadows, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
 
-interface ToastProps {
-  message: string;
-  type?: 'success' | 'error' | 'info';
-  style?: StyleProp<ViewStyle>;
-}
+  if (!toast) return null;
 
-export function Toast({ message, type = 'info', style }: ToastProps) {
-  const { colors, typography, spacing, radii, shadows } = useTheme();
+  const handleAction = () => {
+    if (toast.onAction) {
+      toast.onAction();
+    }
+    hideToast(toast.id);
+  };
 
-  let iconName: IconName = 'info';
-  let iconColor: string = colors.primary;
-
-  if (type === 'success') {
-    iconName = 'check-circle';
-    iconColor = colors.success;
-  } else if (type === 'error') {
-    iconName = 'alert-circle';
-    iconColor = colors.danger;
-  }
+  const getIcon = () => {
+    switch (toast.type) {
+      case 'success':
+        return <Feather name="heart" size={18} color={colors.accent} />;
+      case 'error':
+        return <Feather name="alert-circle" size={18} color={colors.danger} />;
+      default:
+        return <Feather name="info" size={18} color={colors.primary} />;
+    }
+  };
 
   return (
     <Animated.View
-      entering={FadeInUp}
-      exiting={FadeOutUp}
+      key={toast.id}
+      entering={
+        reducedMotion
+          ? FadeIn.duration(150)
+          : FadeInDown.duration(240).springify().damping(18)
+      }
+      exiting={reducedMotion ? FadeOut.duration(150) : FadeOutDown.duration(180)}
       style={[
-        styles.container,
+        styles.toastWrapper,
         {
-          backgroundColor: colors.surface,
-          borderRadius: radii.md,
-          padding: spacing[16],
-          ...shadows.medium,
+          bottom: Math.max(insets.bottom, 16) + 76, // Acima da tab bar
         },
-        style,
       ]}
+      pointerEvents="box-none"
     >
-      <Feather name={iconName} size={20} color={iconColor} style={styles.icon} />
-      <Text
+      <View
         style={[
-          styles.text,
+          styles.toastCard,
           {
-            color: colors.textPrimary,
-            fontFamily: typography.fontFamily.medium,
-            fontSize: typography.fontSize.sm,
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.md,
+            ...shadows.medium,
           },
         ]}
       >
-        {message}
-      </Text>
+        <View style={styles.iconBox}>{getIcon()}</View>
+
+        <Text
+          style={[
+            styles.messageText,
+            { 
+              color: colors.textPrimary,
+              fontFamily: typography.fontFamily.medium,
+              fontSize: typography.fontSize.sm,
+            }
+          ]}
+          numberOfLines={2}
+        >
+          {toast.message}
+        </Text>
+
+        {toast.actionLabel && (
+          <PressableScale
+            onPress={handleAction}
+            style={[
+              styles.actionButton,
+              {
+                backgroundColor: colors.accentSoft,
+                borderRadius: radii.sm,
+              },
+            ]}
+            accessibilityLabel={toast.actionLabel}
+          >
+            <Text 
+              style={[
+                styles.actionButtonText, 
+                { 
+                  color: colors.accent,
+                  fontFamily: typography.fontFamily.bold,
+                }
+              ]}
+            >
+              {toast.actionLabel}
+            </Text>
+          </PressableScale>
+        )}
+
+        <PressableScale
+          onPress={() => hideToast(toast.id)}
+          style={styles.closeButton}
+          hitSlop={12}
+          accessibilityLabel="Fechar notificação"
+        >
+          <Feather name="x" size={18} color={colors.textSecondary} />
+        </PressableScale>
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  toastWrapper: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  toastCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'center',
-    minWidth: 200,
-    maxWidth: '90%',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    maxWidth: 400,
+    width: '100%',
   },
-  icon: {
+  iconBox: {
     marginRight: 12,
   },
-  text: {
+  messageText: {
     flex: 1,
+    lineHeight: 20,
+    letterSpacing: -0.2,
+  },
+  actionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonText: {
+    fontSize: 13,
+  },
+  closeButton: {
+    paddingLeft: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

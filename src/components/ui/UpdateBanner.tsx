@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AnimatedTouchable } from '@/design/components/AnimatedTouchable';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { PressableScale } from './PressableScale';
+import { useTheme } from '@/theme';
 
 export function UpdateBanner() {
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
+  const { colors, typography, shadows, radii } = useTheme();
   const insets = useSafeAreaInsets();
   const [hasUpdate, setHasUpdate] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<any>(null);
@@ -19,13 +17,11 @@ export function UpdateBanner() {
     }
 
     navigator.serviceWorker.register('/sw.js').then((registration) => {
-      // 1. Já existe um worker esperando para ativar
       if (registration.waiting) {
         setWaitingWorker(registration.waiting);
         setHasUpdate(true);
       }
 
-      // 2. Novo worker detectado durante o ciclo de vida
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
         if (!newWorker) return;
@@ -66,32 +62,35 @@ export function UpdateBanner() {
         styles.bannerContainer,
         {
           top: insets.top > 0 ? insets.top + 8 : 12,
-          backgroundColor: isDark ? 'rgba(35, 29, 62, 0.95)' : 'rgba(255, 255, 255, 0.96)',
-          borderColor: isDark ? 'rgba(167, 151, 255, 0.35)' : 'rgba(124, 111, 224, 0.25)',
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderRadius: radii.md,
+          ...shadows.medium,
         },
       ]}
     >
       <View style={styles.contentRow}>
-        <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(167,151,255,0.18)' : '#EFECFC' }]}>
-          <Ionicons name="sparkles" size={15} color={themeTokens.primary} />
+        <View style={[styles.iconCircle, { backgroundColor: colors.primarySoft }]}>
+          <Feather name="refresh-cw" size={15} color={colors.primary} />
         </View>
 
         <View style={styles.textColumn}>
-          <Text style={[styles.title, { color: themeTokens.textPrimary }]}>
+          <Text style={[styles.title, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
             Nova versão disponível
           </Text>
-          <Text style={[styles.subtitle, { color: themeTokens.textSecondary }]}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
             Atualize para carregar as melhorias
           </Text>
         </View>
 
-        <AnimatedTouchable
-          style={[styles.reloadButton, { backgroundColor: themeTokens.primary }]}
+        <PressableScale
+          style={[styles.reloadButton, { backgroundColor: colors.primary, borderRadius: radii.sm }]}
           onPress={handleReload}
-          activeOpacity={0.85}
         >
-          <Text style={styles.reloadText}>Recarregar</Text>
-        </AnimatedTouchable>
+          <Text style={[styles.reloadText, { fontFamily: typography.fontFamily.bold, color: colors.surface }]}>
+            Recarregar
+          </Text>
+        </PressableScale>
       </View>
     </View>
   );
@@ -102,20 +101,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    zIndex: 9999,
-    borderRadius: 20,
     borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    elevation: 8,
+    zIndex: 9999,
   },
   contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 12,
     gap: 12,
   },
   iconCircle: {
@@ -127,27 +119,22 @@ const styles = StyleSheet.create({
   },
   textColumn: {
     flex: 1,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 14,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 1,
+    fontSize: 12,
   },
   reloadButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   reloadText: {
-    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '700',
   },
 });

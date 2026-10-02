@@ -11,10 +11,10 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] Fase 2B: 1ª tela (a menor)
 - [x] **PARADA 2**: usuário confere que a tela é igual à anterior
 - [x] Fase 2B: demais telas, uma a uma
-- [ ] **PARADA 3**: usuário testa o app inteiro
+- [x] **PARADA 3**: usuário testa o app inteiro
 - [x] Fase 3A: Tokens
 - [x] Fase 3B: Componentes do design system
-- [ ] Fase 4: Casca do app, dock e PWA
+- [x] Fase 4: Casca do app, dock e PWA
 - [ ] **PARADA 4**: usuário vê /dev/design-system e a dock no iPhone
 - [ ] Fase 5: Início
 - [ ] **PARADA 5**: usuário aprova o visual
@@ -141,3 +141,11 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - `Skeleton`: Placeholder animado (pulsante) para estados de carregamento.
   - `Toast`: Mensagem flutuante para feedback rápido (sucesso, erro, info).
 - **Pendências:** Iniciar a migração da casca do app e Tab Bar (Fase 4).
+
+### Fase 4: Casca do app, dock e PWA
+- **O que foi feito:**
+  - Migrada a antiga Tab Bar (`LiquidTabBar`) para dentro do Design System novo em `src/components/layout/TabBar.tsx`, refatorada para consumir estritamente os tokens de `@/theme` e ícones `Feather`.
+  - Migrado o componente `Toast` e `UpdateBanner` para a nova estrutura base `src/components/ui/`, refatorando os ícones para `Feather` e as cores/tipografia para consumir `useTheme()`.
+  - Revisado e verificado o arquivo `sw.js` (PWA Cache) e `manifest.json`.
+  - Criada a tela `/dev/design-system` para expor o catálogo de componentes visuais do app de forma isolada.
+- **Pendências para o Usuário (PARADA 4):** Abrir o app no iPhone (ou Safari Desktop), navegar até a rota `/dev/design-system`, inspecionar o visual e comportamento da Dock flutuante, e validar a coesão do Design System até o momento.

@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
   AccessibilityInfo,
 } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -25,22 +25,20 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { getThemeTokens } from '@/design/tokens/theme';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-
+import { useTheme } from '@/theme';
 import { Image } from 'expo-image';
 import { useAuth } from '@/lib/context/AuthContext';
 import { supabase } from '@/lib/core/supabase';
 
 const TAB_CONFIG: Record<
   string,
-  { label: string; icon: keyof typeof Ionicons.glyphMap; focusedIcon: keyof typeof Ionicons.glyphMap }
+  { label: string; icon: keyof typeof Feather.glyphMap; focusedIcon: keyof typeof Feather.glyphMap }
 > = {
-  index: { label: 'Início', icon: 'home-outline', focusedIcon: 'home' },
-  messages: { label: 'Mensagens', icon: 'chatbubble-ellipses-outline', focusedIcon: 'chatbubble-ellipses' },
-  memories: { label: 'Memórias', icon: 'camera-outline', focusedIcon: 'camera' },
-  dates: { label: 'Datas', icon: 'calendar-outline', focusedIcon: 'calendar' },
-  profile: { label: 'Perfil', icon: 'person-outline', focusedIcon: 'person' },
+  index: { label: 'Início', icon: 'home', focusedIcon: 'home' },
+  messages: { label: 'Mensagens', icon: 'message-circle', focusedIcon: 'message-circle' },
+  memories: { label: 'Memórias', icon: 'camera', focusedIcon: 'camera' },
+  dates: { label: 'Datas', icon: 'calendar', focusedIcon: 'calendar' },
+  profile: { label: 'Perfil', icon: 'user', focusedIcon: 'user' },
 };
 
 const INDICATOR_SPRING = { damping: 15, stiffness: 150, overshootClamping: true };
@@ -63,11 +61,11 @@ interface TabIconProps {
 function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion, avatarUrl }: TabIconProps) {
   const config = TAB_CONFIG[routeName] || {
     label: routeName,
-    icon: 'ellipse-outline' as const,
-    focusedIcon: 'ellipse' as const,
+    icon: 'circle' as const,
+    focusedIcon: 'circle' as const,
   };
 
-  const themeTokens = getThemeTokens(isDark);
+  const theme = useTheme();
 
   const proximity = useDerivedValue(() => {
     return Math.abs(activeIndex.value - index);
@@ -90,8 +88,8 @@ function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion, avatarU
     return { opacity };
   });
 
-  const activeColor = themeTokens.primary;
-  const inactiveColor = themeTokens.textSecondary;
+  const activeColor = theme.colors.primary;
+  const inactiveColor = theme.colors.textSecondary;
 
   const isFocused = useDerivedValue(() => proximity.value < 0.5);
 
@@ -130,10 +128,10 @@ function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion, avatarU
         ) : (
           <>
             <Animated.View style={unfocusedIconOpacity}>
-              <Ionicons name={config.icon} size={21} color={inactiveColor} />
+              <Feather name={config.icon} size={21} color={inactiveColor} />
             </Animated.View>
             <Animated.View style={focusedIconOpacity}>
-              <Ionicons name={config.focusedIcon} size={21} color={activeColor} />
+              <Feather name={config.focusedIcon} size={21} color={activeColor} />
             </Animated.View>
           </>
         )}
@@ -158,11 +156,11 @@ interface LiquidTabBarProps {
   navigation: any;
 }
 
-export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
+export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
+  const theme = useTheme();
+  const { isDark } = theme;
   const { user } = useAuth();
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
 
@@ -390,8 +388,8 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
             bottom: bottomPosition,
             left: DOCK_MARGIN,
             right: DOCK_MARGIN,
-            shadowColor: themeTokens.shadow,
-            borderColor: themeTokens.glassBorder,
+            shadowColor: theme.shadows.medium.shadowColor,
+            borderColor: theme.colors.border,
             borderTopColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.95)',
             zIndex: 100,
           },
@@ -445,7 +443,7 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
               borderColor: isDark
                 ? 'rgba(255, 255, 255, 0.24)'
                 : 'rgba(255, 255, 255, 0.85)',
-              shadowColor: themeTokens.primary,
+              shadowColor: theme.colors.primary,
             },
           ]}
         >
@@ -494,7 +492,7 @@ export function LiquidTabBar({ state, descriptors, navigation }: LiquidTabBarPro
   );
 }
 
-export default LiquidTabBar;
+export default TabBar;
 
 const styles = StyleSheet.create({
   dockFadeGradient: {

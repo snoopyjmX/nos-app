@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs, useRouter, usePathname } from 'expo-router';
-import { LiquidTabBar } from '@/design/components/LiquidTabBar';
+import { TabBar } from '@/components/layout/TabBar';
 import { Gesture, GestureDetector, Directions } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { View, Platform } from 'react-native';
@@ -59,7 +59,7 @@ export default function TabsLayout() {
     <GestureDetector gesture={swipeGesture}>
       <View style={{ flex: 1 }}>
         <Tabs
-          tabBar={(props) => <LiquidTabBar {...props} />}
+          tabBar={(props) => <TabBar {...props} />}
           screenOptions={{
             headerShown: false,
           }}

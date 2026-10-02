@@ -9,3 +9,4 @@ export * from './Avatar';
 export * from './EmptyState';
 export * from './Skeleton';
 export * from './Toast';
+export * from './UpdateBanner';
