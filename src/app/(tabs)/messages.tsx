@@ -20,7 +20,7 @@ export default function MessagesScreen() {
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
   const { colors, typography, isDark } = useTheme();
-  const { paddingBottom: tabBarHeight } = useTabBarHeight();
+  const { tabBarHeight } = useTabBarHeight();
   const reducedMotion = useReducedMotion();
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
