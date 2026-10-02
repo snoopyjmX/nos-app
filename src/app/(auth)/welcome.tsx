@@ -1,179 +1,129 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 
-import { AtmosphereBackground } from '@/design/ui/AtmosphereBackground';
-import { LiquidGlassView } from '@/design/ui/LiquidGlassView';
-import { PressableScale } from '@/design/ui/PressableScale';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { PressableScale, Button, Chip } from '@/components/ui';
+import { useTheme } from '@/theme';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
-
-  const handleLoginPress = () => {
-    router.push('/(auth)/login');
-  };
-
-  const handleRegisterPress = () => {
-    router.push('/(auth)/register');
-  };
+  const { colors, typography, isDark } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
-      <AtmosphereBackground />
-
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View
         style={[
           styles.content,
           {
             paddingTop: insets.top + (Platform.OS === 'ios' ? 24 : 16),
-            paddingBottom: Platform.OS === 'ios' ? insets.bottom + 16 : 28,
+            paddingBottom: Math.max(insets.bottom, 24) + 16,
           },
         ]}
       >
-        {/* Card Hero de Vidro Jateado (Apple Liquid Glass) */}
+        {/* Hero Section */}
         <View style={styles.heroContainer}>
-          <LiquidGlassView variant="hero" style={styles.heroGlass} borderRadius={40}>
-            {/* Especular superior translúcido */}
-            <LinearGradient
-              colors={
-                isDark
-                  ? ['rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.02)', 'transparent']
-                  : ['rgba(255, 255, 255, 0.85)', 'rgba(255, 255, 255, 0.15)', 'transparent']
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 0.6 }}
-              style={styles.cardSpecularTop}
-              pointerEvents="none"
+          <View style={styles.heroContent}>
+            {/* Badge Topo: UM ESPAÇO SÓ NOSSO */}
+            <Chip 
+              label="UM ESPAÇO SÓ NOSSO" 
+              icon="heart"
             />
 
-            <View style={styles.heroContent}>
-              {/* Badge Topo: UM ESPAÇO SÓ NOSSO */}
-              <LiquidGlassView
-                variant="pill"
-                borderRadius={999}
-                style={styles.pillBadge}
-              >
-                <Ionicons name="sparkles" size={12} color={themeTokens.primary} />
-                <Text style={[styles.pillBadgeText, { color: themeTokens.primary }]}>
-                  UM ESPAÇO SÓ NOSSO
-                </Text>
-                <Ionicons name="sparkles" size={12} color={themeTokens.primary} />
-              </LiquidGlassView>
-
-              {/* Logo Oficial do Usuário */}
-              <View style={styles.logoWrapper}>
-                <Image
-                  source={require('../../../assets/favicon.png')}
-                  style={styles.heroLogo}
-                  resizeMode="contain"
-                />
-              </View>
-
-              {/* Tipografia da Marca */}
-              <View style={styles.heroTypography}>
-                <Text
-                  style={[
-                    styles.brandTitle,
-                    {
-                      color: isDark ? '#FFFFFF' : '#16151E',
-                    },
-                  ]}
-                >
-                  nós.
-                </Text>
-                <Text style={[styles.brandTagline, { color: themeTokens.primary }]}>
-                  O nosso refúgio digital a dois.
-                </Text>
-              </View>
+            {/* Logo Oficial Transparente */}
+            <View style={styles.logoWrapper}>
+              <Image
+                source={require('../../../assets/icone-anel-transparente.png')}
+                style={styles.heroLogo}
+                resizeMode="contain"
+              />
             </View>
-          </LiquidGlassView>
+
+            {/* Tipografia da Marca */}
+            <View style={styles.heroTypography}>
+              <Text
+                style={[
+                  styles.brandTitle,
+                  {
+                    color: colors.textPrimary,
+                    fontFamily: typography.fontFamily.black,
+                  },
+                ]}
+              >
+                nós.
+              </Text>
+              <Text 
+                style={[
+                  styles.brandTagline, 
+                  { 
+                    color: colors.primary,
+                    fontFamily: typography.fontFamily.bold 
+                  }
+                ]}
+              >
+                O nosso refúgio digital a dois.
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Seção Inferior com Descrição, Badges e Botões de Ação */}
         <View style={styles.bottomSection}>
-          <Text style={[styles.brandDescription, { color: themeTokens.textSecondary }]}>
-            Um lugar privado e silencioso para registrar memórias, trocar bilhetes e celebrar a nossa história juntos.
+          <Text 
+            style={[
+              styles.brandDescription, 
+              { 
+                color: colors.textSecondary,
+                fontFamily: typography.fontFamily.regular
+              }
+            ]}
+          >
+            Um lugar privado e seguro para registrar memórias, trocar bilhetes e celebrar a nossa história juntos.
           </Text>
 
-          {/* Badges Fusionados com Vidro Líquido */}
+          {/* Badges Simples */}
           <View style={styles.fusedBadgesRow}>
-            <LiquidGlassView
-              variant="pill"
-              borderRadius={999}
-              style={styles.fusedPillGroup}
-            >
+            <View style={[styles.fusedPillGroup, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
               <View style={styles.fusedPillHalf}>
-                <Ionicons name="key" size={13} color={themeTokens.primary} />
-                <Text style={[styles.fusedPillText, { color: themeTokens.textPrimary }]}>
-                  100% Privado
+                <Feather name="lock" size={13} color={colors.primary} />
+                <Text style={[styles.fusedPillText, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+                  Privado e protegido
                 </Text>
               </View>
 
               <View
                 style={[
                   styles.fusedPillDivider,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(255, 255, 255, 0.15)'
-                      : 'rgba(142, 124, 232, 0.20)',
-                  },
+                  { backgroundColor: colors.border },
                 ]}
               />
 
               <View style={styles.fusedPillHalf}>
-                <Ionicons name="infinite" size={15} color={themeTokens.primary} />
-                <Text style={[styles.fusedPillText, { color: themeTokens.textPrimary }]}>
+                <Feather name="star" size={14} color={colors.primary} />
+                <Text style={[styles.fusedPillText, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
                   Exclusivo
                 </Text>
               </View>
-            </LiquidGlassView>
+            </View>
           </View>
 
           {/* Botões de Ação */}
           <View style={styles.actionContainer}>
-            <PressableScale activeOpacity={0.88} onPress={handleLoginPress} scaleTo={0.97}>
-              <LiquidGlassView variant="control" borderRadius={29} style={styles.primaryButtonGlass}>
-                <LinearGradient
-                  colors={isDark ? ['rgba(142, 124, 232, 0.8)', 'rgba(124, 58, 237, 0.8)'] : ['rgba(142, 124, 232, 0.9)', 'rgba(109, 40, 217, 0.9)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.38)', 'transparent']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 0.8 }}
-                  style={styles.buttonGlint}
-                  pointerEvents="none"
-                />
+            <Button
+              onPress={() => router.push('/(auth)/login')}
+              variant="primary"
+            >
+              Entrar na Minha Conta
+            </Button>
 
-                <Text style={styles.primaryButtonText}>Entrar na Minha Conta</Text>
-                <View style={styles.arrowCircle}>
-                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                </View>
-              </LiquidGlassView>
-            </PressableScale>
-
-            <PressableScale activeOpacity={0.85} onPress={handleRegisterPress} scaleTo={0.97}>
-              <LiquidGlassView variant="control" borderRadius={27} style={styles.secondaryButtonGlass}>
-                <Text
-                  style={[
-                    styles.secondaryButtonText,
-                    { color: isDark ? '#F7F5FF' : '#16151E' },
-                  ]}
-                >
-                  Criar Nosso Espaço
-                </Text>
-              </LiquidGlassView>
-            </PressableScale>
+            <Button
+              onPress={() => router.push('/(auth)/register')}
+              variant="ghost"
+            >
+              Criar Nosso Espaço
+            </Button>
           </View>
         </View>
       </View>
@@ -195,72 +145,34 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    maxHeight: 480,
-  },
-  heroGlass: {
-    width: '100%',
-    aspectRatio: 0.86,
-    maxHeight: 450,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    borderWidth: 1.5,
-  },
-  cardSpecularTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 120,
   },
   heroContent: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    flex: 1,
+    justifyContent: 'center',
     width: '100%',
-    paddingVertical: 10,
-  },
-  pillBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-  },
-  pillBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.3,
+    gap: 24,
   },
   logoWrapper: {
-    width: 145,
-    height: 145,
+    width: 140,
+    height: 140,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 12,
   },
   heroLogo: {
     width: '100%',
     height: '100%',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 18,
   },
   heroTypography: {
     alignItems: 'center',
+    gap: 4,
   },
   brandTitle: {
     fontSize: 52,
-    fontWeight: '900',
     letterSpacing: -1.8,
-    lineHeight: 58,
   },
   brandTagline: {
     fontSize: 17,
-    fontWeight: '700',
     letterSpacing: -0.3,
-    marginTop: 2,
   },
   bottomSection: {
     width: '100%',
@@ -271,20 +183,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: '92%',
-    fontWeight: '400',
-    marginBottom: 18,
+    marginBottom: 20,
   },
   fusedBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
   },
   fusedPillGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    borderRadius: 999,
   },
   fusedPillHalf: {
     flexDirection: 'row',
@@ -293,7 +205,6 @@ const styles = StyleSheet.create({
   },
   fusedPillText: {
     fontSize: 13,
-    fontWeight: '700',
   },
   fusedPillDivider: {
     width: 1,
@@ -303,47 +214,5 @@ const styles = StyleSheet.create({
   actionContainer: {
     gap: 12,
     width: '100%',
-  },
-  primaryButtonGlass: {
-    width: '100%',
-    height: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    overflow: 'hidden',
-  },
-  buttonGlint: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '60%',
-  },
-  primaryButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: -0.3,
-  },
-  arrowCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonGlass: {
-    width: '100%',
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.2,
   },
 });

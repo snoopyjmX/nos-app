@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -14,21 +12,16 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 
 import { supabase } from '@/lib/core/supabase';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
-import { AtmosphereBackground } from '@/design/ui/AtmosphereBackground';
-import { LiquidGlassView } from '@/design/ui/LiquidGlassView';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { useTheme } from '@/theme';
+import { Button, IconButton } from '@/components/ui';
 
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { isDark } = useAppTheme();
-  const theme = getThemeTokens(isDark);
+  const { colors, typography, isDark } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,7 +32,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Atenção', 'Por favor, preencha o e-mail e a senha.');
+      Alert.alert('Atenção', 'E-mail ou senha incorretos.');
       return;
     }
 
@@ -51,15 +44,28 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erro ao entrar', error.message);
+      Alert.alert('Atenção', 'E-mail ou senha incorretos.');
     } else {
       router.replace('/');
     }
   };
 
+  const handleForgotPassword = () => {
+    Alert.alert('Recuperar Senha', 'Se o e-mail existir em nossa base, enviaremos as instruções para redefinir a senha.');
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <AtmosphereBackground />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <IconButton 
+          icon="arrow-left" 
+          variant="ghost" 
+          onPress={() => router.back()} 
+          accessibilityLabel="Voltar"
+        />
+        <Text style={[styles.headerTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>Entrar</Text>
+        <View style={{ width: 44 }} />
+      </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -68,132 +74,105 @@ export default function LoginScreen() {
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            {
-              paddingTop: Math.max(insets.top, 24) + 16,
-              paddingBottom: Math.max(insets.bottom, 24) + 16,
-            },
+            { paddingBottom: Math.max(insets.bottom, 24) + 16 },
           ]}
           bounces={false}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header Brand */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../../../assets/favicon.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={[styles.brandTitle, { color: isDark ? '#A797FF' : theme.primary }]}>nós.</Text>
-            <Text style={[styles.brandSubtitle, { color: isDark ? '#AAA5B8' : theme.textSecondary }]}>
-              Um espaço só nosso
-            </Text>
-          </View>
-
-          {/* Form Card */}
-          <LiquidGlassView variant="hero" style={styles.formCard} borderRadius={28}>
-            <Text style={[styles.formTitle, { color: isDark ? '#F7F5FF' : theme.textPrimary }]}>
-              Bem-vindo de volta
-            </Text>
-
+          <View style={styles.formCard}>
             <View style={styles.inputWrapper}>
-              <Text style={[styles.inputLabel, { color: isDark ? '#AAA5B8' : theme.textSecondary }]}>E-mail</Text>
-              <LiquidGlassView 
-                variant="control" 
-                style={[styles.inputGlass, isEmailFocused && { borderColor: theme.primary }]} 
-                borderRadius={16}
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>E-mail</Text>
+              <View 
+                style={[
+                  styles.inputBox, 
+                  { 
+                    backgroundColor: colors.surface, 
+                    borderColor: isEmailFocused ? colors.primary : colors.border 
+                  }
+                ]} 
               >
-                <Ionicons name="mail-outline" size={20} color={isEmailFocused ? theme.primary : (isDark ? '#AAA5B8' : theme.textSecondary)} style={styles.inputIcon} />
+                <Feather name="mail" size={20} color={isEmailFocused ? colors.primary : colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={[
                     styles.input,
-                    { color: isDark ? '#F7F5FF' : '#16151E' },
+                    { color: colors.textPrimary, fontFamily: typography.fontFamily.medium },
                     Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
                   ]}
-                  placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
-                  selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
-                  cursorColor={isDark ? '#A797FF' : '#7C6FE0'}
-                  placeholder="seu@email.com"
+                  placeholderTextColor={colors.textSecondary}
+                  selectionColor={colors.primary}
+                  cursorColor={colors.primary}
+                  placeholder="Seu e-mail"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="email"
+                  textContentType="emailAddress"
                   value={email}
                   onChangeText={setEmail}
                   onFocus={() => setIsEmailFocused(true)}
                   onBlur={() => setIsEmailFocused(false)}
                 />
-              </LiquidGlassView>
+              </View>
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={[styles.inputLabel, { color: isDark ? '#AAA5B8' : theme.textSecondary }]}>Senha</Text>
-              <LiquidGlassView 
-                variant="control" 
-                style={[styles.inputGlass, isPasswordFocused && { borderColor: theme.primary }]} 
-                borderRadius={16}
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>Senha</Text>
+              <View 
+                style={[
+                  styles.inputBox, 
+                  { 
+                    backgroundColor: colors.surface, 
+                    borderColor: isPasswordFocused ? colors.primary : colors.border 
+                  }
+                ]} 
               >
-                <Ionicons name="lock-closed-outline" size={20} color={isPasswordFocused ? theme.primary : (isDark ? '#AAA5B8' : theme.textSecondary)} style={styles.inputIcon} />
+                <Feather name="lock" size={20} color={isPasswordFocused ? colors.primary : colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={[
                     styles.input,
-                    { color: isDark ? '#F7F5FF' : '#16151E' },
+                    { color: colors.textPrimary, fontFamily: typography.fontFamily.medium },
                     Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
                   ]}
-                  placeholderTextColor={isDark ? 'rgba(247, 245, 255, 0.45)' : 'rgba(22, 21, 30, 0.45)'}
-                  selectionColor={isDark ? '#A797FF' : '#7C6FE0'}
-                  cursorColor={isDark ? '#A797FF' : '#7C6FE0'}
+                  placeholderTextColor={colors.textSecondary}
+                  selectionColor={colors.primary}
+                  cursorColor={colors.primary}
                   placeholder="Sua senha"
                   secureTextEntry={!isPasswordVisible}
                   autoCapitalize="none"
                   autoComplete="password"
+                  textContentType="password"
                   value={password}
                   onChangeText={setPassword}
                   onFocus={() => setIsPasswordFocused(true)}
                   onBlur={() => setIsPasswordFocused(false)}
                 />
-                <Pressable onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeButton}>
-                  <Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={20} color={isDark ? '#AAA5B8' : theme.textSecondary} />
+                <Pressable 
+                  onPress={() => setIsPasswordVisible(!isPasswordVisible)} 
+                  style={styles.eyeButton}
+                  accessibilityLabel={isPasswordVisible ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  <Feather name={isPasswordVisible ? 'eye-off' : 'eye'} size={20} color={colors.textSecondary} />
                 </Pressable>
-              </LiquidGlassView>
+              </View>
             </View>
 
-            <PressableScale
-              style={[styles.buttonContainer, loading && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={loading}
-              scaleTo={0.97}
-            >
-              <LiquidGlassView variant="control" style={styles.button} borderRadius={16}>
-                <LinearGradient
-                  colors={isDark ? ['rgba(142, 124, 232, 0.8)', 'rgba(124, 58, 237, 0.8)'] : ['rgba(142, 124, 232, 0.9)', 'rgba(109, 40, 217, 0.9)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.buttonText}>Entrar</Text>
-                )}
-              </LiquidGlassView>
-            </PressableScale>
+            <View style={styles.forgotPasswordContainer}>
+              <Pressable onPress={handleForgotPassword} accessibilityLabel="Esqueci a senha" style={styles.forgotBtn}>
+                <Text style={[styles.forgotText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Esqueci a senha</Text>
+              </Pressable>
+            </View>
 
-            <PressableScale
-              style={styles.switchButton}
-              onPress={() => router.push('/(auth)/register')}
-              scaleTo={0.98}
-            >
-              <Text style={[styles.switchText, { color: isDark ? '#AAA5B8' : theme.textSecondary }]}>
-                Ainda não tem conta?{' '}
-                <Text style={[styles.switchHighlight, { color: isDark ? '#A797FF' : theme.primary }]}>
-                  Criar conta
-                </Text>
-              </Text>
-            </PressableScale>
-          </LiquidGlassView>
+            <View style={styles.buttonContainer}>
+              <Button
+                onPress={handleLogin}
+                loading={loading}
+                variant="primary"
+              >
+                Entrar
+              </Button>
+            </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -204,6 +183,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 18,
+  },
   keyboardAvoid: {
     flex: 1,
   },
@@ -212,60 +201,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  logoContainer: {
-    marginBottom: 12,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-  },
-  logoImage: {
-    width: 72,
-    height: 72,
-  },
-  brandTitle: {
-    fontSize: 42,
-    fontWeight: '800',
-    letterSpacing: -1.2,
-  },
-  brandSubtitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    marginTop: 4,
-    letterSpacing: -0.2,
-  },
   formCard: {
-    padding: 24,
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
-  },
-  formTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-    marginBottom: 20,
+    gap: 20,
   },
   inputWrapper: {
-    marginBottom: 16,
     width: '100%',
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
-    marginLeft: 2,
-    letterSpacing: -0.1,
+    fontSize: 14,
+    marginBottom: 8,
+    marginLeft: 4,
   },
-  inputGlass: {
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 54,
+    height: 56,
     paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
   },
   inputIcon: {
     marginRight: 10,
@@ -273,41 +229,27 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: '100%',
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 16,
   },
   eyeButton: {
-    padding: 4,
-    marginLeft: 8,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -10,
+  },
+  forgotPasswordContainer: {
+    alignItems: 'flex-end',
+    marginTop: -8,
+  },
+  forgotBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  forgotText: {
+    fontSize: 14,
   },
   buttonContainer: {
     marginTop: 8,
-  },
-  button: {
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  switchButton: {
-    marginTop: 20,
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  switchText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  switchHighlight: {
-    fontWeight: '700',
   },
 });

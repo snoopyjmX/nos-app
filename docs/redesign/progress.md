@@ -21,7 +21,8 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] Fase 6: Recados
 - [x] Fase 7: Memórias
 - [x] Fase 8: Datas
-- [ ] Fase 9: Ajustes e vínculo
+- [ ] Fase 9A: Ajustes e vínculo (Perfil)
+- [x] Fase 9B: Telas de boas-vindas, login e cadastro (Auth)
 - [ ] **PARADA 6**: usuário revisa as telas
 - [ ] Fase 10: Acessibilidade
 - [ ] Fase 11: Performance
