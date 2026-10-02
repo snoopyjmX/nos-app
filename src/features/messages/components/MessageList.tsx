@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, FlatList, ActivityIndicator, StyleSheet, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { EmptyState } from '@/design/ui/EmptyState';
+import { EmptyState } from '@/components/ui';
+import { useTheme } from '@/theme';
 import { MessageBubble } from './MessageBubble';
 import { isSameDay, formatDaySeparator } from '../utils/dateFormatting';
 import { Message, UserProfile } from '../types';
@@ -13,8 +14,6 @@ interface MessageListProps {
   isInitialLoadDoneRef: React.MutableRefObject<boolean>;
   initialMessageIdsRef: React.MutableRefObject<Set<string>>;
   reducedMotion: boolean;
-  isDark: boolean;
-  themeTokens: any;
   insets: any;
   flatListRef: React.RefObject<any>;
   handleScroll: (event: any) => void;
@@ -29,13 +28,13 @@ export function MessageList({
   isInitialLoadDoneRef,
   initialMessageIdsRef,
   reducedMotion,
-  isDark,
-  themeTokens,
   insets,
   flatListRef,
   handleScroll,
   handleContentSizeChange,
 }: MessageListProps) {
+  const { colors, radii, shadows } = useTheme();
+
   if (messages.length === 0) {
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -44,16 +43,17 @@ export function MessageList({
             style={[
               styles.emptyCard,
               {
-                backgroundColor: isDark ? themeTokens.surface : '#FFFFFF',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.15)',
+                backgroundColor: colors.surface,
+                borderRadius: radii.md,
+                borderWidth: 0,
+                ...shadows.soft,
               },
             ]}
           >
             <EmptyState
-              icon="mail-open-outline"
+              icon="mail"
               title="Nenhum bilhete ainda"
-              subtitle="Surpreenda seu amor deixando o primeiro recado carinhoso aqui. Cada mensagem fica guardada com carinho."
-              compact
+              description="Surpreenda seu amor deixando o primeiro recado carinhoso aqui. Cada mensagem fica guardada com carinho."
             />
           </View>
         </View>
@@ -91,8 +91,6 @@ export function MessageList({
         showDaySeparator={showDaySeparator}
         dayLabel={dayLabel}
         isLastInGroup={isLastInGroup}
-        isDark={isDark}
-        themeTokens={themeTokens}
         avatarUri={avatarUri}
         reducedMotion={reducedMotion}
         isNew={isNew}
@@ -100,33 +98,40 @@ export function MessageList({
     );
   };
 
+  const renderHeaderComponent = () => {
+    if (!loadingOlder) return null;
+    return (
+      <View style={styles.loadingOlderBox}>
+        <ActivityIndicator color={colors.primary} size="small" />
+      </View>
+    );
+  };
+
   return (
     <FlatList
       ref={flatListRef}
       data={messages}
-      keyExtractor={(item) => item.id}
+      keyExtractor={(i) => i.id}
       renderItem={renderMessageItem}
       contentContainerStyle={[
-        styles.listContent,
+        styles.scrollContent,
         {
           paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
-          paddingBottom: 16,
+          paddingBottom: 24,
         },
       ]}
-      showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
       onScroll={handleScroll}
       scrollEventThrottle={16}
       onContentSizeChange={handleContentSizeChange}
-      maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
-      ListHeaderComponent={
-        loadingOlder ? (
-          <View style={styles.loadingOlderContainer}>
-            <ActivityIndicator size="small" color={themeTokens.primary} />
-          </View>
-        ) : null
+      ListHeaderComponent={renderHeaderComponent}
+      maintainVisibleContentPosition={
+        Platform.OS === 'ios'
+          ? { minIndexForVisible: 0, autoscrollToTopThreshold: 10 }
+          : undefined
       }
+      showsVerticalScrollIndicator={false}
+      removeClippedSubviews={Platform.OS === 'android'}
     />
   );
 }
@@ -134,25 +139,21 @@ export function MessageList({
 const styles = StyleSheet.create({
   centerContainer: {
     flex: 1,
-    alignItems: 'center',
+    paddingHorizontal: 20,
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    alignItems: 'center',
   },
   emptyCard: {
-    padding: 28,
-    alignItems: 'center',
     width: '100%',
-    borderRadius: 24,
-    borderWidth: 1,
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 20,
-  },
-  loadingOlderContainer: {
-    paddingVertical: 12,
+    padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+  },
+  loadingOlderBox: {
+    paddingVertical: 12,
+    alignItems: 'center',
   },
 });

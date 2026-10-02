@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { ZoomIn, FadeIn } from 'react-native-reanimated';
+import { useTheme } from '@/theme';
 import { Message, UserProfile } from '../types';
 import { formatMessageTime } from '../utils/dateFormatting';
 
@@ -14,8 +15,6 @@ interface MessageBubbleProps {
   showDaySeparator: boolean;
   dayLabel: string;
   isLastInGroup: boolean;
-  isDark: boolean;
-  themeTokens: any;
   avatarUri?: string | null;
   reducedMotion: boolean;
   isNew: boolean;
@@ -29,25 +28,19 @@ export function MessageBubble({
   showDaySeparator,
   dayLabel,
   isLastInGroup,
-  isDark,
-  themeTokens,
   avatarUri,
   reducedMotion,
   isNew,
 }: MessageBubbleProps) {
+  const { colors, typography, shadows, isDark } = useTheme();
+
   const avatar = (
     <View
       style={[
         styles.avatarContainer,
         {
-          backgroundColor: isDark
-            ? 'rgba(157, 146, 240, 0.15)'
-            : 'rgba(124, 111, 224, 0.12)',
-          borderColor: isMe
-            ? themeTokens.primary
-            : isDark
-            ? 'rgba(157, 146, 240, 0.4)'
-            : 'rgba(124, 111, 224, 0.35)',
+          backgroundColor: colors.primarySoft,
+          borderColor: isMe ? colors.primary : colors.border,
         },
       ]}
     >
@@ -62,17 +55,15 @@ export function MessageBubble({
           <LinearGradient
             colors={
               isMe
-                ? [themeTokens.primary, themeTokens.primaryDark]
-                : isDark
-                ? ['#9D92F0', '#F7A6BB']
-                : ['#EFECFC', '#FDEEF2']
+                ? [colors.primary, colors.primary]
+                : [colors.primarySoft, colors.primarySoft]
             }
             style={StyleSheet.absoluteFill}
           />
-          <Ionicons
-            name="person"
+          <Feather
+            name="user"
             size={14}
-            color={isMe ? '#FFFFFF' : themeTokens.primary}
+            color={isMe ? '#FFFFFF' : colors.primary}
           />
         </View>
       )}
@@ -91,19 +82,15 @@ export function MessageBubble({
             style={[
               styles.daySeparatorChip,
               {
-                backgroundColor: isDark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(124, 111, 224, 0.08)',
-                borderColor: isDark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(124, 111, 224, 0.15)',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.08)',
+                borderColor: colors.border,
               },
             ]}
           >
             <Text
               style={[
                 styles.daySeparatorText,
-                { color: themeTokens.textSecondary, fontFamily: 'Nunito_600SemiBold' },
+                { color: colors.textSecondary, fontFamily: typography.fontFamily.bold },
               ]}
             >
               {dayLabel}
@@ -128,17 +115,18 @@ export function MessageBubble({
               styles.messageBubble,
               styles.bubbleMe,
               !isLastInGroup && { borderBottomRightRadius: 20 },
-              isSending && styles.bubbleSending,
+              isSending && { opacity: 0.7 },
+              shadows.soft,
             ]}
           >
             <LinearGradient
-              colors={isDark ? ['#9D92F0', '#7C6FE0'] : ['#7C6FE0', '#6358D4']}
+              colors={[colors.primary, colors.primary]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            <Text style={styles.messageTextMe}>{item.content}</Text>
-            <Text style={styles.messageTimeMe}>
+            <Text style={[styles.messageTextMe, { fontFamily: typography.fontFamily.regular }]}>{item.content}</Text>
+            <Text style={[styles.messageTimeMe, { fontFamily: typography.fontFamily.regular }]}>
               {isSending ? 'enviando...' : formatMessageTime(item.created_at)}
             </Text>
           </Animated.View>
@@ -148,19 +136,28 @@ export function MessageBubble({
             style={[
               styles.messageBubble,
               styles.bubblePartner,
-              !isLastInGroup && { borderBottomLeftRadius: 20 },
               {
-                backgroundColor: isDark ? themeTokens.surface : '#FFFFFF',
-                borderColor: isDark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(124, 111, 224, 0.15)',
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
               },
+              !isLastInGroup && { borderBottomLeftRadius: 20 },
+              shadows.soft,
             ]}
           >
-            <Text style={[styles.messageTextPartner, { color: themeTokens.textPrimary }]}>
+            <Text
+              style={[
+                styles.messageTextPartner,
+                { color: colors.textPrimary, fontFamily: typography.fontFamily.regular },
+              ]}
+            >
               {item.content}
             </Text>
-            <Text style={[styles.messageTimePartner, { color: themeTokens.textSecondary }]}>
+            <Text
+              style={[
+                styles.messageTimePartner,
+                { color: colors.textSecondary, fontFamily: typography.fontFamily.regular },
+              ]}
+            >
               {formatMessageTime(item.created_at)}
             </Text>
           </Animated.View>
@@ -175,18 +172,16 @@ export function MessageBubble({
 const styles = StyleSheet.create({
   daySeparatorContainer: {
     alignItems: 'center',
-    marginVertical: 14,
+    marginVertical: 18,
   },
   daySeparatorChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
     borderWidth: 1,
   },
   daySeparatorText: {
     fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
   },
   messageRow: {
     flexDirection: 'row',
@@ -200,81 +195,66 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   avatarContainer: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginHorizontal: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 1.5,
-  },
-  avatarSpacer: {
-    width: 30,
-    marginHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   avatarImage: {
     width: '100%',
     height: '100%',
   },
   avatarFallback: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarSpacer: {
+    width: 28,
+  },
   messageBubble: {
     maxWidth: '75%',
-    paddingVertical: 10,
     paddingHorizontal: 14,
+    paddingVertical: 10,
+    overflow: 'hidden',
   },
   bubbleMe: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 6,
-    overflow: 'hidden',
-    shadowColor: '#7C6FE0',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 3,
+    borderBottomRightRadius: 4,
+    marginRight: 8,
   },
   bubblePartner: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    borderBottomLeftRadius: 6,
+    borderBottomLeftRadius: 4,
     borderBottomRightRadius: 20,
-    overflow: 'hidden',
+    marginLeft: 8,
     borderWidth: 1,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
   },
   messageTextMe: {
-    fontSize: 15,
     color: '#FFFFFF',
-    lineHeight: 21,
-    fontWeight: '500',
+    fontSize: 16,
+    lineHeight: 22,
   },
   messageTextPartner: {
-    fontSize: 15,
-    lineHeight: 21,
-    fontWeight: '500',
+    fontSize: 16,
+    lineHeight: 22,
   },
   messageTimeMe: {
+    color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 4,
     alignSelf: 'flex-end',
-    fontWeight: '500',
+    marginTop: 4,
   },
   messageTimePartner: {
     fontSize: 11,
-    marginTop: 4,
     alignSelf: 'flex-end',
-    fontWeight: '500',
-  },
-  bubbleSending: {
-    opacity: 0.75,
+    marginTop: 4,
   },
 });

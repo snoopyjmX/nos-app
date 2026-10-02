@@ -1,17 +1,15 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, TextInput, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { GlassSurface } from '@/design/ui/GlassSurface';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { PressableScale } from '@/components/ui';
+import { useTheme } from '@/theme';
 
 interface MessageInputProps {
   inputText: string;
   setInputText: (text: string) => void;
   sending: boolean;
   onSend: () => void;
-  isDark: boolean;
-  themeTokens: any;
   isKeyboardVisible: boolean;
   visualKeyboardHeight: number;
   tabBarHeight: number;
@@ -22,17 +20,20 @@ export function MessageInput({
   setInputText,
   sending,
   onSend,
-  isDark,
-  themeTokens,
   isKeyboardVisible,
   visualKeyboardHeight,
   tabBarHeight,
 }: MessageInputProps) {
+  const { colors, typography, radii, shadows } = useTheme();
+
   return (
     <View
       style={[
-        styles.blurredInputContainer,
+        styles.inputContainer,
         {
+          backgroundColor: colors.background,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
           paddingBottom: isKeyboardVisible
             ? (Platform.OS === 'ios' ? 10 : 12)
             : tabBarHeight + 10,
@@ -40,39 +41,21 @@ export function MessageInput({
         },
       ]}
     >
-      <GlassSurface
-        intensity={Platform.OS === 'ios' ? 80 : 100}
-        tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
-        style={StyleSheet.absoluteFill}
-      />
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: isDark ? 'rgba(21, 18, 42, 0.75)' : 'rgba(248, 246, 254, 0.80)',
-            borderTopWidth: 1,
-            borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
-          },
-        ]}
-      />
       <View style={styles.inputInnerRow}>
         <View
           style={[
             styles.textInputPill,
             {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.08)'
-                : '#FFFFFF',
-              borderColor: isDark
-                ? 'rgba(255, 255, 255, 0.14)'
-                : 'rgba(124, 111, 224, 0.20)',
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderRadius: radii.lg,
             },
           ]}
         >
           <TextInput
-            style={[styles.textInput, { color: themeTokens.textPrimary }]}
+            style={[styles.textInput, { color: colors.textPrimary, fontFamily: typography.fontFamily.regular }]}
             placeholder="Escreva um recado com carinho..."
-            placeholderTextColor={themeTokens.textMuted}
+            placeholderTextColor={colors.textSecondary}
             value={inputText}
             onChangeText={setInputText}
             multiline
@@ -84,7 +67,8 @@ export function MessageInput({
         <PressableScale
           style={[
             styles.sendButton,
-            (!inputText.trim() || sending) && styles.sendButtonDisabled,
+            { borderRadius: radii.pill },
+            (!inputText.trim() || sending) && { opacity: 0.6 },
           ]}
           onPress={onSend}
           disabled={!inputText.trim() || sending}
@@ -93,19 +77,24 @@ export function MessageInput({
           <LinearGradient
             colors={
               !inputText.trim() || sending
-                ? [isDark ? '#2A2545' : '#EFECFC', isDark ? '#2A2545' : '#EFECFC']
-                : ['#7C6FE0', '#F58FA8']
+                ? [colors.primarySoft, colors.primarySoft]
+                : [colors.primary, colors.accent]
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <Ionicons
-            name="paper-plane"
-            size={16}
-            color={!inputText.trim() || sending ? (isDark ? '#5B5675' : '#AAA5B8') : '#FFFFFF'}
-            style={{ marginLeft: 2 }}
-          />
+            style={styles.sendButtonGradient}
+          >
+            {sending ? (
+              <ActivityIndicator color={(!inputText.trim() || sending) ? colors.textSecondary : '#FFF'} size="small" />
+            ) : (
+              <Feather
+                name="send"
+                size={18}
+                color={(!inputText.trim() || sending) ? colors.primary : '#FFF'}
+                style={{ marginLeft: -2, marginTop: 2 }}
+              />
+            )}
+          </LinearGradient>
         </PressableScale>
       </View>
     </View>
@@ -113,46 +102,40 @@ export function MessageInput({
 }
 
 const styles = StyleSheet.create({
-  blurredInputContainer: {
-    zIndex: 20,
-    overflow: 'hidden',
+  inputContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
   inputInnerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    gap: 8,
+    alignItems: 'flex-end',
+    gap: 10,
   },
   textInputPill: {
     flex: 1,
-    minHeight: 44,
-    maxHeight: 100,
-    borderRadius: 999,
+    minHeight: 46,
+    maxHeight: 120,
     borderWidth: 1,
-    paddingHorizontal: 16,
     justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   textInput: {
-    fontSize: 15,
-    paddingVertical: 8,
+    fontSize: 16,
+    lineHeight: 22,
+    maxHeight: 100,
   },
   sendButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 46,
+    height: 46,
     overflow: 'hidden',
-    alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#7C6FE0',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    alignItems: 'center',
   },
-  sendButtonDisabled: {
-    opacity: 0.45,
-    shadowOpacity: 0,
-    elevation: 0,
+  sendButtonGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

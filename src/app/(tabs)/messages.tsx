@@ -3,11 +3,9 @@ import { View, StyleSheet, KeyboardAvoidingView, Platform, Keyboard } from 'reac
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
-import { AtmosphereBackground } from '@/design/ui/AtmosphereBackground';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { useTheme } from '@/theme';
 import { useTabBarHeight } from '@/lib/hooks/useTabBarHeight';
 
 import { useMessages } from '@/features/messages/api/useMessages';
@@ -21,9 +19,8 @@ export default function MessagesScreen() {
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
-  const { tabBarHeight } = useTabBarHeight();
+  const { colors, typography, isDark } = useTheme();
+  const { paddingBottom: tabBarHeight } = useTabBarHeight();
   const reducedMotion = useReducedMotion();
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -149,8 +146,7 @@ export default function MessagesScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
-      <AtmosphereBackground />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -159,7 +155,7 @@ export default function MessagesScreen() {
       >
         <View style={styles.contentFlex}>
           {loading ? (
-            <MessagesSkeleton insets={insets} isDark={isDark} themeTokens={themeTokens} />
+            <MessagesSkeleton insets={insets} />
           ) : (
             <MessageList
               messages={messages}
@@ -169,8 +165,6 @@ export default function MessagesScreen() {
               isInitialLoadDoneRef={isInitialLoadDoneRef}
               initialMessageIdsRef={initialMessageIdsRef}
               reducedMotion={reducedMotion}
-              isDark={isDark}
-              themeTokens={themeTokens}
               insets={insets}
               flatListRef={flatListRef}
               handleScroll={handleScroll}
@@ -180,8 +174,6 @@ export default function MessagesScreen() {
         </View>
 
         <MessagesHeader
-          isDark={isDark}
-          themeTokens={themeTokens}
           insets={insets}
           onGoBack={handleGoBack}
         />
@@ -191,8 +183,6 @@ export default function MessagesScreen() {
           setInputText={setInputText}
           sending={sending}
           onSend={() => handleSendMessage(flatListRef)}
-          isDark={isDark}
-          themeTokens={themeTokens}
           isKeyboardVisible={isKeyboardVisible}
           visualKeyboardHeight={visualKeyboardHeight}
           tabBarHeight={tabBarHeight}

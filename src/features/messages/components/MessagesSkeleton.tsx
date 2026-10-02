@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
+import { Skeleton } from '@/components/ui';
+import { useTheme } from '@/theme';
 
 interface MessagesSkeletonProps {
   insets: any;
-  isDark: boolean;
-  themeTokens: any;
 }
 
-export function MessagesSkeleton({ insets, isDark, themeTokens }: MessagesSkeletonProps) {
+export function MessagesSkeleton({ insets }: MessagesSkeletonProps) {
+  const { radii } = useTheme();
+  
   return (
     <View style={[styles.skeletonChat, { paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66) }]}>
       {[
@@ -16,26 +18,14 @@ export function MessagesSkeleton({ insets, isDark, themeTokens }: MessagesSkelet
         { align: 'left' as const, w: '55%' },
         { align: 'right' as const, w: '70%' },
       ].map((s, i) => (
-        <View
-          key={i}
-          style={[
-            s.align === 'left' ? styles.skeletonLeft : styles.skeletonRight,
-            {
-              width: s.w as any,
-              backgroundColor:
-                s.align === 'right'
-                  ? isDark
-                    ? 'rgba(167,151,255,0.15)'
-                    : 'rgba(142,124,232,0.2)'
-                  : isDark
-                  ? 'rgba(255,255,255,0.06)'
-                  : 'rgba(255,255,255,0.55)',
-              borderColor: isDark
-                ? themeTokens.glassBorder
-                : 'rgba(255,255,255,0.7)',
-            },
-          ]}
-        />
+        <View key={i} style={[s.align === 'left' ? styles.alignLeft : styles.alignRight, { width: s.w as any }]}>
+          <Skeleton 
+            width="100%" 
+            height={48} 
+            borderRadius={radii.md} 
+            style={s.align === 'left' ? { borderBottomLeftRadius: 4 } : { borderBottomRightRadius: 4 }}
+          />
+        </View>
       ))}
     </View>
   );
@@ -43,21 +33,14 @@ export function MessagesSkeleton({ insets, isDark, themeTokens }: MessagesSkelet
 
 const styles = StyleSheet.create({
   skeletonChat: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 20,
     gap: 14,
   },
-  skeletonLeft: {
-    height: 48,
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
+  alignLeft: {
+    alignSelf: 'flex-start',
   },
-  skeletonRight: {
-    height: 48,
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
+  alignRight: {
     alignSelf: 'flex-end',
-    borderWidth: 1,
   },
 });
