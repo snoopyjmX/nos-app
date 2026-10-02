@@ -23,9 +23,9 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] Fase 8: Datas
 - [x] Fase 9A: Ajustes e vínculo (Perfil)
 - [x] Fase 9B: Telas de boas-vindas, login e cadastro (Auth)
-- [ ] **PARADA 6**: usuário revisa as telas
-- [ ] Fase 10: Acessibilidade
-- [ ] Fase 11: Performance
+- [x] **PARADA 6**: usuário revisa as telas
+- [x] Fase 10: Acessibilidade
+- [x] Fase 11: Performance
 - [ ] Fase 12: Testes
 - [ ] Fase 13: Revisão final de segurança e release
 - [ ] **PARADA 7**: fim, usuário revisa e faz o merge
