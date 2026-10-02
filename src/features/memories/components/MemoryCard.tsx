@@ -153,10 +153,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    maxWidth: '45%',
+    flexShrink: 1,
+    marginLeft: 8,
   },
   signatureAuthorText: {
     fontSize: 11,
+    flexShrink: 1,
   },
   cardTitle: {
     fontSize: 20,
