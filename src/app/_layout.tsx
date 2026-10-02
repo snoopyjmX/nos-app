@@ -35,10 +35,11 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const isResetPassword = segments.includes('reset-password');
 
-    if (!session && !inAuthGroup) {
+    if (!session && !inAuthGroup && !isResetPassword) {
       router.replace('/(auth)/welcome');
-    } else if (session && inAuthGroup) {
+    } else if (session && inAuthGroup && !isResetPassword) {
       router.replace('/');
     }
   }, [session, isLoading, segments, router]);

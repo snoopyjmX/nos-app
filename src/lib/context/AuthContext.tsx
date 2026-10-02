@@ -28,6 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 2. Escuta mudanças na autenticação (login, logout, refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, currentSession) => {
+        if (_event === 'PASSWORD_RECOVERY') {
+          router.replace('/(auth)/reset-password');
+        }
         setSession(currentSession);
         setIsLoading(false);
         if (currentSession?.user) {

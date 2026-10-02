@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,10 @@ import {
   ScrollView,
   TextInput,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
@@ -26,6 +28,15 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingReset, setLoadingReset] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resetCooldown > 0) {
+      const timer = setTimeout(() => setResetCooldown(resetCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resetCooldown]);
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -50,8 +61,25 @@ export default function LoginScreen() {
     }
   };
 
-  const handleForgotPassword = () => {
-    Alert.alert('Recuperar Senha', 'Se o e-mail existir em nossa base, enviaremos as instruções para redefinir a senha.');
+    const handleForgotPassword = async () => {
+    if (!email.trim() || !email.includes('@')) {
+      Alert.alert('Atenção', 'Digite seu e-mail');
+      return;
+    }
+    if (resetCooldown > 0) return;
+
+    setLoadingReset(true);
+    const redirectTo = Platform.OS === 'web' 
+      ? `${window.location.origin}/reset-password`
+      : Linking.createURL('/reset-password');
+
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo,
+    });
+
+    setLoadingReset(false);
+    setResetCooldown(60);
+    Alert.alert('Recuperar Senha', 'Se esse e-mail tiver uma conta, enviaremos um link para criar uma nova senha.');
   };
 
   return (
@@ -159,7 +187,7 @@ export default function LoginScreen() {
 
             <View style={styles.forgotPasswordContainer}>
               <Pressable onPress={handleForgotPassword} accessibilityLabel="Esqueci a senha" style={styles.forgotBtn}>
-                <Text style={[styles.forgotText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Esqueci a senha</Text>
+                {loadingReset ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={[styles.forgotText, { color: resetCooldown > 0 ? colors.textSecondary : colors.primary, fontFamily: typography.fontFamily.bold }]}>{resetCooldown > 0 ? `Aguarde ${resetCooldown}s` : 'Esqueci a senha'}</Text>}
               </Pressable>
             </View>
 
