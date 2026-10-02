@@ -120,19 +120,15 @@ export const CoupleJourneyCounter = React.memo(function CoupleJourneyCounter({
         style={[
           styles.journeyBreakdownPill,
           {
-            backgroundColor: isDark
-              ? 'rgba(255, 255, 255, 0.18)'
-              : 'rgba(240, 236, 254, 0.92)',
-            borderColor: isDark
-              ? 'rgba(255, 255, 255, 0.25)'
-              : 'rgba(255, 255, 255, 0.85)',
+            backgroundColor: colors.primarySoft,
+            borderColor: colors.border,
           },
         ]}
       >
         <Text
           style={[
             styles.journeyBreakdownText,
-            { color: isDark ? '#DDD6FE' : '#6D28D9' },
+            { color: colors.primary },
           ]}
         >
           {timeTotals.breakdownMonths}{' '}
