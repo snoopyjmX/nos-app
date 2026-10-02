@@ -94,3 +94,23 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - **Tornar a Rota Fina:** `profile.tsx` reduzida de 1644 para cerca de 295 linhas.
 - **Pendente para o Usuário:** 
   - Testar a aba de **Ajustes (Perfil)** e confirmar que as alterações de tema, cópia do código, avatar e logout funcionam perfeitamente.
+### Fase 2B: 4ª tela (index.tsx)
+- **O que foi feito:** Refatorada a tela `index.tsx` (Início).
+- **Arquivos criados:**
+  - `src/features/home/types.ts`
+  - `src/features/home/utils/time.ts`
+  - `src/features/home/api/useHomeData.ts` (Cache SWR, Realtime com 5 tabelas)
+  - `src/features/home/components/CoupleJourneyCounter.tsx`
+  - `src/features/home/components/HeroCard.tsx`
+  - `src/features/home/components/ShortcutsRow.tsx`
+  - `src/features/home/components/NextMilestoneCard.tsx`
+  - `src/features/home/components/RecentMemoryCard.tsx`
+  - `src/features/home/components/ThrowbackMemoryCard.tsx`
+- **Tornar a Rota Fina:** `index.tsx` reduzida de 1720 para cerca de 320 linhas.
+- **Pendente para o Usuário:** 
+  - Testar a aba de **Início** e confirmar que a saudação, o contador ao vivo (jornada), o card de próxima celebração, os atalhos e os mini-cards de memória funcionam sem piscar e exatamente iguais.
+
+### Dates (5ª tela - concluída)
+- Dividida logicamente com hooks customizados (`useDates`) isolados em `src/features/dates/api/`.
+- Componentes complexos `Floating3DHeart`, `CountdownDigits`, `DatesHeroCard`, `DateListItem` e `AddDateModal` extraídos.
+- Funções de cálculo de datas e utilitários colocados em `src/features/dates/utils/`.
