@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { LogBox, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, ErrorBoundaryProps } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
@@ -13,7 +13,7 @@ import { UpdateBanner } from '@/design/ui/UpdateBanner';
 
 LogBox.ignoreAllLogs(true);
 
-export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <View style={styles.errorContainer}>
       <Text style={styles.errorTitle}>Ops! Algo deu errado.</Text>
