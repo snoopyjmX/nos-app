@@ -13,7 +13,7 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [ ] Fase 2B: demais telas, uma a uma
 - [ ] **PARADA 3**: usuário testa o app inteiro
 - [x] Fase 3A: Tokens
-- [ ] Fase 3B: Componentes do design system
+- [x] Fase 3B: Componentes do design system
 - [ ] Fase 4: Casca do app, dock e PWA
 - [ ] **PARADA 4**: usuário vê /dev/design-system e a dock no iPhone
 - [ ] Fase 5: Início
@@ -125,3 +125,19 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - `src/theme/motion.ts`: Durações de animação (`micro`, `normal`, `celebration`) e *easings* otimizados (ease-out, springs) para Reanimated.
   - `src/theme/index.ts`: Hook `useTheme()` para expor os tokens no contexto correto com tipagem forte e esquema de cores automático (React Native `useColorScheme`).
 - **Pendente:** Iniciar a Fase 3B (Componentes base) utilizando esses tokens.
+
+### Fase 3B: Componentes do Design System
+- **O que foi feito:** Criada a biblioteca de componentes base reaproveitáveis (`src/components/ui/`), todos consumindo estritamente os tokens de `src/theme/`.
+- **Componentes criados:**
+  - `Screen`: Container base com tratamento de insets (Safe Area) e espaço reservado para a Tab Bar flutuante.
+  - `PressableScale`: Botão base com animação de escala (spring) via Reanimated.
+  - `Button`: Botão principal com suporte a variantes (primary, secondary, ghost) e estado de loading.
+  - `IconButton`: Botão apenas com ícone (Feather).
+  - `Card`: Container com variantes (elevated, outlined) aplicando bordas e sombras do tema.
+  - `Chip`: Indicador visual/tag arredondada.
+  - `SectionTitle`: Título e subtítulo padronizado para seções.
+  - `Avatar`: Imagem redonda de usuário ou placeholder com iniciais.
+  - `EmptyState`: Estado vazio amigável, com ícone, título, descrição e botão de ação.
+  - `Skeleton`: Placeholder animado (pulsante) para estados de carregamento.
+  - `Toast`: Mensagem flutuante para feedback rápido (sucesso, erro, info).
+- **Pendências:** Iniciar a migração da casca do app e Tab Bar (Fase 4).
