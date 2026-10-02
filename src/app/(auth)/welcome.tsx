@@ -71,7 +71,7 @@ export default function WelcomeScreen() {
               {/* Logo Oficial do Usuário */}
               <View style={styles.logoWrapper}>
                 <Image
-                  source={require('../../assets/favicon.png')}
+                  source={require('../../../assets/favicon.png')}
                   style={styles.heroLogo}
                   resizeMode="contain"
                 />

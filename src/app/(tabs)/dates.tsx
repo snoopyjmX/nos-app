@@ -214,7 +214,7 @@ function Floating3DHeart() {
   return (
     <Animated.View style={[heartStyles.heroHeartContainer, animatedStyle]}>
       <Image
-        source={require('../../assets/images/heart-3d.webp')}
+        source={require('../../../assets/images/heart-3d.webp')}
         style={heartStyles.heroHeartImage}
         contentFit="contain"
         cachePolicy="memory-disk"
