@@ -145,6 +145,11 @@ export default function MessagesScreen() {
     }
   };
 
+  const partnerId = Array.from(profileMap.keys()).find(id => id !== user?.id);
+  const partnerProfile = partnerId ? profileMap.get(partnerId) : null;
+  const partnerName = partnerProfile?.name ? partnerProfile.name.split(' ')[0] : 'Meu Amor';
+  const presenceText = 'Online agora'; // Presença opcional exibida
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
@@ -176,6 +181,8 @@ export default function MessagesScreen() {
         <MessagesHeader
           insets={insets}
           onGoBack={handleGoBack}
+          partnerName={partnerName}
+          presenceText={presenceText}
         />
 
         <MessageInput

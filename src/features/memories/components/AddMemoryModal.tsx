@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Modal, KeyboardAvoidingView, ScrollView, TextIn
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
-import { Button, IconButton } from '@/components/ui';
+import { Button, IconButton, WebDatePicker } from '@/components/ui';
 import { useTheme } from '@/theme';
 import { formatFullDatePTBR } from '../utils/formatting';
 
@@ -128,14 +128,14 @@ export function AddMemoryModal({
               </View>
             </View>
 
-            {(showDatePicker || Platform.OS === 'ios') && (
+            {Platform.OS !== 'web' && (showDatePicker || Platform.OS === 'ios') && (
               <View style={styles.pickerBox}>
                 <DateTimePicker
                   value={memoryDate}
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   maximumDate={new Date()}
-                  onValueChange={onDateChange}
+                  onChange={onDateChange}
                   textColor={colors.textPrimary}
                 />
                 {Platform.OS === 'ios' && (
@@ -144,6 +144,14 @@ export function AddMemoryModal({
                   </View>
                 )}
               </View>
+            )}
+
+            {Platform.OS === 'web' && (
+              <WebDatePicker
+                value={memoryDate}
+                onChange={(date) => onDateChange({ type: 'set', nativeEvent: { timestamp: date.getTime() } } as any, date)}
+                mode="date"
+              />
             )}
 
             <View style={styles.modalActionsRow}>

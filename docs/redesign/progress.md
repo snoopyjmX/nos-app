@@ -198,3 +198,7 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - Comentado temporariamente o seletor de tema (`ThemeSection`).
   - Corrigido o botão de "Copiar" que ficava sobreposto com o badge "Vinculado", permitindo a quebra de linha.
   - Adicionado fundo sólido (`backgroundColor`) no header da tela de Perfil para evitar transparência ao rolar.
+
+### Correções extras de UI e Lógica (Fase 9A/9B)
+- PWA e Web Fallback: Criado o `WebDatePicker` usando `createElement('input')` para contornar a ausência de pickers nativos na web (Safari iOS). Inserido em `AddDateModal`, `AddMemoryModal` e `AnniversaryModal`.
+- Status de Presença (Mock): Inserida indicação visual de parceiro ("Online agora" / bolinha verde "Online") no cabeçalho das telas de Início e Recados, para dar utilidade à preferência de Privacidade criada no perfil.

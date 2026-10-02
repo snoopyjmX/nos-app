@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Button, IconButton, PressableScale } from '@/components/ui';
+import { Button, IconButton, PressableScale, WebDatePicker } from '@/components/ui';
 import { useTheme } from '@/theme';
 import { formatFullDatePTBR, formatTimePTBR, CATEGORIES } from '../utils/formatting';
 
@@ -181,7 +181,7 @@ export function AddDateModal({
             </View>
 
             {/* DatePicker */}
-            {showDatePicker && (
+            {Platform.OS !== 'web' && showDatePicker && (
               <View style={styles.pickerBox}>
                 <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
                   Selecione o Dia
@@ -190,7 +190,7 @@ export function AddDateModal({
                   value={selectedDate}
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onValueChange={onDateChange}
+                  onChange={onDateChange}
                   textColor={colors.textPrimary}
                 />
                 {Platform.OS === 'ios' && (
@@ -198,6 +198,22 @@ export function AddDateModal({
                     <Button variant="secondary" onPress={() => setShowDatePicker(false)}>Concluir Data</Button>
                   </View>
                 )}
+              </View>
+            )}
+
+            {Platform.OS === 'web' && showDatePicker && (
+              <View style={styles.pickerBox}>
+                <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+                  Selecione o Dia
+                </Text>
+                <WebDatePicker
+                  value={selectedDate}
+                  onChange={(date) => onDateChange({ type: 'set', nativeEvent: { timestamp: date.getTime() } } as any, date)}
+                  mode="date"
+                />
+                <View style={{ marginTop: 16 }}>
+                  <Button variant="secondary" onPress={() => setShowDatePicker(false)}>Concluir Data</Button>
+                </View>
               </View>
             )}
 
@@ -253,7 +269,7 @@ export function AddDateModal({
             </View>
 
             {/* TimePicker */}
-            {showTimePicker && (
+            {Platform.OS !== 'web' && showTimePicker && (
               <View style={styles.pickerBox}>
                 <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
                   Selecione o Horário
@@ -263,7 +279,7 @@ export function AddDateModal({
                   mode="time"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   is24Hour={true}
-                  onValueChange={onTimeChange}
+                  onChange={onTimeChange}
                   textColor={colors.textPrimary}
                 />
                 {Platform.OS === 'ios' && (
@@ -271,6 +287,22 @@ export function AddDateModal({
                     <Button variant="secondary" onPress={() => setShowTimePicker(false)}>Concluir Horário</Button>
                   </View>
                 )}
+              </View>
+            )}
+
+            {Platform.OS === 'web' && showTimePicker && (
+              <View style={styles.pickerBox}>
+                <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+                  Selecione o Horário
+                </Text>
+                <WebDatePicker
+                  value={selectedTime || new Date()}
+                  onChange={(date) => onTimeChange({ type: 'set', nativeEvent: { timestamp: date.getTime() } } as any, date)}
+                  mode="time"
+                />
+                <View style={{ marginTop: 16 }}>
+                  <Button variant="secondary" onPress={() => setShowTimePicker(false)}>Concluir Horário</Button>
+                </View>
               </View>
             )}
 

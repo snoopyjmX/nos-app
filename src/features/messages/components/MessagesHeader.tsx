@@ -7,9 +7,11 @@ import { useTheme } from '@/theme';
 interface MessagesHeaderProps {
   insets: any;
   onGoBack: () => void;
+  partnerName?: string;
+  presenceText?: string;
 }
 
-export function MessagesHeader({ insets, onGoBack }: MessagesHeaderProps) {
+export function MessagesHeader({ insets, onGoBack, partnerName, presenceText }: MessagesHeaderProps) {
   const { colors, typography, shadows } = useTheme();
 
   return (
@@ -34,12 +36,14 @@ export function MessagesHeader({ insets, onGoBack }: MessagesHeaderProps) {
         />
 
         <View style={styles.headerBrandWrapper}>
-          <Text style={[styles.headerBrandTitle, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>nós.</Text>
+          <Text style={[styles.headerBrandTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+            {partnerName || 'nós.'}
+          </Text>
           <Text
-            style={[styles.headerCoupleSubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}
+            style={[styles.headerCoupleSubtitle, { color: colors.primary, fontFamily: typography.fontFamily.medium }]}
             numberOfLines={1}
           >
-            Bilhetes carinhosos do casal
+            {presenceText || 'Bilhetes carinhosos'}
           </Text>
         </View>
       </View>
@@ -68,8 +72,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerBrandTitle: {
-    fontSize: 27,
-    letterSpacing: -0.8,
+    fontSize: 20,
+    letterSpacing: -0.4,
   },
   headerCoupleSubtitle: {
     fontSize: 13,

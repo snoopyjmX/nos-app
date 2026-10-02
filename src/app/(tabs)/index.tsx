@@ -98,7 +98,10 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={styles.headerRight}>
-          {/* Settings removido conforme pedido */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22C55E' }} />
+            <Text style={{ color: colors.textSecondary, fontSize: 13, fontFamily: typography.fontFamily.medium }}>Online</Text>
+          </View>
         </View>
       </View>
 

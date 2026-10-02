@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { WebDatePicker } from '@/components/ui/WebDatePicker';
 import { useTheme } from '@/theme';
 
 interface AnniversaryModalProps {
@@ -89,7 +90,7 @@ export function AnniversaryModal({
           )}
 
           {/* Picker nativo no iOS ou quando ativado no Android */}
-          {(Platform.OS === 'ios' || showAndroidPicker) && (
+          {Platform.OS !== 'web' && (Platform.OS === 'ios' || showAndroidPicker) && (
             <View style={styles.pickerBox}>
               <DateTimePicker
                 value={tempDate}
@@ -100,6 +101,14 @@ export function AnniversaryModal({
                 textColor={colors.textPrimary}
               />
             </View>
+          )}
+
+          {Platform.OS === 'web' && (
+            <WebDatePicker
+              value={tempDate}
+              onChange={(date) => onDateChange({ type: 'set', nativeEvent: { timestamp: date.getTime() } } as any, date)}
+              mode="date"
+            />
           )}
 
           {/* Botões de Ação do Modal */}
