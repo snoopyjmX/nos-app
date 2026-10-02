@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { PressableScale } from '@/components/ui';
+import { useTheme } from '@/theme';
 
 interface MemoryFABProps {
   onPress: () => void;
@@ -10,28 +11,30 @@ interface MemoryFABProps {
 }
 
 export function MemoryFAB({ onPress, tabBarHeight }: MemoryFABProps) {
+  const { colors, typography, radii, shadows } = useTheme();
+
   return (
     <View
       style={[
         styles.floatingButtonWrapper,
         {
           bottom: tabBarHeight + 16,
+          ...shadows.medium,
         },
       ]}
     >
       <PressableScale
         onPress={onPress}
-        activeOpacity={0.88}
         accessibilityLabel="Adicionar nova memória"
       >
         <LinearGradient
-          colors={['#7C6FE0', '#F58FA8']}
+          colors={[colors.primary, colors.accent]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.floatingButtonGradient}
+          style={[styles.floatingButtonGradient, { borderRadius: radii.pill }]}
         >
-          <Ionicons name="camera-outline" size={18} color="#FFFFFF" />
-          <Text style={styles.floatingButtonText}>Adicionar Memória</Text>
+          <Feather name="camera" size={18} color="#FFFFFF" />
+          <Text style={[styles.floatingButtonText, { fontFamily: typography.fontFamily.bold }]}>Adicionar Memória</Text>
         </LinearGradient>
       </PressableScale>
     </View>
@@ -44,16 +47,11 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 30,
     borderRadius: 999,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
   },
   floatingButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    borderRadius: 999,
     paddingVertical: 13,
     paddingHorizontal: 20,
     borderWidth: 1,
@@ -62,7 +60,6 @@ const styles = StyleSheet.create({
   },
   floatingButtonText: {
     fontSize: 15,
-    fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },

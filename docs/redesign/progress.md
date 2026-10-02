@@ -19,7 +19,7 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] Fase 5: Início
 - [x] **PARADA 5**: usuário aprova o visual
 - [x] Fase 6: Recados
-- [ ] Fase 7: Memórias
+- [x] Fase 7: Memórias
 - [ ] Fase 8: Datas
 - [ ] Fase 9: Ajustes e vínculo
 - [ ] **PARADA 6**: usuário revisa as telas
@@ -165,3 +165,10 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - O Chat agora usa os Feather Icons e possui os marcadores de dia de maneira padronizada.
   - Refatorado o "Skeleton" de carregamento e o `EmptyState` central.
 - **Pendências:** Validar com o usuário se o Chat ficou fluido e sem resíduos visuais do design velho.
+
+### Fase 7: Memórias
+- **O que foi feito:**
+  - Migrados todos os componentes `MemoryCard`, `MemoryList`, `MemoryFAB`, `AddMemoryModal`, `MemoryPreviewModal` para consumir os tokens nativos de `@/theme`.
+  - Removemos fundos blur caros e passamos a usar sombras leves e botões padronizados (`Button`, `IconButton`) com fallback nativo.
+  - Skeletons padronizados via UI e substituição total de ícones para o Feather.
+- **Pendências:** Validar abertura do preview de fotos com o usuário.

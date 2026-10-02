@@ -5,12 +5,9 @@ import { useReducedMotion } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
-
-import { AtmosphereBackground } from '@/design/ui/AtmosphereBackground';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { useTheme } from '@/theme';
 import { useTabBarHeight } from '@/lib/hooks/useTabBarHeight';
 import { useToast } from '@/lib/context/ToastContext';
 import { supabase } from '@/lib/core/supabase';
@@ -26,8 +23,7 @@ import { AddMemoryModal } from '@/features/memories/components/AddMemoryModal';
 import { MemoryPreviewModal } from '@/features/memories/components/MemoryPreviewModal';
 
 export default function MemoriesScreen() {
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
+  const { colors, isDark } = useTheme();
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
@@ -255,8 +251,7 @@ export default function MemoriesScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
-      <AtmosphereBackground />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
 
       <MemoryList
         memories={memories}
@@ -265,8 +260,6 @@ export default function MemoriesScreen() {
         loading={loading}
         loadingMore={loadingMore}
         refreshing={refreshing}
-        isDark={isDark}
-        themeTokens={themeTokens}
         reducedMotion={reducedMotion}
         insets={insets}
         tabBarHeight={tabBarHeight}
@@ -277,7 +270,7 @@ export default function MemoriesScreen() {
         onAddMemory={handlePickImage}
       />
 
-      <MemoriesHeader isDark={isDark} insets={insets} />
+      <MemoriesHeader insets={insets} />
 
       <MemoryFAB onPress={handlePickImage} tabBarHeight={tabBarHeight} />
 
@@ -293,8 +286,6 @@ export default function MemoriesScreen() {
         setShowDatePicker={setShowDatePicker}
         uploading={uploading}
         onSave={handleSaveMemory}
-        isDark={isDark}
-        themeTokens={themeTokens}
       />
 
       <MemoryPreviewModal

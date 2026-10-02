@@ -1,53 +1,59 @@
 import React from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { GlassSurface } from '@/design/ui/GlassSurface';
-import { AppHeader } from '@/design/components/AppHeader';
+import { View, StyleSheet, Text, Platform } from 'react-native';
+import { useTheme } from '@/theme';
 
 interface MemoriesHeaderProps {
-  isDark: boolean;
   insets: any;
 }
 
-export function MemoriesHeader({ isDark, insets }: MemoriesHeaderProps) {
+export function MemoriesHeader({ insets }: MemoriesHeaderProps) {
+  const { colors, typography, shadows } = useTheme();
+
   return (
-    <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
-      <GlassSurface
-        intensity={Platform.OS === 'ios' ? 80 : 100}
-        tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
-        style={StyleSheet.absoluteFill}
-      />
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: isDark ? 'rgba(15, 13, 24, 0.65)' : 'rgba(248, 249, 252, 0.70)',
-            borderBottomWidth: 1,
-            borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.60)',
-          },
-        ]}
-      />
+    <View 
+      style={[
+        styles.headerContainer, 
+        { 
+          paddingTop: insets.top,
+          backgroundColor: colors.background,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          ...shadows.soft,
+        }
+      ]}
+    >
       <View style={styles.headerInnerRow}>
-        <AppHeader
-          sectionTitle="nós."
-          coupleSubtitle="Nossos momentos eternizados"
-          containerStyle={{ marginBottom: 0, paddingTop: 6, paddingBottom: 6 }}
-        />
+        <Text style={[styles.headerBrandTitle, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>nós.</Text>
+        <Text
+          style={[styles.headerCoupleSubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}
+          numberOfLines={1}
+        >
+          Nossos momentos eternizados
+        </Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  blurredHeaderContainer: {
+  headerContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 20,
-    overflow: 'hidden',
   },
   headerInnerRow: {
-    paddingHorizontal: 20,
-    paddingBottom: 4,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 8 : 10,
+    paddingBottom: 12,
+  },
+  headerBrandTitle: {
+    fontSize: 27,
+    letterSpacing: -0.8,
+  },
+  headerCoupleSubtitle: {
+    fontSize: 13,
+    marginTop: -2,
   },
 });

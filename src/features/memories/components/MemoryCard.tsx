@@ -2,8 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, { LinearTransition } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { Feather } from '@expo/vector-icons';
+import { PressableScale } from '@/components/ui';
+import { useTheme } from '@/theme';
 import { MemoryItem, MemberProfile } from '../types';
 import { formatFullDatePTBR, formatSavedAtDateTime } from '../utils/formatting';
 
@@ -12,8 +13,6 @@ interface MemoryCardProps {
   index: number;
   user: any;
   profileMap: Map<string, MemberProfile>;
-  isDark: boolean;
-  themeTokens: any;
   reducedMotion: boolean;
   onPreview: (item: MemoryItem) => void;
   onDelete: (item: MemoryItem) => void;
@@ -24,12 +23,11 @@ export function MemoryCard({
   index,
   user,
   profileMap,
-  isDark,
-  themeTokens,
   reducedMotion,
   onPreview,
   onDelete,
 }: MemoryCardProps) {
+  const { colors, typography, radii, shadows } = useTheme();
   const imageUrl = item.displayThumbUrl || item.displayUrl || item.image_url;
   const authorProfile = item.created_by ? profileMap.get(item.created_by) : undefined;
   const isMe = item.created_by === user?.id;
@@ -44,22 +42,16 @@ export function MemoryCard({
       <PressableScale
         onPress={() => onPreview(item)}
         onLongPress={() => onDelete(item)}
-        activeOpacity={0.94}
       >
         <View
           style={[
             styles.memoryCard,
             {
-              borderColor: themeTokens.glassBorder,
-              backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
-              shadowColor: themeTokens.shadow,
+              backgroundColor: colors.surface,
+              borderRadius: radii.md,
+              ...shadows.soft,
             },
-            isHero && [
-              styles.heroMemoryCard,
-              {
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(124, 111, 224, 0.20)',
-              },
-            ],
+            isHero && styles.heroMemoryCard,
           ]}
         >
           <Image
@@ -78,20 +70,20 @@ export function MemoryCard({
                 style={[
                   styles.datePill,
                   {
-                    backgroundColor: isDark ? 'rgba(142, 124, 232, 0.16)' : 'rgba(142, 124, 232, 0.1)',
-                    borderColor: isDark ? 'rgba(142, 124, 232, 0.28)' : 'rgba(142, 124, 232, 0.18)',
+                    backgroundColor: colors.primarySoft,
+                    borderRadius: radii.pill,
                   },
                 ]}
               >
-                <Ionicons name="calendar-outline" size={13} color={themeTokens.primary} />
-                <Text style={[styles.datePillText, { color: themeTokens.primary }]}>
+                <Feather name="calendar" size={13} color={colors.primary} />
+                <Text style={[styles.datePillText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>
                   {formatFullDatePTBR(item.memory_date)}
                 </Text>
               </View>
 
               <View style={styles.signatureBadge}>
-                <Ionicons name="sparkles" size={11} color={themeTokens.accent} />
-                <Text style={[styles.signatureAuthorText, { color: themeTokens.primary }]} numberOfLines={1}>
+                <Feather name="star" size={11} color={colors.accent} />
+                <Text style={[styles.signatureAuthorText, { color: colors.primary, fontFamily: typography.fontFamily.regular }]} numberOfLines={1}>
                   Eternizado por {authorName}
                 </Text>
               </View>
@@ -100,22 +92,18 @@ export function MemoryCard({
             <Text
               style={[
                 styles.cardTitle,
-                { color: themeTokens.textPrimary },
+                { color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
                 isHero && styles.heroCardTitle,
               ]}
-              numberOfLines={2}
             >
               {item.title}
             </Text>
 
-            {item.created_at ? (
-              <View style={styles.savedAtRow}>
-                <Ionicons name="time-outline" size={12} color={themeTokens.textSecondary} />
-                <Text style={[styles.savedAtText, { color: themeTokens.textSecondary }]}>
-                  Salvo em {formatSavedAtDateTime(item.created_at)}
-                </Text>
-              </View>
-            ) : null}
+            <View style={styles.footerRow}>
+              <Text style={[styles.savedAtText, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+                {formatSavedAtDateTime(item.created_at)}
+              </Text>
+            </View>
           </View>
         </View>
       </PressableScale>
@@ -126,94 +114,91 @@ export function MemoryCard({
 const styles = StyleSheet.create({
   cardWrapper: {
     marginBottom: 20,
+    width: '100%',
   },
   memoryCard: {
-    borderRadius: 24,
-    padding: 12,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+    overflow: 'hidden',
   },
   heroMemoryCard: {
-    borderRadius: 28,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 22,
-    elevation: 4,
+    // hero card style
   },
   cardImage: {
     width: '100%',
-    height: 220,
-    borderRadius: 20,
-    backgroundColor: 'rgba(142, 124, 232, 0.08)',
+    height: 180,
+    backgroundColor: '#EAEAEA',
   },
   heroCardImage: {
-    height: 290,
-    borderRadius: 22,
+    height: 280,
   },
   cardContent: {
-    paddingHorizontal: 6,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  datePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 999,
-    marginBottom: 8,
-    borderWidth: 1,
-  },
-  datePillText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    lineHeight: 24,
-    letterSpacing: -0.3,
-  },
-  heroCardTitle: {
-    fontSize: 21,
-    lineHeight: 28,
+    padding: 16,
   },
   cardMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 8,
-    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+  datePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    gap: 6,
+  },
+  datePillText: {
+    fontSize: 12,
   },
   signatureBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(124, 58, 237, 0.08)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(124, 58, 237, 0.15)',
+    maxWidth: '45%',
   },
   signatureAuthorText: {
     fontSize: 11,
-    fontWeight: '700',
   },
-  savedAtRow: {
+  cardTitle: {
+    fontSize: 20,
+    letterSpacing: -0.4,
+    marginBottom: 8,
+  },
+  heroCardTitle: {
+    fontSize: 24,
+    letterSpacing: -0.6,
+  },
+  cardDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  heroCardDescription: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
+    justifyContent: 'space-between',
+    marginTop: 4,
   },
   savedAtText: {
     fontSize: 11,
-    fontWeight: '500',
+  },
+  syncContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  syncText: {
+    fontSize: 11,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  errorText: {
+    fontSize: 11,
   },
 });

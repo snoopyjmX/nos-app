@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
-import { LiquidGlassView } from '@/design/ui/LiquidGlassView';
-import { GlassSurface } from '@/design/ui/GlassSurface';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '@/theme';
 import { MemoryItem, MemberProfile } from '../types';
 import { formatFullDatePTBR, formatSavedAtDateTime } from '../utils/formatting';
 
@@ -22,6 +21,8 @@ export function MemoryPreviewModal({
   user,
   profileMap,
 }: MemoryPreviewModalProps) {
+  const { colors, typography, radii, shadows } = useTheme();
+
   return (
     <Modal
       visible={!!previewMemory}
@@ -29,7 +30,7 @@ export function MemoryPreviewModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <LiquidGlassView variant="hero" intensity={80} style={styles.previewOverlay}>
+      <View style={[styles.previewOverlay, { backgroundColor: 'rgba(0,0,0,0.85)' }]}>
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
           activeOpacity={1}
@@ -41,7 +42,7 @@ export function MemoryPreviewModal({
             <View style={styles.previewImageContainer}>
               <Image
                 source={{ uri: previewMemory.displayUrl || previewMemory.image_url }}
-                style={styles.previewImage}
+                style={[styles.previewImage, { borderRadius: radii.lg }]}
                 contentFit="cover"
                 transition={300}
                 cachePolicy="memory-disk"
@@ -50,58 +51,63 @@ export function MemoryPreviewModal({
 
               <View style={styles.previewTopActionsRow}>
                 <TouchableOpacity
-                  style={styles.previewActionCircle}
+                  style={[styles.previewActionCircle, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                   onPress={() => onDelete(previewMemory)}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   accessibilityLabel="Remover memória"
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#F58FA8" />
+                  <Feather name="trash-2" size={18} color={colors.danger} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.previewActionCircle}
+                  style={[styles.previewActionCircle, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                   onPress={onClose}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   accessibilityLabel="Fechar visualização"
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="close" size={24} color="#FFFFFF" />
+                  <Feather name="x" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.previewInfoWrapper}>
-                <GlassSurface borderRadius={24}
-                  intensity={Platform.OS === 'ios' ? 70 : 90}
-                  tint="systemThinMaterialDark"
-                  style={styles.previewInfoGlass}
+                <View 
+                  style={[
+                    styles.previewInfoGlass, 
+                    { 
+                      backgroundColor: 'rgba(0,0,0,0.7)',
+                      borderRadius: radii.md,
+                    }
+                  ]}
                 >
-                  <Text style={styles.previewTitle}>{previewMemory.title}</Text>
+                  <Text style={[styles.previewTitle, { fontFamily: typography.fontFamily.bold }]}>{previewMemory.title}</Text>
+                  
                   <View style={styles.previewMetaPills}>
                     <View style={styles.previewPill}>
-                      <Ionicons name="calendar-outline" size={13} color="#FFFFFF" />
-                      <Text style={styles.previewDate}>
+                      <Feather name="calendar" size={12} color="#FFFFFF" />
+                      <Text style={[styles.previewDate, { fontFamily: typography.fontFamily.regular }]}>
                         {formatFullDatePTBR(previewMemory.memory_date)}
                       </Text>
                     </View>
                     <View style={styles.previewPill}>
-                      <Ionicons name="sparkles" size={12} color="#DDD6FE" />
-                      <Text style={styles.previewSignature}>
+                      <Feather name="star" size={11} color={colors.primary} />
+                      <Text style={[styles.previewSignature, { fontFamily: typography.fontFamily.regular }]}>
                         Eternizado por {previewMemory.created_by === user?.id ? 'Você' : (profileMap.get(previewMemory.created_by || '')?.name || 'Parceiro(a)')}
                       </Text>
                     </View>
                   </View>
                   {previewMemory.created_at ? (
-                    <Text style={styles.previewSavedAt}>
+                    <Text style={[styles.previewSavedAt, { fontFamily: typography.fontFamily.regular }]}>
                       Salvo em {formatSavedAtDateTime(previewMemory.created_at)}
                     </Text>
                   ) : null}
-                </GlassSurface>
+                </View>
               </View>
             </View>
           </View>
         )}
-      </LiquidGlassView>
+      </View>
     </Modal>
   );
 }
@@ -111,101 +117,88 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  previewCard: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  previewImageContainer: {
+    width: '100%',
+    height: '85%',
+    maxWidth: 500,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#111',
   },
   previewTopActionsRow: {
     position: 'absolute',
     top: 16,
+    left: 16,
     right: 16,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
     zIndex: 10,
   },
   previewActionCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  previewCard: {
-    width: '90%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  previewImageContainer: {
-    width: '100%',
-    borderRadius: 36,
-    overflow: 'hidden',
-    backgroundColor: '#1C1A2E',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  previewImage: {
-    width: '100%',
-    height: 540,
   },
   previewInfoWrapper: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
+    bottom: 16,
+    left: 16,
+    right: 16,
   },
   previewInfoGlass: {
-    borderRadius: 24, overflow: "hidden",
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    padding: 20,
   },
   previewTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 24,
     color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: -0.3,
+    marginBottom: 8,
+    letterSpacing: -0.4,
   },
-  previewDate: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '600',
+  previewDescription: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.85)',
+    marginBottom: 16,
+    lineHeight: 22,
   },
   previewMetaPills: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 8,
     flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
   },
   previewPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    gap: 6,
+  },
+  previewDate: {
+    color: '#FFFFFF',
+    fontSize: 13,
   },
   previewSignature: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#DDD6FE',
+    color: '#FFFFFF',
+    fontSize: 12,
   },
   previewSavedAt: {
+    color: 'rgba(255,255,255,0.5)',
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.65)',
-    marginTop: 8,
   },
 });
