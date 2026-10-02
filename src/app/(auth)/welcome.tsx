@@ -109,6 +109,7 @@ export default function WelcomeScreen() {
             </View>
           </View>
 
+          
           {/* Botões de Ação */}
           <View style={styles.actionContainer}>
             <Button
@@ -125,6 +126,15 @@ export default function WelcomeScreen() {
               Criar Nosso Espaço
             </Button>
           </View>
+          
+          <View style={{ marginTop: 24, paddingHorizontal: 12 }}>
+            <Text style={{ textAlign: 'center', fontSize: 13, color: colors.textSecondary, fontFamily: typography.fontFamily.regular }}>
+              Ao continuar, você concorda com nossos{' '}
+              <Text onPress={() => router.push('/terms')} style={{ color: colors.primary, fontFamily: typography.fontFamily.bold }}>Termos</Text> e{' '}
+              <Text onPress={() => router.push('/privacy')} style={{ color: colors.primary, fontFamily: typography.fontFamily.bold }}>Política de Privacidade</Text>.
+            </Text>
+          </View>
+
         </View>
       </View>
     </View>

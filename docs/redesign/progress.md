@@ -214,3 +214,22 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - Modificado aviso de erro para o convite ser sempre genérico ("Código inválido ou expirado").
   - Descomentado o seletor de tema (`ThemeSection.tsx`) no painel de Configurações.
   - Tipagem corrigida e lint rodado sem erros.
+
+### Fase 9D: Recuperação de Senha
+- **O que foi feito:**
+  - Botão "Esqueci a senha" (`login.tsx`) implementado com validação de e-mail e debounce (timer de 60 segundos com bloqueio visual).
+  - Chamada ao Supabase utilizando `resetPasswordForEmail` com redirecionamento correto (para Web com `window.location.origin` e no Nativo usando deep links do expo).
+  - Configuração `detectSessionInUrl: true` aplicada ao cliente do Supabase (`supabase.ts`) para tratamento automático do link de reset.
+  - Contexto de Autenticação (`AuthContext.tsx`) modificado para escutar o evento `PASSWORD_RECOVERY` e redirecionar imediatamente o usuário para o formulário seguro.
+  - O Guard de rotas (`_layout.tsx`) recebeu bypass na rota de recuperação, permitindo acesso mesmo sem/com sessão.
+  - Nova tela `reset-password.tsx` desenvolvida, com formulário de dupla checagem, validação de 8 caracteres, ícones de visibilidade, logout posterior (`signOut({scope: 'others'})`) por segurança e estado visual de link expirado/inválido tratando ambos os formatos PKCE (`code`) e Implicit (`access_token`).
+
+### Fase 10 e Ajustes de Layout PWA
+- **O que foi feito:**
+  - Telas públicas criadas para Termos de Uso (`terms.tsx`) e Política de Privacidade (`privacy.tsx`), baseadas nos textos em markdown de `docs/redesign/legal`.
+  - Inclusão dos links dos Termos e Privacidade nas telas de Cadastro, Boas-Vindas e Ajustes (Perfil).
+  - Atualização do arquivo `vercel.json` na raiz com as políticas rígidas de CSP (Report-Only), HSTS, e restrições de permissão (Fase P4 de Produção).
+  - Correção crítica no PWA do iPhone (iOS Safari): 
+    - Adicionado suporte de fallback seguro com `env(safe-area-inset-top)` e `env(safe-area-inset-bottom)` no componente `Screen.tsx` e `TabBar.tsx`. 
+    - Removido o cálculo duplicado de padding na `Screen` para não cortar o final das rolagens, unificando pelo `useDockInset()`.
+    - Garantido o tamanho mínimo do alvo de clique do botão "Esqueci a Senha" (44x44px).

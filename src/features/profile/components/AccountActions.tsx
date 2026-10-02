@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useTheme } from '@/theme';
@@ -10,6 +11,7 @@ interface AccountActionsProps {
 
 export function AccountActions({ onSignOut }: AccountActionsProps) {
   const { colors, typography, radii, spacing, isDark } = useTheme();
+  const router = useRouter();
 
   return (
     <View style={styles.accountActionBlock}>
@@ -31,6 +33,15 @@ export function AccountActions({ onSignOut }: AccountActionsProps) {
           Encerrar Sessão
         </Text>
       </PressableScale>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
+        <PressableScale onPress={() => router.push('/terms')}>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: typography.fontFamily.medium, textDecorationLine: 'underline' }}>Termos</Text>
+        </PressableScale>
+        <PressableScale onPress={() => router.push('/privacy')}>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: typography.fontFamily.medium, textDecorationLine: 'underline' }}>Privacidade</Text>
+        </PressableScale>
+      </View>
 
       <Text style={[styles.footerNote, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
         nós. • Um espaço só nosso

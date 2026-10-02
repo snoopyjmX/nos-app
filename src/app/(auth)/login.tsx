@@ -273,6 +273,10 @@ const styles = StyleSheet.create({
   forgotBtn: {
     paddingVertical: 8,
     paddingHorizontal: 4,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   forgotText: {
     fontSize: 14,

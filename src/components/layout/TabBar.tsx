@@ -361,7 +361,7 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
 
   if (keyboardVisible) return null;
 
-  const bottomPosition = insets.bottom > 0 ? insets.bottom + 4 : 20;
+  const bottomPosition = Platform.OS === 'web' ? 'calc(env(safe-area-inset-bottom, 0px) + 20px)' : (insets.bottom > 0 ? insets.bottom + 4 : 20);
 
   return (
     <>
@@ -375,7 +375,7 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
         style={[
           styles.dockFadeGradient,
           {
-            height: DOCK_HEIGHT + bottomPosition + 16,
+            height: (Platform.OS === 'web' ? `calc(env(safe-area-inset-bottom, 0px) + ${DOCK_HEIGHT + 36}px)` : DOCK_HEIGHT + (bottomPosition as number) + 16) as any,
           },
         ]}
         pointerEvents="none"
@@ -385,7 +385,7 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
         style={[
           styles.dockContainer,
           {
-            bottom: bottomPosition,
+            bottom: bottomPosition as any,
             left: DOCK_MARGIN,
             right: DOCK_MARGIN,
             shadowColor: theme.shadows.medium.shadowColor,

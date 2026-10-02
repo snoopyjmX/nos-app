@@ -36,8 +36,9 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const isResetPassword = segments.includes('reset-password');
+    const isPublicRoute = segments.includes('terms') || segments.includes('privacy');
 
-    if (!session && !inAuthGroup && !isResetPassword) {
+    if (!session && !inAuthGroup && !isResetPassword && !isPublicRoute) {
       router.replace('/(auth)/welcome');
     } else if (session && inAuthGroup && !isResetPassword) {
       router.replace('/');

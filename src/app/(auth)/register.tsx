@@ -33,6 +33,10 @@ export default function RegisterScreen() {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
+
+  const handleTerms = () => router.push('/terms');
+  const handlePrivacy = () => router.push('/privacy');
+
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
       Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
@@ -65,13 +69,9 @@ export default function RegisterScreen() {
     }
   };
 
-  const handleTerms = () => {
-    Alert.alert('Termos', 'Abrir termos de uso');
-  };
+  
 
-  const handlePrivacy = () => {
-    Alert.alert('Privacidade', 'Abrir política de privacidade');
-  };
+  
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { View, StyleSheet, StyleProp, ViewStyle, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 
@@ -28,10 +28,10 @@ export function Screen({
         styles.container,
         {
           backgroundColor: colors.background,
-          paddingTop: insets.top,
+          paddingTop: (Platform.OS === 'web' ? 'env(safe-area-inset-top, 0px)' : insets.top) as any,
           paddingLeft: Math.max(insets.left, spacing[12]),
           paddingRight: Math.max(insets.right, spacing[12]),
-          paddingBottom: tabBarHeight,
+          // paddingBottom is handled by useDockInset() in ScrollViews to avoid double padding
         },
         style,
       ]}
