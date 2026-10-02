@@ -6,7 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AuthProvider, useAuth } from '@/lib/context/AuthContext';
 import { CoupleProvider } from '@/lib/context/CoupleContext';
-import { ThemeProvider, useAppTheme } from '@/lib/context/ThemeContext';
+import { ThemeProvider } from '@/lib/context/ThemeContext';
 import { ToastProvider } from '@/lib/context/ToastContext';
 import { Toast } from '@/components/ui/Toast';
 import { UpdateBanner } from '@/components/ui/UpdateBanner';
@@ -29,8 +29,7 @@ function RootLayoutNav() {
   const { session, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const { isDark } = useAppTheme();
-
+  
   useEffect(() => {
     if (isLoading) return;
 
