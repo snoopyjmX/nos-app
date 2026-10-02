@@ -39,7 +39,7 @@ import { AppHeader } from '../../components/AppHeader';
 import { useToast } from '../../context/ToastContext';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { normalizeAndCompressImage } from '../../lib/imageManipulation';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { useAuth } from '../../context/AuthContext';
 import { useCouple } from '../../context/CoupleContext';
@@ -617,30 +617,22 @@ export default function MemoriesScreen() {
       const thumbFileName = `${coupleId}/${timestamp}_thumb.jpg`;
 
       // 1. Redimensiona imagem principal para largura máxima de 1080px (preserva proporção)
-      const mainManipulated = await manipulateAsync(
-        selectedImageUri,
-        [{ resize: { width: 1080 } }],
-        { compress: 0.8, format: SaveFormat.JPEG }
-      );
+      const mainManipulatedUri = await normalizeAndCompressImage(selectedImageUri, 1080, 0.8);
 
       // 2. Gera thumbnail de ~400px de largura para carregar com leveza na listagem
-      const thumbManipulated = await manipulateAsync(
-        selectedImageUri,
-        [{ resize: { width: 400 } }],
-        { compress: 0.75, format: SaveFormat.JPEG }
-      );
+      const thumbManipulatedUri = await normalizeAndCompressImage(selectedImageUri, 400, 0.75);
 
       // 3. Converte URIs manipulados para FormData (padrão recomendado para React Native + Supabase)
       const formDataMain = new FormData();
       formDataMain.append('file', {
-        uri: mainManipulated.uri,
+        uri: mainManipulatedUri,
         name: 'image.jpg',
         type: 'image/jpeg',
       } as any);
 
       const formDataThumb = new FormData();
       formDataThumb.append('file', {
-        uri: thumbManipulated.uri,
+        uri: thumbManipulatedUri,
         name: 'thumb.jpg',
         type: 'image/jpeg',
       } as any);
@@ -726,8 +718,8 @@ export default function MemoriesScreen() {
         memory_date: isoDate,
         image_url: fileName,
         thumb_path: finalThumbPath,
-        displayUrl: mainManipulated.uri,
-        displayThumbUrl: thumbManipulated.uri,
+        displayUrl: mainManipulatedUri,
+        displayThumbUrl: thumbManipulatedUri,
         created_at: new Date().toISOString(),
       };
       setMemories((prev) => [optimisticMemory, ...prev]);

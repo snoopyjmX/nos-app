@@ -31,7 +31,6 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { LiquidThemeSelector } from '../../components/ui/LiquidThemeSelector';
 import { useAuth } from '../../context/AuthContext';
@@ -40,6 +39,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
 import { getThemeTokens } from '../../constants/theme';
 import { useTabBarHeight } from '../../hooks/useTabBarHeight';
+import { normalizeAndCompressImage } from '../../lib/imageManipulation';
 
 interface ProfileData {
   id: string;
@@ -423,14 +423,9 @@ export default function ProfileScreen() {
       const asset = result.assets[0];
       setUploadingAvatar(true);
 
-      // Redimensiona o avatar para 512x512 em JPEG qualidade 0.8
-      const manipulated = await manipulateAsync(
-        asset.uri,
-        [{ resize: { width: 512, height: 512 } }],
-        { compress: 0.8, format: SaveFormat.JPEG }
-      );
+      const manipulatedUri = await normalizeAndCompressImage(asset.uri, 512, 0.8);
 
-      const response = await fetch(manipulated.uri);
+      const response = await fetch(manipulatedUri);
       const fileBody = await response.blob();
 
       const fileName = `${user.id}/${Date.now()}.jpg`;
