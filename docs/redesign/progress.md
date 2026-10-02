@@ -189,3 +189,12 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - Adoção de um mock visual em "Preferências & Segurança" para controlar o Status de Presença.
   - Correções diversas de TypeScript entre `mode` de tema e `typography.fontFamily`.
 - **Pendências para o Usuário (PARADA 6):** Revisar as telas de Perfil, Login, Cadastro e Boas-vindas para validar a navegação e consistência visual.
+
+### Correções de UI reportadas (Fase 9A/9B)
+- Status Bar: removido conflito duplo do componente `StatusBar` entre `_layout.tsx` e o `ThemeContext`, e assegurado o funcionamento automático.
+- Aba Início: Removido o botão de configurações extra que levava ao perfil.
+- Aba Memórias: Aumentado o `paddingTop` do header fixo para não cobrir o primeiro card nem o estado vazio.
+- Aba Perfil: 
+  - Comentado temporariamente o seletor de tema (`ThemeSection`).
+  - Corrigido o botão de "Copiar" que ficava sobreposto com o badge "Vinculado", permitindo a quebra de linha.
+  - Adicionado fundo sólido (`backgroundColor`) no header da tela de Perfil para evitar transparência ao rolar.

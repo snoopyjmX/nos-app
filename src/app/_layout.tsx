@@ -3,7 +3,7 @@ import { LogBox, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Stack, useRouter, useSegments, ErrorBoundaryProps } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/lib/context/AuthContext';
 import { CoupleProvider } from '@/lib/context/CoupleContext';
 import { ThemeProvider, useAppTheme } from '@/lib/context/ThemeContext';
@@ -45,7 +45,6 @@ function RootLayoutNav() {
 
   return (
     <>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false }} />
       <UpdateBanner />
       <Toast />

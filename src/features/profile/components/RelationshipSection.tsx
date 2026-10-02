@@ -119,10 +119,10 @@ export function RelationshipSection({
           >
             <Feather name="key" size={20} color={colors.primary} />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingRight: 8 }}>
             <View style={styles.codeHeaderRow}>
               <Text style={[styles.codeLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.medium }]}>
-                Código de Vínculo do Casal
+                Código do Casal
               </Text>
               <View
                 style={[
@@ -257,6 +257,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 2,
+    flexWrap: 'wrap',
   },
   codeLabel: {
     fontSize: 11,

@@ -98,11 +98,7 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={styles.headerRight}>
-          <IconButton 
-            icon="settings" 
-            variant="ghost" 
-            onPress={() => router.push('/(tabs)/profile')}
-          />
+          {/* Settings removido conforme pedido */}
         </View>
       </View>
 

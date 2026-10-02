@@ -203,7 +203,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+      <View style={[styles.headerContainer, { paddingTop: insets.top, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={styles.headerInnerRow}>
           <AppHeader
             sectionTitle="perfil"
@@ -267,10 +267,11 @@ export default function ProfileScreen() {
               onOpenDateModal={handleOpenDateModal}
             />
 
-            <ThemeSection
+            {/* Ocultando seletor de tema temporariamente conforme pedido */}
+            {/* <ThemeSection
               mode={mode}
               setMode={setMode}
-            />
+            /> */}
 
             <SecuritySection />
 
@@ -306,7 +307,6 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(124, 111, 224, 0.15)',
   },
   headerInnerRow: {
     paddingHorizontal: 20,

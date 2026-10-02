@@ -42,7 +42,7 @@ export function MemoryList({
 
   if (loading) {
     return (
-      <View style={[styles.skeletonContainer, { paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66) }]}>
+      <View style={[styles.skeletonContainer, { paddingTop: insets.top + (Platform.OS === 'ios' ? 90 : 86) }]}>
         {[1, 2, 3].map((_, i) => (
           <Skeleton key={i} width="100%" height={320} borderRadius={radii.md} />
         ))}
@@ -53,7 +53,7 @@ export function MemoryList({
   if (memories.length === 0) {
     return (
       <ScrollView
-        contentContainerStyle={[styles.centerContainer, { paddingTop: insets.top + 80 }]}
+        contentContainerStyle={[styles.centerContainer, { paddingTop: insets.top + 100 }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -92,7 +92,7 @@ export function MemoryList({
       contentContainerStyle={[
         styles.listContent,
         {
-          paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
+          paddingTop: insets.top + (Platform.OS === 'ios' ? 90 : 86),
           paddingBottom: tabBarHeight + 60,
         },
       ]}
