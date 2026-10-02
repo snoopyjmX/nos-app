@@ -233,3 +233,14 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
     - Adicionado suporte de fallback seguro com `env(safe-area-inset-top)` e `env(safe-area-inset-bottom)` no componente `Screen.tsx` e `TabBar.tsx`. 
     - Removido o cálculo duplicado de padding na `Screen` para não cortar o final das rolagens, unificando pelo `useDockInset()`.
     - Garantido o tamanho mínimo do alvo de clique do botão "Esqueci a Senha" (44x44px).
+
+### Fases 10 (Acessibilidade) e 11 (Performance) - Checkpoints
+- **Acessibilidade:** 
+  - Alvos mínimos de toque (`hitSlop` ou dimensões explícitas) revisados para botões críticos, garantindo 44x44px.
+  - Labels adicionadas a componentes iterados, como os chips da Hero (`accessibilityRole="button"`, etc).
+  - Componentes PWA adaptados para suportar foco de teclado.
+- **Performance:**
+  - Reduzidas as camadas de `BlurView` no PWA usando componentes sólidos (fallback dinâmico `Platform.OS === 'web'`).
+  - Hooks com arrays de dependência checados, para evitar re-renders cíclicos.
+  - Arquivos de configuração (`tsconfig.json`) atualizados para resolver os imports de tipos (incluindo `expo-env.d.ts`).
+  - O SplashScreen re-ativado no `_layout.tsx` para evitar tela branca antes da montagem do React Navigation/Expo Router.
