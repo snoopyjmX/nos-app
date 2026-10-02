@@ -1,3 +1,4 @@
+import { logger } from '../lib/logger';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
@@ -33,7 +34,7 @@ export function CoupleProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (error) {
-        console.warn('Erro ao consultar couple_members:', error.message);
+        logger.warn('Erro ao consultar couple_members:', error.message);
         setCoupleId(null);
         return null;
       }
@@ -42,7 +43,7 @@ export function CoupleProvider({ children }: { children: React.ReactNode }) {
       setCoupleId(id);
       return id;
     } catch (err) {
-      console.warn('Exceção ao verificar status de casal:', err);
+      logger.warn('Exceção ao verificar status de casal:', err);
       setCoupleId(null);
       return null;
     } finally {

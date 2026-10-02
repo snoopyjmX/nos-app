@@ -1,3 +1,4 @@
+import { logger } from '../../lib/logger';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { 
   View,
@@ -268,7 +269,7 @@ export default function MessagesScreen() {
         .in('id', Array.from(userIds));
 
       if (error) {
-        console.warn('Erro ao carregar perfis:', error.message);
+        logger.warn('Erro ao carregar perfis:', error.message);
       }
 
       const map = new Map<string, UserProfile>(profileMap);
@@ -297,7 +298,7 @@ export default function MessagesScreen() {
 
       setProfileMap(map);
     } catch (err) {
-      console.warn('Erro ao carregar perfis de mensagens:', err);
+      logger.warn('Erro ao carregar perfis de mensagens:', err);
     }
   }, [coupleId, user]);
 
@@ -344,7 +345,7 @@ export default function MessagesScreen() {
         }, 120);
       }
     } catch (err: any) {
-      console.warn('Erro ao carregar mensagens iniciais:', err.message);
+      logger.warn('Erro ao carregar mensagens iniciais:', err.message);
     } finally {
       setLoading(false);
     }
@@ -391,7 +392,7 @@ export default function MessagesScreen() {
         }
       }
     } catch (err: any) {
-      console.warn('Erro ao carregar mensagens anteriores:', err.message);
+      logger.warn('Erro ao carregar mensagens anteriores:', err.message);
       isPrependRef.current = false;
     } finally {
       setLoadingOlder(false);
@@ -445,7 +446,7 @@ export default function MessagesScreen() {
         }, 80);
       }
     } catch (err) {
-      console.warn('Erro ao sincronizar mensagens recentes:', err);
+      logger.warn('Erro ao sincronizar mensagens recentes:', err);
     } finally {
       isSyncingRef.current = false;
     }
@@ -698,11 +699,11 @@ export default function MessagesScreen() {
               body: `Tem um novo recado carinhoso de ${currentUserProfile?.name || 'seu amor'} ❤️`,
               data: { url: '/messages' },
             }),
-          }).catch((err) => console.warn('Push error:', err));
+          }).catch((err) => logger.warn('Push error:', err));
         }
       }
     } catch (err: any) {
-      console.warn('Erro ao salvar mensagem:', err);
+      logger.warn('Erro ao salvar mensagem:', err);
       // Em caso de falha de conexão, remove a mensagem otimista e devolve o texto
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setInputText(contentToSend);

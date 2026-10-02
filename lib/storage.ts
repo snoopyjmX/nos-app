@@ -1,3 +1,4 @@
+import { logger } from './lib/logger';
 import { supabase } from './supabase';
 
 interface CacheEntry {
@@ -103,7 +104,7 @@ export async function getSignedMemoryUrl(
         .createSignedUrl(path, expiresInSeconds);
 
       if (error || !data?.signedUrl) {
-        console.warn('Erro ao gerar signed URL para memória:', error?.message);
+        logger.warn('Erro ao gerar signed URL para memória:', error?.message);
         return null;
       }
 
@@ -115,7 +116,7 @@ export async function getSignedMemoryUrl(
 
       return signedUrl;
     } catch (err: any) {
-      console.warn('Falha inesperada ao obter signed URL:', err?.message || err);
+      logger.warn('Falha inesperada ao obter signed URL:', err?.message || err);
       return null;
     } finally {
       inFlightPromises.delete(path);

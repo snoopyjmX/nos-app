@@ -1,3 +1,4 @@
+import { logger } from '../lib/logger';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabase.auth.signOut();
     } catch (err) {
-      console.warn('Erro ao encerrar sessão no Supabase:', err);
+      logger.warn('Erro ao encerrar sessão no Supabase:', err);
     } finally {
       // 1. Limpa explicitamente a sessão e o usuário do estado
       setSession(null);
@@ -64,14 +65,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await AsyncStorage.multiRemove(authKeys);
         }
       } catch (storageErr) {
-        console.warn('Erro ao limpar chaves do AsyncStorage:', storageErr);
+        logger.warn('Erro ao limpar chaves do AsyncStorage:', storageErr);
       }
 
       // 3. Força a navegação imediata para a tela de login
       try {
         router.replace('/(auth)/login');
       } catch (navErr) {
-        console.warn('Erro ao redirecionar após logout:', navErr);
+        logger.warn('Erro ao redirecionar após logout:', navErr);
       }
     }
   };

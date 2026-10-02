@@ -1,3 +1,4 @@
+import { logger } from '../../lib/logger';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
@@ -337,7 +338,7 @@ export default function MemoriesScreen() {
       }
       setProfileMap(map);
     } catch (err) {
-      console.warn('Erro ao carregar perfis para memórias:', err);
+      logger.warn('Erro ao carregar perfis para memórias:', err);
     }
   }, [coupleId, user?.id]);
 
@@ -401,7 +402,7 @@ export default function MemoriesScreen() {
         return combined;
       });
     } catch (err) {
-      console.warn('Erro ao carregar memórias:', err);
+      logger.warn('Erro ao carregar memórias:', err);
     } finally {
       setLoading(false);
     }
@@ -705,7 +706,7 @@ export default function MemoriesScreen() {
               body: `${currentUserName} eternizou um novo momento: "${memoryTitle.trim()}" ✨`,
               data: { url: '/memories' },
             }),
-          }).catch((err) => console.warn('Push error on memory save:', err));
+          }).catch((err) => logger.warn('Push error on memory save:', err));
         }
       }
 

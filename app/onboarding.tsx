@@ -1,3 +1,4 @@
+import { logger } from '../lib/logger';
 import React, { useState } from 'react';
 import {
   View,
@@ -131,7 +132,7 @@ export default function OnboardingScreen() {
         message: `Amor, criei o nosso espaço no NÓS! Baixe o aplicativo e utilize o nosso código: ${inviteCode}`,
       });
     } catch (err) {
-      console.warn('Erro ao compartilhar convite:', err);
+      logger.warn('Erro ao compartilhar convite:', err);
     }
   };
 

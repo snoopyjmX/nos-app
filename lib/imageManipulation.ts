@@ -1,3 +1,4 @@
+import { logger } from './lib/logger';
 import { Platform } from 'react-native';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
@@ -52,7 +53,7 @@ export async function normalizeAndCompressImage(
         );
       });
     } catch (error) {
-      console.warn('Erro ao processar imagem no web:', error);
+      logger.warn('Erro ao processar imagem no web:', error);
       // Fallback: tenta rodar o manipulateAsync caso o createImageBitmap falhe (embora no web o manipulateAsync possa ter o bug do EXIF dependendo da engine)
       const fallback = await manipulateAsync(
         uri,
