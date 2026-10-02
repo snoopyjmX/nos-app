@@ -21,7 +21,7 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] Fase 6: Recados
 - [x] Fase 7: Memórias
 - [x] Fase 8: Datas
-- [ ] Fase 9A: Ajustes e vínculo (Perfil)
+- [x] Fase 9A: Ajustes e vínculo (Perfil)
 - [x] Fase 9B: Telas de boas-vindas, login e cadastro (Auth)
 - [ ] **PARADA 6**: usuário revisa as telas
 - [ ] Fase 10: Acessibilidade
@@ -180,3 +180,12 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - O header agora é simples, com fundo sólido, para melhorar a performance.
   - Remoção de blurs pesados em modais de adicionar evento, mantendo a experiência fluida no PWA web e iOS.
 - **Pendências:** Confirmar os tamanhos de fonte no contador se ficam bons em telas pequenas.
+
+### Fase 9A e 9B: Ajustes, Auth e Vínculo
+- **O que foi feito:**
+  - Migrados os fluxos de login, cadastro e boas-vindas para UI sólida, sem blurs, usando Feather icons, bordas nativas e novo texto "Privado e protegido" no lugar de referências à criptografia de ponta a ponta.
+  - Símbolo do anel ajustado para transparência nativa na tela de login.
+  - Aba Perfil totalmente refatorada (`RelationshipSection`, `ThemeSection`, `SecuritySection`, `AccountActions`, `AnniversaryModal`) utilizando `useTheme()`.
+  - Adoção de um mock visual em "Preferências & Segurança" para controlar o Status de Presença.
+  - Correções diversas de TypeScript entre `mode` de tema e `typography.fontFamily`.
+- **Pendências para o Usuário (PARADA 6):** Revisar as telas de Perfil, Login, Cadastro e Boas-vindas para validar a navegação e consistência visual.

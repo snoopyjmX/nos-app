@@ -6,14 +6,11 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 
-import { AtmosphereBackground } from '@/design/ui/AtmosphereBackground';
-import { GlassSurface } from '@/design/ui/GlassSurface';
 import { AppHeader } from '@/design/components/AppHeader';
-
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
 import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { useTheme } from '@/theme';
 import { useTabBarHeight } from '@/lib/hooks/useTabBarHeight';
 import { supabase } from '@/lib/core/supabase';
 import { normalizeAndCompressImage } from '@/lib/core/imageManipulation';
@@ -27,8 +24,8 @@ import { AccountActions } from '@/features/profile/components/AccountActions';
 import { AnniversaryModal } from '@/features/profile/components/AnniversaryModal';
 
 export default function ProfileScreen() {
-  const { isDark, mode, setMode } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
+  const { colors, isDark } = useTheme();
+  const { mode, setMode } = useAppTheme();
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { coupleId, clearCouple } = useCouple();
@@ -205,25 +202,8 @@ export default function ProfileScreen() {
   const partnerName = partnerProfile?.display_name || 'Meu Amor';
 
   return (
-    <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
-      <AtmosphereBackground />
-
-      <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
-        <GlassSurface
-          intensity={Platform.OS === 'ios' ? 80 : 100}
-          tint={isDark ? 'systemUltraThinMaterialDark' : 'systemUltraThinMaterialLight'}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              backgroundColor: isDark ? 'rgba(15, 13, 24, 0.65)' : 'rgba(248, 249, 252, 0.70)',
-              borderBottomWidth: 1,
-              borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.60)',
-            },
-          ]}
-        />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
         <View style={styles.headerInnerRow}>
           <AppHeader
             sectionTitle="perfil"
@@ -244,8 +224,8 @@ export default function ProfileScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={themeTokens.primary}
-            colors={[themeTokens.primary]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       >
@@ -279,34 +259,23 @@ export default function ProfileScreen() {
               partnerName={partnerName}
               uploadingAvatar={uploadingAvatar}
               onPickAvatar={handlePickAvatar}
-              isDark={isDark}
-              themeTokens={themeTokens}
             />
 
             <RelationshipSection
               anniversaryDate={anniversaryDate}
               coupleCode={coupleCode}
               onOpenDateModal={handleOpenDateModal}
-              isDark={isDark}
-              themeTokens={themeTokens}
             />
 
             <ThemeSection
               mode={mode}
               setMode={setMode}
-              isDark={isDark}
-              themeTokens={themeTokens}
             />
 
-            <SecuritySection
-              isDark={isDark}
-              themeTokens={themeTokens}
-            />
+            <SecuritySection />
 
             <AccountActions
               onSignOut={handleSignOut}
-              isDark={isDark}
-              themeTokens={themeTokens}
             />
           </>
         )}
@@ -321,8 +290,6 @@ export default function ProfileScreen() {
         onDateChange={onDateChange}
         onSave={handleSaveAnniversary}
         onClose={() => setIsDateModalVisible(false)}
-        isDark={isDark}
-        themeTokens={themeTokens}
       />
     </View>
   );
@@ -332,13 +299,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  blurredHeaderContainer: {
+  headerContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 20,
-    overflow: 'hidden',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(124, 111, 224, 0.15)',
   },
   headerInnerRow: {
     paddingHorizontal: 20,

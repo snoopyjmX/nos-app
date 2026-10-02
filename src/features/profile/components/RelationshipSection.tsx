@@ -1,25 +1,23 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Platform, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useTheme } from '@/theme';
 import { formatFullDatePTBR } from '../utils/formatting';
 
 interface RelationshipSectionProps {
   anniversaryDate: string | null;
   coupleCode: string | null;
   onOpenDateModal: () => void;
-  isDark: boolean;
-  themeTokens: any;
 }
 
 export function RelationshipSection({
   anniversaryDate,
   coupleCode,
   onOpenDateModal,
-  isDark,
-  themeTokens,
 }: RelationshipSectionProps) {
+  const { colors, typography, radii, isDark } = useTheme();
   const [copiedCode, setCopiedCode] = useState(false);
 
   const copyCoupleCode = async () => {
@@ -41,7 +39,7 @@ export function RelationshipSection({
   return (
     <View style={styles.sectionBlock}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: themeTokens.textSecondary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
           NOSSO RELACIONAMENTO
         </Text>
       </View>
@@ -50,8 +48,9 @@ export function RelationshipSection({
         style={[
           styles.relationshipCard,
           {
-            backgroundColor: isDark ? themeTokens.surface : '#FFFFFF',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.15)',
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.md,
           },
         ]}
       >
@@ -65,14 +64,14 @@ export function RelationshipSection({
             },
           ]}
         >
-          <Ionicons name="calendar" size={22} color={themeTokens.primary} />
+          <Feather name="calendar" size={22} color={colors.primary} />
         </View>
 
         <View style={styles.relationContent}>
-          <Text style={[styles.relationLabel, { color: themeTokens.textSecondary }]}>
+          <Text style={[styles.relationLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.medium }]}>
             Data de Início Oficial
           </Text>
-          <Text style={[styles.relationDateValue, { color: themeTokens.textPrimary }]}>
+          <Text style={[styles.relationDateValue, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
             {formatFullDatePTBR(anniversaryDate)}
           </Text>
         </View>
@@ -92,8 +91,8 @@ export function RelationshipSection({
           onPress={onOpenDateModal}
           accessibilityLabel="Editar data oficial"
         >
-          <Ionicons name="pencil" size={13} color={themeTokens.primary} />
-          <Text style={[styles.editPillText, { color: themeTokens.primary }]}>Editar</Text>
+          <Feather name="edit-2" size={13} color={colors.primary} />
+          <Text style={[styles.editPillText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Editar</Text>
         </PressableScale>
       </View>
 
@@ -102,8 +101,9 @@ export function RelationshipSection({
           style={[
             styles.codeCard,
             {
-              backgroundColor: isDark ? themeTokens.surface : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.15)',
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderRadius: radii.md,
             },
           ]}
         >
@@ -117,11 +117,11 @@ export function RelationshipSection({
               },
             ]}
           >
-            <Ionicons name="key-outline" size={20} color={themeTokens.primary} />
+            <Feather name="key" size={20} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.codeHeaderRow}>
-              <Text style={[styles.codeLabel, { color: themeTokens.textSecondary }]}>
+              <Text style={[styles.codeLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.medium }]}>
                 Código de Vínculo do Casal
               </Text>
               <View
@@ -132,13 +132,13 @@ export function RelationshipSection({
                   },
                 ]}
               >
-                <Ionicons name="checkmark-circle" size={13} color="#22C55E" />
-                <Text style={[styles.linkedBadgeText, { color: isDark ? '#4ADE80' : '#15803D' }]}>
+                <Feather name="check-circle" size={13} color="#22C55E" />
+                <Text style={[styles.linkedBadgeText, { color: isDark ? '#4ADE80' : '#15803D', fontFamily: typography.fontFamily.bold }]}>
                   Vinculado
                 </Text>
               </View>
             </View>
-            <Text style={[styles.codeValue, { color: themeTokens.textPrimary }]}>
+            <Text style={[styles.codeValue, { color: colors.textPrimary }]}>
               {coupleCode}
             </Text>
           </View>
@@ -158,15 +158,15 @@ export function RelationshipSection({
             onPress={copyCoupleCode}
             accessibilityLabel="Copiar código de casal"
           >
-            <Ionicons
-              name={copiedCode ? "checkmark" : "copy-outline"}
+            <Feather
+              name={copiedCode ? "check" : "copy"}
               size={14}
-              color={copiedCode ? '#22C55E' : themeTokens.primary}
+              color={copiedCode ? '#22C55E' : colors.primary}
             />
             <Text
               style={[
                 styles.copyPillText,
-                { color: copiedCode ? '#22C55E' : themeTokens.primary },
+                { color: copiedCode ? '#22C55E' : colors.primary, fontFamily: typography.fontFamily.bold },
               ]}
             >
               {copiedCode ? 'Copiado!' : 'Copiar'}
@@ -188,14 +188,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
     letterSpacing: 1.2,
   },
   relationshipCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
     shadowColor: '#5B4294',
@@ -217,14 +214,10 @@ const styles = StyleSheet.create({
   },
   relationLabel: {
     fontSize: 11,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
     marginBottom: 2,
   },
   relationDateValue: {
     fontSize: 16,
-    fontFamily: 'Fraunces_700Bold',
-    fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
   editPill: {
@@ -238,13 +231,10 @@ const styles = StyleSheet.create({
   },
   editPillText: {
     fontSize: 12,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
   codeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
     marginTop: 12,
@@ -270,8 +260,6 @@ const styles = StyleSheet.create({
   },
   codeLabel: {
     fontSize: 11,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
   },
   codeValue: {
     fontSize: 16,
@@ -289,8 +277,6 @@ const styles = StyleSheet.create({
   },
   linkedBadgeText: {
     fontSize: 11,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
   copyPill: {
     flexDirection: 'row',
@@ -303,7 +289,5 @@ const styles = StyleSheet.create({
   },
   copyPillText: {
     fontSize: 12,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
 });

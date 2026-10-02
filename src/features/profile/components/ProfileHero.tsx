@@ -12,9 +12,10 @@ import Animated, {
   useReducedMotion,
   Easing,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { Feather } from '@expo/vector-icons';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { usePathname } from 'expo-router';
+import { useTheme } from '@/theme';
 import { ProfileData } from '../types';
 import { getFirstName } from '../utils/formatting';
 
@@ -25,8 +26,6 @@ interface ProfileHeroProps {
   partnerName: string;
   uploadingAvatar: boolean;
   onPickAvatar: () => void;
-  isDark: boolean;
-  themeTokens: any;
 }
 
 export function ProfileHero({
@@ -36,13 +35,12 @@ export function ProfileHero({
   partnerName,
   uploadingAvatar,
   onPickAvatar,
-  isDark,
-  themeTokens,
 }: ProfileHeroProps) {
   const pathname = usePathname();
   const isFocused = pathname.includes('/profile');
   const reducedMotion = useReducedMotion();
   const heartScale = useSharedValue(1);
+  const { colors, typography, isDark } = useTheme();
 
   useEffect(() => {
     if (!isFocused || reducedMotion) {
@@ -75,8 +73,8 @@ export function ProfileHero({
         style={[
           styles.coupleHeroCard,
           {
-            backgroundColor: isDark ? themeTokens.surface : '#FFFFFF',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.15)',
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
           },
         ]}
       >
@@ -97,7 +95,7 @@ export function ProfileHero({
               >
                 <View style={[styles.avatarInnerContainer, { backgroundColor: isDark ? '#15122A' : '#FFFFFF' }]}>
                   {uploadingAvatar ? (
-                    <ActivityIndicator color={themeTokens.primary} size="small" />
+                    <ActivityIndicator color={colors.primary} size="small" />
                   ) : myProfile?.displayAvatarUrl ? (
                     <Image
                       source={{ uri: myProfile.displayAvatarUrl }}
@@ -106,24 +104,24 @@ export function ProfileHero({
                       cachePolicy="memory-disk"
                     />
                   ) : (
-                    <Ionicons name="person" size={32} color={themeTokens.primary} />
+                    <Feather name="user" size={32} color={colors.primary} />
                   )}
                 </View>
               </LinearGradient>
-              <View style={[styles.cameraBadge, { backgroundColor: themeTokens.primary }]}>
-                <Ionicons name="camera" size={12} color="#FFFFFF" />
+              <View style={[styles.cameraBadge, { backgroundColor: colors.primary }]}>
+                <Feather name="camera" size={12} color="#FFFFFF" />
               </View>
             </View>
 
-            <Text style={[styles.avatarLabel, { color: themeTokens.textPrimary }]} numberOfLines={2}>
+            <Text style={[styles.avatarLabel, { color: colors.textPrimary, fontFamily: typography.fontFamily.black }]} numberOfLines={2}>
               {getFirstName(myName)}
             </Text>
-            <Text style={[styles.avatarSubLabel, { color: themeTokens.textSecondary }]}>Você</Text>
+            <Text style={[styles.avatarSubLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>Você</Text>
           </PressableScale>
 
           {/* Conector Central */}
           <View style={styles.connectorCenter}>
-            <View style={[styles.connectorLine, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(124, 111, 224, 0.2)' }]} />
+            <View style={[styles.connectorLine, { backgroundColor: colors.border }]} />
             <Animated.View style={[styles.heartCircleContainer, animatedHeartStyle]}>
               <LinearGradient
                 colors={['#7C6FE0', '#F58FA8']}
@@ -131,10 +129,10 @@ export function ProfileHero({
                 end={{ x: 1, y: 1 }}
                 style={styles.heartCircle}
               >
-                <Ionicons name="heart" size={16} color="#FFFFFF" />
+                <Feather name="heart" size={16} color="#FFFFFF" />
               </LinearGradient>
             </Animated.View>
-            <View style={[styles.connectorLine, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(124, 111, 224, 0.2)' }]} />
+            <View style={[styles.connectorLine, { backgroundColor: colors.border }]} />
           </View>
 
           {/* Avatar do Parceiro/Parceira */}
@@ -155,16 +153,16 @@ export function ProfileHero({
                       cachePolicy="memory-disk"
                     />
                   ) : (
-                    <Ionicons name="person" size={32} color={themeTokens.primary} />
+                    <Feather name="user" size={32} color={colors.primary} />
                   )}
                 </View>
               </LinearGradient>
             </View>
 
-            <Text style={[styles.avatarLabel, { color: themeTokens.textPrimary }]} numberOfLines={2}>
+            <Text style={[styles.avatarLabel, { color: colors.textPrimary, fontFamily: typography.fontFamily.black }]} numberOfLines={2}>
               {getFirstName(partnerName)}
             </Text>
-            <Text style={[styles.avatarSubLabel, { color: themeTokens.textSecondary }]}>Parceiro(a)</Text>
+            <Text style={[styles.avatarSubLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>Parceiro(a)</Text>
           </View>
         </View>
 
@@ -179,7 +177,7 @@ export function ProfileHero({
           ]}
         >
           <View style={styles.greenPulseDot} />
-          <Text style={[styles.syncStatusText, { color: isDark ? '#4ADE80' : '#15803D' }]}>
+          <Text style={[styles.syncStatusText, { color: isDark ? '#4ADE80' : '#15803D', fontFamily: typography.fontFamily.bold }]}>
             Espaço Compartilhado Sincronizado
           </Text>
         </View>
@@ -259,15 +257,11 @@ const styles = StyleSheet.create({
   },
   avatarLabel: {
     fontSize: 15,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
     marginTop: 8,
     textAlign: 'center',
   },
   avatarSubLabel: {
     fontSize: 12,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
     marginTop: 2,
   },
   connectorCenter: {
@@ -309,7 +303,5 @@ const styles = StyleSheet.create({
   },
   syncStatusText: {
     fontSize: 11,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
   },
 });

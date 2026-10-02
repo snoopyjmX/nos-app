@@ -6,10 +6,9 @@ import Animated, {
   withSpring,
   useReducedMotion,
 } from 'react-native-reanimated';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { useTheme } from '@/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface LiquidThemeSelectorProps {
@@ -20,8 +19,7 @@ interface LiquidThemeSelectorProps {
 const SPRING_CONFIG = { damping: 18, stiffness: 220, mass: 0.8 };
 
 export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSelectorProps) {
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
+  const { colors, typography, isDark } = useTheme();
   const reducedMotion = useReducedMotion();
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -97,15 +95,15 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
         activeOpacity={0.85}
         onPress={() => handleSelect('light')}
       >
-        <Ionicons
-          name="sunny"
+        <Feather
+          name="sun"
           size={16}
-          color={isLight ? '#FFFFFF' : themeTokens.textSecondary}
+          color={isLight ? '#FFFFFF' : colors.textSecondary}
         />
         <Text
           style={[
             styles.tabText,
-            { color: isLight ? '#FFFFFF' : themeTokens.textSecondary, fontWeight: isLight ? '700' : '600' },
+            { color: isLight ? '#FFFFFF' : colors.textSecondary, fontFamily: isLight ? typography.fontFamily.bold : typography.fontFamily.medium },
           ]}
         >
           Claro
@@ -118,15 +116,15 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
         activeOpacity={0.85}
         onPress={() => handleSelect('dark')}
       >
-        <Ionicons
+        <Feather
           name="moon"
           size={15}
-          color={!isLight ? '#FFFFFF' : themeTokens.textSecondary}
+          color={!isLight ? '#FFFFFF' : colors.textSecondary}
         />
         <Text
           style={[
             styles.tabText,
-            { color: !isLight ? '#FFFFFF' : themeTokens.textSecondary, fontWeight: !isLight ? '700' : '600' },
+            { color: !isLight ? '#FFFFFF' : colors.textSecondary, fontFamily: !isLight ? typography.fontFamily.bold : typography.fontFamily.medium },
           ]}
         >
           Escuro
@@ -172,6 +170,5 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     letterSpacing: -0.2,
-    fontFamily: Platform.select({ ios: 'Nunito', android: 'Nunito', default: 'sans-serif' }),
   },
 });

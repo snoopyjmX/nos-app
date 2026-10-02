@@ -1,15 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { Feather } from '@expo/vector-icons';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useTheme } from '@/theme';
 
 interface AccountActionsProps {
   onSignOut: () => void;
-  isDark: boolean;
-  themeTokens: any;
 }
 
-export function AccountActions({ onSignOut, isDark, themeTokens }: AccountActionsProps) {
+export function AccountActions({ onSignOut }: AccountActionsProps) {
+  const { colors, typography, radii, spacing, isDark } = useTheme();
+
   return (
     <View style={styles.accountActionBlock}>
       <PressableScale
@@ -19,17 +20,19 @@ export function AccountActions({ onSignOut, isDark, themeTokens }: AccountAction
           {
             backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
             borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.20)',
+            borderRadius: radii.pill,
+            paddingVertical: spacing[12],
           },
         ]}
         accessibilityLabel="Encerrar Sessão"
       >
-        <Ionicons name="log-out-outline" size={18} color={isDark ? '#F87171' : '#DC2626'} />
-        <Text style={[styles.signOutText, { color: isDark ? '#F87171' : '#DC2626' }]}>
+        <Feather name="log-out" size={18} color={isDark ? '#F87171' : '#DC2626'} />
+        <Text style={[styles.signOutText, { color: isDark ? '#F87171' : '#DC2626', fontFamily: typography.fontFamily.bold }]}>
           Encerrar Sessão
         </Text>
       </PressableScale>
 
-      <Text style={[styles.footerNote, { color: themeTokens.textSecondary }]}>
+      <Text style={[styles.footerNote, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
         nós. • Um espaço só nosso
       </Text>
     </View>
@@ -46,19 +49,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: 999,
-    paddingVertical: 14,
     borderWidth: 1,
     marginBottom: 16,
   },
   signOutText: {
     fontSize: 14,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
   footerNote: {
     fontSize: 12,
-    fontFamily: 'Nunito_400Regular',
     textAlign: 'center',
   },
 });

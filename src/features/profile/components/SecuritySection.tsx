@@ -1,17 +1,16 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Switch, Platform } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '@/theme';
 
-interface SecuritySectionProps {
-  isDark: boolean;
-  themeTokens: any;
-}
+export function SecuritySection() {
+  const { colors, typography, radii, isDark } = useTheme();
+  const [showPresence, setShowPresence] = useState(true);
 
-export function SecuritySection({ isDark, themeTokens }: SecuritySectionProps) {
   return (
     <View style={styles.sectionBlock}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: themeTokens.textSecondary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
           PREFERÊNCIAS & SEGURANÇA
         </Text>
       </View>
@@ -20,8 +19,9 @@ export function SecuritySection({ isDark, themeTokens }: SecuritySectionProps) {
         style={[
           styles.securityCard,
           {
-            backgroundColor: isDark ? themeTokens.surface : '#FFFFFF',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.15)',
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.md,
           },
         ]}
       >
@@ -36,29 +36,19 @@ export function SecuritySection({ isDark, themeTokens }: SecuritySectionProps) {
               },
             ]}
           >
-            <Ionicons name="shield-checkmark" size={20} color="#22C55E" />
+            <Feather name="shield" size={20} color="#22C55E" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.securityTitle, { color: themeTokens.textPrimary }]}>
+            <Text style={[styles.securityTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
               Espaço Privado & Seguro
             </Text>
-            <Text style={[styles.securitySubtitle, { color: themeTokens.textSecondary }]}>
-              Protegido com Row Level Security (RLS) no Supabase. Somente vocês dois têm acesso às fotos, recados e memórias.
+            <Text style={[styles.securitySubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+              Apenas você e seu parceiro(a) têm acesso a este espaço. Tudo é guardado com segurança.
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={themeTokens.textMuted} />
         </View>
 
-        <View
-          style={[
-            styles.securityDivider,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.06)'
-                : 'rgba(124, 111, 224, 0.10)',
-            },
-          ]}
-        />
+        <View style={[styles.securityDivider, { backgroundColor: colors.border }]} />
 
         <View style={styles.securityRow}>
           <View
@@ -71,18 +61,49 @@ export function SecuritySection({ isDark, themeTokens }: SecuritySectionProps) {
               },
             ]}
           >
-            <Ionicons name="lock-closed" size={20} color={themeTokens.primary} />
+            <Feather name="lock" size={20} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.securityTitle, { color: themeTokens.textPrimary }]}>
-              Armazenamento Criptografado
+            <Text style={[styles.securityTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+              Privado e Protegido
             </Text>
-            <Text style={[styles.securitySubtitle, { color: themeTokens.textSecondary }]}>
-              Buckets de fotos e arquivos privados com acesso controlado por assinaturas temporárias.
+            <Text style={[styles.securitySubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+              Suas fotos, memórias e recados são estritamente confidenciais.
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={themeTokens.textMuted} />
         </View>
+
+        <View style={[styles.securityDivider, { backgroundColor: colors.border }]} />
+
+        <View style={styles.securityRow}>
+          <View
+            style={[
+              styles.securityIconBox,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(157, 146, 240, 0.15)'
+                  : 'rgba(124, 111, 224, 0.10)',
+              },
+            ]}
+          >
+            <Feather name="eye" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.securityTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+              Status de Presença
+            </Text>
+            <Text style={[styles.securitySubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+              Mostrar "Online agora" ou "Visto há..." para seu parceiro(a).
+            </Text>
+          </View>
+          <Switch
+            value={showPresence}
+            onValueChange={setShowPresence}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : (showPresence ? colors.primarySoft : '#f4f3f4')}
+          />
+        </View>
+
       </View>
     </View>
   );
@@ -98,12 +119,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
     letterSpacing: 1.2,
   },
   securityCard: {
-    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
     shadowColor: '#5B4294',
@@ -126,13 +144,10 @@ const styles = StyleSheet.create({
   },
   securityTitle: {
     fontSize: 14,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
     marginBottom: 2,
   },
   securitySubtitle: {
     fontSize: 12,
-    fontFamily: 'Nunito_400Regular',
     lineHeight: 17,
   },
   securityDivider: {

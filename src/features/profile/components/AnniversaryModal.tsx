@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, Platform, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useTheme } from '@/theme';
 
 interface AnniversaryModalProps {
   visible: boolean;
@@ -14,8 +15,6 @@ interface AnniversaryModalProps {
   onDateChange: (event: DateTimePickerChangeEvent, selected?: Date) => void;
   onSave: () => void;
   onClose: () => void;
-  isDark: boolean;
-  themeTokens: any;
 }
 
 export function AnniversaryModal({
@@ -27,9 +26,9 @@ export function AnniversaryModal({
   onDateChange,
   onSave,
   onClose,
-  isDark,
-  themeTokens,
 }: AnniversaryModalProps) {
+  const { colors, typography, isDark } = useTheme();
+
   return (
     <Modal
       visible={visible}
@@ -42,8 +41,8 @@ export function AnniversaryModal({
           style={[
             styles.modalCard,
             {
-              backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.15)',
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
             },
           ]}
         >
@@ -60,13 +59,13 @@ export function AnniversaryModal({
                 },
               ]}
             >
-              <Ionicons name="calendar" size={22} color={themeTokens.primary} />
+              <Feather name="calendar" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.modalTitle, { color: themeTokens.textPrimary }]}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.black }]}>
                 Início do Relacionamento
               </Text>
-              <Text style={[styles.modalSubtitle, { color: themeTokens.textSecondary }]}>
+              <Text style={[styles.modalSubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
                 Essa data alimenta o contador da tela Início e a contagem da jornada de vocês.
               </Text>
             </View>
@@ -78,8 +77,8 @@ export function AnniversaryModal({
               style={styles.androidDateButton}
               onPress={() => setShowAndroidPicker(true)}
             >
-              <Ionicons name="calendar-outline" size={20} color={themeTokens.primary} />
-              <Text style={[styles.androidDateText, { color: themeTokens.textPrimary }]}>
+              <Feather name="calendar" size={20} color={colors.primary} />
+              <Text style={[styles.androidDateText, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
                 {tempDate.toLocaleDateString('pt-BR', {
                   day: 'numeric',
                   month: 'long',
@@ -97,8 +96,8 @@ export function AnniversaryModal({
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 maximumDate={new Date()}
-                onValueChange={onDateChange}
-                textColor={themeTokens.textPrimary}
+                onChange={onDateChange}
+                textColor={colors.textPrimary}
               />
             </View>
           )}
@@ -116,7 +115,7 @@ export function AnniversaryModal({
               disabled={savingDate}
               accessibilityLabel="Cancelar edição de data"
             >
-              <Text style={[styles.modalCancelText, { color: themeTokens.textSecondary }]}>
+              <Text style={[styles.modalCancelText, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
                 Cancelar
               </Text>
             </PressableScale>
@@ -140,8 +139,8 @@ export function AnniversaryModal({
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <>
-                  <Text style={styles.modalSaveText}>Salvar Data</Text>
-                  <Ionicons name="heart" size={16} color="#FFFFFF" />
+                  <Text style={[styles.modalSaveText, { fontFamily: typography.fontFamily.bold }]}>Salvar Data</Text>
+                  <Feather name="heart" size={16} color="#FFFFFF" />
                 </>
               )}
             </PressableScale>
@@ -188,12 +187,9 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
   },
   modalSubtitle: {
     fontSize: 12,
-    fontFamily: 'Nunito_400Regular',
     marginTop: 2,
     lineHeight: 16,
   },
@@ -208,8 +204,6 @@ const styles = StyleSheet.create({
   },
   androidDateText: {
     fontSize: 14,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
   },
   pickerBox: {
     alignItems: 'center',
@@ -229,8 +223,6 @@ const styles = StyleSheet.create({
   },
   modalCancelText: {
     fontSize: 14,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
   modalSaveBtn: {
     flex: 2,
@@ -245,8 +237,6 @@ const styles = StyleSheet.create({
   modalSaveText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
   btnDisabled: {
     opacity: 0.7,

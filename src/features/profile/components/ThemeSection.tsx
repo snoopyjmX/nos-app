@@ -1,20 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '@/theme';
 import { LiquidThemeSelector } from '@/design/ui/LiquidThemeSelector';
 
 interface ThemeSectionProps {
   mode: 'light' | 'dark';
   setMode: (mode: 'light' | 'dark') => void;
-  isDark: boolean;
-  themeTokens: any;
 }
 
-export function ThemeSection({ mode, setMode, isDark, themeTokens }: ThemeSectionProps) {
+export function ThemeSection({ mode, setMode }: ThemeSectionProps) {
+  const { colors, typography, radii, isDark } = useTheme();
+
   return (
     <View style={styles.sectionBlock}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: themeTokens.textSecondary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
           APARÊNCIA & TEMA
         </Text>
       </View>
@@ -23,8 +24,9 @@ export function ThemeSection({ mode, setMode, isDark, themeTokens }: ThemeSectio
         style={[
           styles.themeCard,
           {
-            backgroundColor: isDark ? themeTokens.surface : '#FFFFFF',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.15)',
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.md,
           },
         ]}
       >
@@ -39,17 +41,17 @@ export function ThemeSection({ mode, setMode, isDark, themeTokens }: ThemeSectio
               },
             ]}
           >
-            <Ionicons
-              name={mode === 'dark' ? 'moon' : 'sunny'}
+            <Feather
+              name={mode === 'dark' ? 'moon' : 'sun'}
               size={20}
-              color={themeTokens.primary}
+              color={colors.primary}
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.themeCardTitle, { color: themeTokens.textPrimary }]}>
+            <Text style={[styles.themeCardTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
               Tema do Aplicativo
             </Text>
-            <Text style={[styles.themeCardDesc, { color: themeTokens.textSecondary }]}>
+            <Text style={[styles.themeCardDesc, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
               {mode === 'dark' ? 'Modo Escuro (roxo-noite)' : 'Modo Claro'}
             </Text>
           </View>
@@ -71,12 +73,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
     letterSpacing: 1.2,
   },
   themeCard: {
-    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
     shadowColor: '#5B4294',
@@ -100,12 +99,9 @@ const styles = StyleSheet.create({
   },
   themeCardTitle: {
     fontSize: 15,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
   themeCardDesc: {
     fontSize: 12,
-    fontFamily: 'Nunito_400Regular',
     marginTop: 2,
   },
 });
