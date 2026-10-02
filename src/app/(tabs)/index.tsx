@@ -142,7 +142,7 @@ export default function HomeScreen() {
                     styles.celebrationCard,
                     {
                       backgroundColor: colors.accentSoft,
-                      borderColor: colors.accent,
+                      borderColor: 'transparent',
                       borderRadius: radii.md,
                       ...shadows.soft,
                     },
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 8,
   },
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 40,
   },

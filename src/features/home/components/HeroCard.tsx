@@ -33,7 +33,7 @@ export function HeroCard({
           {
             backgroundColor: colors.surface,
             borderRadius: radii.lg,
-            borderColor: colors.border,
+            borderWidth: 0,
             ...shadows.soft,
           },
         ]}

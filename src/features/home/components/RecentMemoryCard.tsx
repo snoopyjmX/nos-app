@@ -42,8 +42,8 @@ export function RecentMemoryCard({
             styles.memoryCard,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
               borderRadius: radii.md,
+              borderWidth: 0,
               ...shadows.soft,
             },
           ]}
@@ -99,8 +99,8 @@ export function RecentMemoryCard({
             styles.memoryCard,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
               borderRadius: radii.md,
+              borderWidth: 0,
               ...shadows.soft,
             },
           ]}

@@ -42,8 +42,8 @@ export function ThrowbackMemoryCard({
           styles.memoryCard,
           {
             backgroundColor: colors.surface,
-            borderColor: colors.border,
             borderRadius: radii.md,
+            borderWidth: 0,
             ...shadows.soft,
           },
         ]}

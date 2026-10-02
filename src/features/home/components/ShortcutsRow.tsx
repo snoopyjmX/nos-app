@@ -30,8 +30,8 @@ export function ShortcutsRow({
           styles.shortcutCard,
           {
             backgroundColor: colors.surface,
-            borderColor: colors.border,
             borderRadius: radii.md,
+            borderWidth: 0,
             ...shadows.soft,
           },
         ]}
@@ -46,8 +46,8 @@ export function ShortcutsRow({
           styles.shortcutCard,
           {
             backgroundColor: colors.surface,
-            borderColor: colors.border,
             borderRadius: radii.md,
+            borderWidth: 0,
             ...shadows.soft,
           },
         ]}
@@ -62,8 +62,8 @@ export function ShortcutsRow({
           styles.shortcutCard,
           {
             backgroundColor: colors.surface,
-            borderColor: colors.border,
             borderRadius: radii.md,
+            borderWidth: 0,
             ...shadows.soft,
           },
         ]}
