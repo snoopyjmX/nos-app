@@ -15,8 +15,8 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] Fase 3A: Tokens
 - [x] Fase 3B: Componentes do design system
 - [x] Fase 4: Casca do app, dock e PWA
-- [ ] **PARADA 4**: usuário vê /dev/design-system e a dock no iPhone
-- [ ] Fase 5: Início
+- [x] **PARADA 4**: usuário vê /dev/design-system e a dock no iPhone
+- [x] Fase 5: Início
 - [ ] **PARADA 5**: usuário aprova o visual
 - [ ] Fase 6: Recados
 - [ ] Fase 7: Memórias
@@ -149,3 +149,11 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - Revisado e verificado o arquivo `sw.js` (PWA Cache) e `manifest.json`.
   - Criada a tela `/dev/design-system` para expor o catálogo de componentes visuais do app de forma isolada.
 - **Pendências para o Usuário (PARADA 4):** Abrir o app no iPhone (ou Safari Desktop), navegar até a rota `/dev/design-system`, inspecionar o visual e comportamento da Dock flutuante, e validar a coesão do Design System até o momento.
+
+### Fase 5: Início
+- **O que foi feito:**
+  - Migrada a tela `index.tsx` da Tab Bar (Início) para utilizar o novo componente base `<Screen />`.
+  - Refatorado todos os cards da Home: `HeroCard`, `ShortcutsRow`, `NextMilestoneCard`, `RecentMemoryCard`, `ThrowbackMemoryCard` e `CoupleJourneyCounter`.
+  - Removido dependência do `AppHeader`, `GlassSurface` e `AtmosphereBackground` da rota `/`, inserindo cabeçalho minimalista em sintonia com a identidade nova e implementando tokens via `useTheme()`.
+  - Atualizado todos os ícones da Home para `Feather` com ajustes de tamanhos.
+- **Pendências para o Usuário (PARADA 5):** Navegar para a tela "Início", avaliar os espaços, a nova tipografia, as bordas, as cores quentes, e como as animações de cascata/entrada ocorrem.

@@ -1,37 +1,36 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { PressableScale } from '@/components/ui';
 import { RecentMemory } from '../types';
 import { formatMemoryDate } from '../utils/time';
+import { useTheme } from '@/theme';
 
 interface RecentMemoryCardProps {
   recentMemory: RecentMemory | null;
   handleOpenMemories: () => void;
   shouldAnimateCascade: boolean;
-  isDark: boolean;
-  themeTokens: any;
 }
 
 export function RecentMemoryCard({
   recentMemory,
   handleOpenMemories,
   shouldAnimateCascade,
-  isDark,
-  themeTokens,
 }: RecentMemoryCardProps) {
+  const { colors, typography, radii, shadows } = useTheme();
+
   return (
     <Animated.View
       entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(180) : undefined}
     >
       <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionHeaderTitle, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
+        <Text style={[styles.sectionHeaderTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
           MEMÓRIA RECENTE
         </Text>
         <PressableScale onPress={handleOpenMemories}>
-          <Text style={[styles.sectionHeaderLink, { color: themeTokens.primary }]}>
+          <Text style={[styles.sectionHeaderLink, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>
             Ver todas
           </Text>
         </PressableScale>
@@ -42,8 +41,10 @@ export function RecentMemoryCard({
           style={[
             styles.memoryCard,
             {
-              backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderRadius: radii.md,
+              ...shadows.soft,
             },
           ]}
           onPress={handleOpenMemories}
@@ -52,7 +53,7 @@ export function RecentMemoryCard({
             style={[
               styles.memoryThumbBox,
               {
-                backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : '#EFECFC',
+                backgroundColor: colors.primarySoft,
               },
             ]}
           >
@@ -65,18 +66,18 @@ export function RecentMemoryCard({
                 transition={200}
               />
             ) : (
-              <Ionicons name="images-outline" size={22} color={themeTokens.primary} />
+              <Feather name="image" size={22} color={colors.primary} />
             )}
           </View>
 
           <View style={styles.memoryContent}>
             <Text
-              style={[styles.memoryTitleText, { color: isDark ? '#F3F1FB' : '#1E1A33' }]}
+              style={[styles.memoryTitleText, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}
               numberOfLines={2}
             >
               {recentMemory.title}
             </Text>
-            <Text style={[styles.memoryDateText, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
+            <Text style={[styles.memoryDateText, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
               {formatMemoryDate(recentMemory.memory_date)}
             </Text>
           </View>
@@ -85,11 +86,11 @@ export function RecentMemoryCard({
             style={[
               styles.memoryChevronBox,
               {
-                backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : 'rgba(124, 111, 224, 0.08)',
+                backgroundColor: colors.primarySoft,
               },
             ]}
           >
-            <Ionicons name="chevron-forward" size={15} color={themeTokens.primary} />
+            <Feather name="chevron-right" size={15} color={colors.primary} />
           </View>
         </PressableScale>
       ) : (
@@ -97,8 +98,10 @@ export function RecentMemoryCard({
           style={[
             styles.memoryCard,
             {
-              backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderRadius: radii.md,
+              ...shadows.soft,
             },
           ]}
           onPress={handleOpenMemories}
@@ -107,31 +110,19 @@ export function RecentMemoryCard({
             style={[
               styles.memoryThumbBox,
               {
-                backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : '#EFECFC',
+                backgroundColor: colors.primarySoft,
               },
             ]}
           >
-            <Ionicons name="sparkles-outline" size={22} color={themeTokens.primary} />
+            <Feather name="plus" size={24} color={colors.primary} />
           </View>
-
           <View style={styles.memoryContent}>
-            <Text style={[styles.memoryTitleText, { color: isDark ? '#F3F1FB' : '#1E1A33' }]}>
-              Guarde sua primeira memória
+            <Text style={[styles.memoryTitleText, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+              Guardar momento
             </Text>
-            <Text style={[styles.memoryDateText, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
-              Eternize os melhores momentos de vocês
+            <Text style={[styles.memoryDateText, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+              Nenhuma memória ainda
             </Text>
-          </View>
-
-          <View
-            style={[
-              styles.memoryChevronBox,
-              {
-                backgroundColor: isDark ? 'rgba(157, 146, 240, 0.12)' : 'rgba(124, 111, 224, 0.08)',
-              },
-            ]}
-          >
-            <Ionicons name="add" size={17} color={themeTokens.primary} />
           </View>
         </PressableScale>
       )}
@@ -146,33 +137,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 4,
     marginBottom: 10,
+    marginTop: 8,
   },
   sectionHeaderTitle: {
     fontSize: 11,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
   },
   sectionHeaderLink: {
     fontSize: 13,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
   memoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 22,
     borderWidth: 1,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+    marginBottom: 16,
   },
   memoryThumbBox: {
-    width: 60,
-    height: 60,
+    width: 64,
+    height: 64,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -185,18 +168,16 @@ const styles = StyleSheet.create({
   },
   memoryContent: {
     flex: 1,
+    justifyContent: 'center',
     paddingRight: 8,
   },
   memoryTitleText: {
-    fontSize: 15,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
+    fontSize: 16,
+    letterSpacing: -0.3,
     marginBottom: 4,
   },
   memoryDateText: {
-    fontSize: 12,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
+    fontSize: 13,
   },
   memoryChevronBox: {
     width: 28,

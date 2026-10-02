@@ -1,16 +1,15 @@
 import React from 'react';
 import { Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { PressableScale } from '@/components/ui';
+import { useTheme } from '@/theme';
 
 interface ShortcutsRowProps {
   handleOpenMessages: () => void;
   handleOpenMemories: () => void;
   handleOpenDates: () => void;
   shouldAnimateCascade: boolean;
-  isDark: boolean;
-  themeTokens: any;
 }
 
 export function ShortcutsRow({
@@ -18,9 +17,9 @@ export function ShortcutsRow({
   handleOpenMemories,
   handleOpenDates,
   shouldAnimateCascade,
-  isDark,
-  themeTokens,
 }: ShortcutsRowProps) {
+  const { colors, typography, radii, shadows } = useTheme();
+
   return (
     <Animated.View
       entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(60) : undefined}
@@ -30,42 +29,48 @@ export function ShortcutsRow({
         style={[
           styles.shortcutCard,
           {
-            backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.md,
+            ...shadows.soft,
           },
         ]}
         onPress={handleOpenMessages}
       >
-        <Ionicons name="chatbubble" size={17} color={themeTokens.primary} />
-        <Text style={[styles.shortcutText, { color: themeTokens.primary }]}>Recado</Text>
+        <Feather name="message-circle" size={17} color={colors.primary} />
+        <Text style={[styles.shortcutText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Recado</Text>
       </PressableScale>
 
       <PressableScale
         style={[
           styles.shortcutCard,
           {
-            backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.md,
+            ...shadows.soft,
           },
         ]}
         onPress={handleOpenMemories}
       >
-        <Ionicons name="camera" size={18} color={themeTokens.primary} />
-        <Text style={[styles.shortcutText, { color: themeTokens.primary }]}>Memória</Text>
+        <Feather name="camera" size={18} color={colors.primary} />
+        <Text style={[styles.shortcutText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Memória</Text>
       </PressableScale>
 
       <PressableScale
         style={[
           styles.shortcutCard,
           {
-            backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.md,
+            ...shadows.soft,
           },
         ]}
         onPress={handleOpenDates}
       >
-        <Ionicons name="calendar" size={17} color={themeTokens.primary} />
-        <Text style={[styles.shortcutText, { color: themeTokens.primary }]}>Datas</Text>
+        <Feather name="calendar" size={17} color={colors.primary} />
+        <Text style={[styles.shortcutText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Datas</Text>
       </PressableScale>
     </Animated.View>
   );
@@ -80,21 +85,13 @@ const styles = StyleSheet.create({
   shortcutCard: {
     flex: 1,
     height: 52,
-    borderRadius: 18,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: '#7C6FE0',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 2,
   },
   shortcutText: {
     fontSize: 13,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
 });

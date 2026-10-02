@@ -2,18 +2,17 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { PressableScale } from '@/components/ui';
 import { CoupleJourneyCounter } from './CoupleJourneyCounter';
+import { useTheme } from '@/theme';
 
 interface HeroCardProps {
   heroImageUri: string | null | undefined;
   effectiveStartDateStr: string | null;
   handleOpenMemories: () => void;
   shouldAnimateCascade: boolean;
-  isDark: boolean;
-  themeTokens: any;
 }
 
 export function HeroCard({
@@ -21,9 +20,9 @@ export function HeroCard({
   effectiveStartDateStr,
   handleOpenMemories,
   shouldAnimateCascade,
-  isDark,
-  themeTokens,
 }: HeroCardProps) {
+  const { colors, typography, radii, shadows, isDark } = useTheme();
+
   return (
     <Animated.View
       entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(0) : undefined}
@@ -32,12 +31,13 @@ export function HeroCard({
         style={[
           styles.heroCard,
           {
-            backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
-            shadowColor: '#7C6FE0',
+            backgroundColor: colors.surface,
+            borderRadius: radii.lg,
+            borderColor: colors.border,
+            ...shadows.soft,
           },
         ]}
         onPress={handleOpenMemories}
-        activeOpacity={0.92}
       >
         {heroImageUri ? (
           <ExpoImage
@@ -71,15 +71,13 @@ export function HeroCard({
           style={StyleSheet.absoluteFill}
         />
 
-        <View style={styles.photoBadge}>
-          <Ionicons name="heart" size={13} color="#FFFFFF" />
-          <Text style={styles.photoBadgeText}>Nós</Text>
+        <View style={[styles.photoBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+          <Feather name="heart" size={13} color="#FFFFFF" />
+          <Text style={[styles.photoBadgeText, { fontFamily: typography.fontFamily.bold }]}>Nós</Text>
         </View>
 
         <CoupleJourneyCounter
           startDate={effectiveStartDateStr}
-          isDark={isDark}
-          themeTokens={themeTokens}
         />
       </PressableScale>
     </Animated.View>
@@ -90,37 +88,24 @@ const styles = StyleSheet.create({
   heroCard: {
     width: '100%',
     height: 245,
-    borderRadius: 28,
     overflow: 'hidden',
     padding: 20,
     justifyContent: 'space-between',
     marginBottom: 16,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    elevation: 4,
   },
   photoBadge: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#7C6FE0',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 999,
-    gap: 5,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 16,
+    gap: 4,
   },
   photoBadgeText: {
-    fontSize: 12,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.2,
+    fontSize: 12,
+    letterSpacing: -0.2,
   },
 });

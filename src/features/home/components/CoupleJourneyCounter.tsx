@@ -4,17 +4,16 @@ import { calculateAccumulatedTime } from '../utils/time';
 
 let hasAnimatedHeroCounterThisSession = false;
 
+import { useTheme } from '@/theme';
+
 interface CoupleJourneyCounterProps {
   startDate: string | null;
-  isDark: boolean;
-  themeTokens: any;
 }
 
 export const CoupleJourneyCounter = React.memo(function CoupleJourneyCounter({
   startDate,
-  isDark,
-  themeTokens,
 }: CoupleJourneyCounterProps) {
+  const { colors, typography, isDark } = useTheme();
   const [timeTotals, setTimeTotals] = useState(() => calculateAccumulatedTime(startDate));
   const [animatedDays, setAnimatedDays] = useState(() => {
     return hasAnimatedHeroCounterThisSession ? timeTotals.days : 0;

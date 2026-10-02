@@ -1,25 +1,24 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { PressableScale } from '@/components/ui';
 import { NextMilestone } from '../types';
+import { useTheme } from '@/theme';
 
 interface NextMilestoneCardProps {
   nextMilestone: NextMilestone | null;
   handleOpenDates: () => void;
   shouldAnimateCascade: boolean;
-  isDark: boolean;
-  themeTokens: any;
 }
 
 export function NextMilestoneCard({
   nextMilestone,
   handleOpenDates,
   shouldAnimateCascade,
-  isDark,
-  themeTokens,
 }: NextMilestoneCardProps) {
+  const { colors, typography, radii, shadows } = useTheme();
+
   if (!nextMilestone) return null;
 
   return (
@@ -30,8 +29,10 @@ export function NextMilestoneCard({
         style={[
           styles.milestoneCard,
           {
-            backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.md,
+            ...shadows.soft,
           },
         ]}
         onPress={handleOpenDates}
@@ -40,19 +41,19 @@ export function NextMilestoneCard({
           style={[
             styles.milestoneIconBox,
             {
-              backgroundColor: isDark ? 'rgba(157, 146, 240, 0.16)' : '#EFECFC',
+              backgroundColor: colors.primarySoft,
             },
           ]}
         >
-          <Ionicons name="sparkles" size={20} color={themeTokens.primary} />
+          <Feather name="star" size={20} color={colors.primary} />
         </View>
 
         <View style={styles.milestoneContent}>
-          <Text style={[styles.milestoneLabel, { color: isDark ? '#AAA5B8' : '#7E7699' }]}>
+          <Text style={[styles.milestoneLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
             PRÓXIMO MOMENTO
           </Text>
           <Text
-            style={[styles.milestoneTitle, { color: isDark ? '#F3F1FB' : '#1E1A33' }]}
+            style={[styles.milestoneTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}
             numberOfLines={2}
           >
             {nextMilestone.title}
@@ -63,11 +64,12 @@ export function NextMilestoneCard({
           style={[
             styles.milestoneChip,
             {
-              backgroundColor: isDark ? 'rgba(157, 146, 240, 0.20)' : '#F3E8FF',
+              backgroundColor: colors.primarySoft,
+              borderRadius: radii.pill,
             },
           ]}
         >
-          <Text style={[styles.milestoneChipText, { color: isDark ? '#C4B5FD' : '#7C3AED' }]}>
+          <Text style={[styles.milestoneChipText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>
             {nextMilestone.daysRemaining === 0
               ? 'É hoje!'
               : `em ${nextMilestone.daysRemaining}d`}
@@ -83,14 +85,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 20,
     borderWidth: 1,
     marginBottom: 20,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 3,
   },
   milestoneIconBox: {
     width: 44,
@@ -102,29 +98,25 @@ const styles = StyleSheet.create({
   },
   milestoneContent: {
     flex: 1,
+    justifyContent: 'center',
     paddingRight: 8,
   },
   milestoneLabel: {
     fontSize: 10,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
     letterSpacing: 0.8,
     marginBottom: 2,
   },
   milestoneTitle: {
-    fontSize: 15,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
-    lineHeight: 18,
+    fontSize: 16,
+    letterSpacing: -0.3,
   },
   milestoneChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   milestoneChipText: {
     fontSize: 12,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
   },
 });
