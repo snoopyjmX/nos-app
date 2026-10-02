@@ -12,7 +12,7 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] **PARADA 2**: usuário confere que a tela é igual à anterior
 - [ ] Fase 2B: demais telas, uma a uma
 - [ ] **PARADA 3**: usuário testa o app inteiro
-- [ ] Fase 3A: Tokens
+- [x] Fase 3A: Tokens
 - [ ] Fase 3B: Componentes do design system
 - [ ] Fase 4: Casca do app, dock e PWA
 - [ ] **PARADA 4**: usuário vê /dev/design-system e a dock no iPhone
@@ -114,3 +114,14 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - Dividida logicamente com hooks customizados (`useDates`) isolados em `src/features/dates/api/`.
 - Componentes complexos `Floating3DHeart`, `CountdownDigits`, `DatesHeroCard`, `DateListItem` e `AddDateModal` extraídos.
 - Funções de cálculo de datas e utilitários colocados em `src/features/dates/utils/`.
+
+### Fase 3A: Tokens de Design
+- **O que foi feito:** Criada a infraestrutura base do Design System (`src/theme/`).
+- **Arquivos criados:**
+  - `src/theme/colors.ts`: Paleta de cores com suporte a `light` e `dark`, garantindo que não haja "preto puro" e sim `roxo-noite`, além da acentuação rosa e tons pastéis (`primarySoft`, `accentSoft`).
+  - `src/theme/typography.ts`: Famílias, pesos, tamanhos (escala modular) e alturas de linha baseados em Nunito e Fraunces.
+  - `src/theme/spacing.ts`: Espaçamentos (base 4) e raios de borda (`sm`, `md`, `lg`, `pill`).
+  - `src/theme/shadows.ts`: Sombras nos níveis `soft` e `medium` com tom difuso roxo/preto (dependendo do esquema de cor).
+  - `src/theme/motion.ts`: Durações de animação (`micro`, `normal`, `celebration`) e *easings* otimizados (ease-out, springs) para Reanimated.
+  - `src/theme/index.ts`: Hook `useTheme()` para expor os tokens no contexto correto com tipagem forte e esquema de cores automático (React Native `useColorScheme`).
+- **Pendente:** Iniciar a Fase 3B (Componentes base) utilizando esses tokens.
