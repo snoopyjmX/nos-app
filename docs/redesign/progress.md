@@ -10,7 +10,7 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] Fase 2A: Estrutura e qualidade
 - [x] Fase 2B: 1ª tela (a menor)
 - [x] **PARADA 2**: usuário confere que a tela é igual à anterior
-- [ ] Fase 2B: demais telas, uma a uma
+- [x] Fase 2B: demais telas, uma a uma
 - [ ] **PARADA 3**: usuário testa o app inteiro
 - [x] Fase 3A: Tokens
 - [x] Fase 3B: Componentes do design system
