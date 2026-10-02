@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,10 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { AnimatedTouchable } from '@/design/components/AnimatedTouchable';
-import { LiquidGlassView } from '@/design/ui/LiquidGlassView';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { Button, IconButton, PressableScale } from '@/components/ui';
+import { useTheme } from '@/theme';
 import { formatFullDatePTBR, formatTimePTBR, CATEGORIES } from '../utils/formatting';
 
 interface AddDateModalProps {
@@ -57,9 +55,7 @@ export function AddDateModal({
   submitting,
   onSave,
 }: AddDateModalProps) {
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
-  const styles = useMemo(() => getStyles(themeTokens, isDark), [themeTokens, isDark]);
+  const { colors, typography, radii, shadows } = useTheme();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -67,45 +63,44 @@ export function AddDateModal({
         style={styles.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <LiquidGlassView intensity={isDark ? 30 : 60} style={StyleSheet.absoluteFill} />
+        <View style={StyleSheet.absoluteFill} />
 
         <View
           style={[
             styles.modalContent,
             {
-              backgroundColor: themeTokens.background,
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+              backgroundColor: colors.surface,
+              borderRadius: radii.lg,
+              ...shadows.medium,
             },
           ]}
         >
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: themeTokens.textPrimary }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
               {isEditing ? 'Editar Data' : 'Nova Data Especial'}
             </Text>
-            <AnimatedTouchable style={styles.modalCloseBtn} onPress={onClose}>
-              <Ionicons name="close" size={24} color={themeTokens.textSecondary} />
-            </AnimatedTouchable>
+            <IconButton icon="x" variant="ghost" onPress={onClose} />
           </View>
 
           <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
             {/* O que vamos celebrar? */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: themeTokens.textSecondary }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
                 O que vamos celebrar?
               </Text>
               <View
                 style={[
                   styles.inputWrapper,
                   {
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8F9FC',
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(124, 111, 224, 0.15)',
+                    backgroundColor: colors.primarySoft,
+                    borderRadius: radii.md,
                   },
                 ]}
               >
                 <TextInput
-                  style={[styles.textInput, { color: themeTokens.textPrimary }]}
+                  style={[styles.textInput, { color: colors.textPrimary, fontFamily: typography.fontFamily.regular }]}
                   placeholder="Ex: Aniversário de namoro, Viagem para Paris..."
-                  placeholderTextColor={themeTokens.textMuted}
+                  placeholderTextColor={colors.textSecondary}
                   value={newTitle}
                   onChangeText={setNewTitle}
                   maxLength={50}
@@ -116,38 +111,38 @@ export function AddDateModal({
 
             {/* Categoria */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: themeTokens.textSecondary }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
                 Categoria
               </Text>
               <View style={styles.categoriesRow}>
                 {CATEGORIES.map((cat) => {
                   const isSelected = newCategory === cat.id;
                   return (
-                    <AnimatedTouchable
+                    <PressableScale
                       key={cat.id}
                       style={[
                         styles.categoryOption,
                         {
-                          backgroundColor: isSelected ? cat.color : (isDark ? 'rgba(255,255,255,0.05)' : '#F3F4F6'),
-                          borderColor: isSelected ? cat.color : (isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB'),
+                          backgroundColor: isSelected ? cat.color : colors.primarySoft,
+                          borderRadius: radii.pill,
                         },
                       ]}
                       onPress={() => setNewCategory(cat.id)}
                     >
-                      <Ionicons
+                      <Feather
                         name={cat.icon as any}
                         size={14}
-                        color={isSelected ? '#FFFFFF' : themeTokens.textSecondary}
+                        color={isSelected ? '#FFFFFF' : colors.textSecondary}
                       />
                       <Text
                         style={[
                           styles.categoryOptionText,
-                          { color: isSelected ? '#FFFFFF' : themeTokens.textSecondary },
+                          { color: isSelected ? '#FFFFFF' : colors.textSecondary, fontFamily: typography.fontFamily.regular },
                         ]}
                       >
                         {cat.label}
                       </Text>
-                    </AnimatedTouchable>
+                    </PressableScale>
                   );
                 })}
               </View>
@@ -155,71 +150,70 @@ export function AddDateModal({
 
             {/* Data */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: themeTokens.textSecondary }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
                 Data do Evento
               </Text>
-              <AnimatedTouchable
+              <PressableScale
                 style={[
                   styles.dateTimeButton,
                   {
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8F9FC',
-                    borderColor: showDatePicker
-                      ? themeTokens.primary
-                      : isDark
-                        ? 'rgba(255, 255, 255, 0.1)'
-                        : 'rgba(124, 111, 224, 0.15)',
+                    backgroundColor: colors.primarySoft,
+                    borderRadius: radii.md,
+                    borderColor: showDatePicker ? colors.primary : 'transparent',
+                    borderWidth: 1,
                   },
                 ]}
                 onPress={() => {
                   setShowDatePicker(!showDatePicker);
                   if (showTimePicker) setShowTimePicker(false);
                 }}
-                activeOpacity={0.8}
               >
-                <Ionicons name="calendar-outline" size={18} color={themeTokens.primary} />
-                <Text style={styles.dateTimeButtonText}>
+                <Feather name="calendar" size={18} color={colors.primary} />
+                <Text style={[styles.dateTimeButtonText, { color: colors.textPrimary, fontFamily: typography.fontFamily.regular }]}>
                   {formatFullDatePTBR(selectedDate.toISOString())}
                 </Text>
-                <Ionicons
-                  name={showDatePicker ? 'chevron-down' : 'chevron-forward'}
+                <Feather
+                  name={showDatePicker ? 'chevron-up' : 'chevron-down'}
                   size={16}
-                  color={themeTokens.textSecondary}
+                  color={colors.textSecondary}
                 />
-              </AnimatedTouchable>
+              </PressableScale>
             </View>
 
             {/* DatePicker */}
             {showDatePicker && (
               <View style={styles.pickerBox}>
-                <Text style={[styles.pickerTitle, { color: themeTokens.textSecondary }]}>
+                <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
                   Selecione o Dia
                 </Text>
                 <DateTimePicker
                   value={selectedDate}
                   mode="date"
-                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onValueChange={onDateChange}
-                  textColor={isDark ? '#F7F5FF' : '#16151E'}
-                  themeVariant={isDark ? 'dark' : 'light'}
+                  textColor={colors.textPrimary}
                 />
+                {Platform.OS === 'ios' && (
+                  <View style={{ marginTop: 16 }}>
+                    <Button variant="secondary" onPress={() => setShowDatePicker(false)}>Concluir Data</Button>
+                  </View>
+                )}
               </View>
             )}
 
-            {/* Horário */}
+            {/* Horário Opcional */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: themeTokens.textSecondary }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
                 Horário (Opcional)
               </Text>
-              <AnimatedTouchable
+              <PressableScale
                 style={[
                   styles.dateTimeButton,
                   {
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F8F9FC',
-                    borderColor: showTimePicker
-                      ? themeTokens.primary
-                      : isDark
-                        ? 'rgba(255, 255, 255, 0.1)'
-                        : 'rgba(124, 111, 224, 0.15)',
+                    backgroundColor: colors.primarySoft,
+                    borderRadius: radii.md,
+                    borderColor: showTimePicker ? colors.primary : 'transparent',
+                    borderWidth: 1,
                   },
                 ]}
                 onPress={() => {
@@ -227,74 +221,66 @@ export function AddDateModal({
                   if (showDatePicker) setShowDatePicker(false);
                   if (!selectedTime) {
                     const now = new Date();
-                    now.setHours(20, 0, 0, 0);
-                    onTimeChange({ type: "set" }, now);
+                    now.setHours(12, 0, 0, 0);
+                    onTimeChange(null, now);
                   }
                 }}
-                activeOpacity={0.8}
               >
-                <Ionicons name="time-outline" size={18} color={themeTokens.primary} />
-                <Text
-                  style={[
-                    styles.dateTimeButtonText,
-                    !selectedTime && { color: themeTokens.textMuted },
-                  ]}
-                >
-                  {selectedTime ? formatTimePTBR(selectedTime.toISOString()) : 'Nenhum horário definido'}
+                <Feather name="clock" size={18} color={colors.primary} />
+                <Text style={[styles.dateTimeButtonText, { color: colors.textPrimary, fontFamily: typography.fontFamily.regular }]}>
+                  {selectedTime ? formatTimePTBR(selectedTime.toISOString()) : 'Adicionar Horário'}
                 </Text>
-                <Ionicons
-                  name={showTimePicker ? 'chevron-down' : 'chevron-forward'}
+                <Feather
+                  name={showTimePicker ? 'chevron-up' : 'chevron-down'}
                   size={16}
-                  color={themeTokens.textSecondary}
+                  color={colors.textSecondary}
                 />
-              </AnimatedTouchable>
+              </PressableScale>
+
+              {selectedTime && (
+                <PressableScale
+                  style={styles.clearTimeButton}
+                  onPress={() => {
+                    onTimeChange(null, undefined);
+                    setShowTimePicker(false);
+                  }}
+                >
+                  <Text style={[styles.clearTimeText, { color: colors.danger, fontFamily: typography.fontFamily.regular }]}>
+                    Remover Horário
+                  </Text>
+                </PressableScale>
+              )}
             </View>
 
             {/* TimePicker */}
             {showTimePicker && (
               <View style={styles.pickerBox}>
-                <Text style={[styles.pickerTitle, { color: themeTokens.textSecondary }]}>
+                <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
                   Selecione o Horário
                 </Text>
                 <DateTimePicker
                   value={selectedTime || new Date()}
                   mode="time"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  is24Hour={true}
                   onValueChange={onTimeChange}
-                  textColor={isDark ? '#F7F5FF' : '#16151E'}
-                  themeVariant={isDark ? 'dark' : 'light'}
+                  textColor={colors.textPrimary}
                 />
+                {Platform.OS === 'ios' && (
+                  <View style={{ marginTop: 16 }}>
+                    <Button variant="secondary" onPress={() => setShowTimePicker(false)}>Concluir Horário</Button>
+                  </View>
+                )}
               </View>
             )}
 
-            {/* Ações */}
             <View style={styles.modalActionsRow}>
-              <AnimatedTouchable
-                style={[styles.modalCancelBtn, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9' }]}
-                onPress={onClose}
-                disabled={submitting}
-              >
-                <Text style={[styles.modalCancelText, { color: themeTokens.textPrimary }]}>Cancelar</Text>
-              </AnimatedTouchable>
-
-              <AnimatedTouchable
-                style={[
-                  styles.modalSaveBtn,
-                  { backgroundColor: themeTokens.primary },
-                  submitting && { opacity: 0.7 },
-                ]}
-                onPress={onSave}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.modalSaveText}>Salvar Data</Text>
-                    <Ionicons name="sparkles" size={16} color="#FFFFFF" />
-                  </>
-                )}
-              </AnimatedTouchable>
+              <View style={{ flex: 1 }}>
+                <Button variant="secondary" onPress={onClose} disabled={submitting}>Cancelar</Button>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button variant="primary" onPress={onSave} loading={submitting}>Salvar Data</Button>
+              </View>
             </View>
           </ScrollView>
         </View>
@@ -303,69 +289,45 @@ export function AddDateModal({
   );
 }
 
-const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
+const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
     maxHeight: '90%',
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 20,
-    shadowColor: '#7C6FE0',
   },
   modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 18,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-  },
-  modalCloseBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontSize: 20,
   },
   modalScroll: {
-    padding: 24,
+    paddingHorizontal: 20,
   },
   inputGroup: {
     marginBottom: 24,
   },
   inputLabel: {
-    fontSize: 14,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
+    fontSize: 13,
     marginBottom: 8,
+    marginLeft: 4,
   },
   inputWrapper: {
-    borderWidth: 1,
-    borderRadius: 16,
     paddingHorizontal: 16,
-    height: 54,
-    justifyContent: 'center',
+    paddingVertical: 14,
   },
   textInput: {
     fontSize: 16,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
-    flex: 1,
+    padding: 0,
   },
   categoriesRow: {
     flexDirection: 'row',
@@ -378,79 +340,49 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 999,
     borderWidth: 1,
+    borderColor: 'transparent',
   },
   categoryOptionText: {
     fontSize: 13,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
   },
   dateTimeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 54,
-    borderRadius: 16,
-    borderWidth: 1,
     paddingHorizontal: 16,
-    gap: 10,
+    paddingVertical: 14,
   },
   dateTimeButtonText: {
     flex: 1,
     fontSize: 16,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
-    color: themeTokens.textPrimary,
+    marginLeft: 10,
+  },
+  clearTimeButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  clearTimeText: {
+    fontSize: 13,
   },
   pickerBox: {
-    backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#F8F9FC',
-    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 16,
     padding: 16,
     marginBottom: 24,
+    marginTop: -8,
   },
   pickerTitle: {
     fontSize: 13,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: 'center',
   },
   modalActionsRow: {
     flexDirection: 'row',
     gap: 12,
     marginTop: 10,
-    marginBottom: 40,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    height: 54,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalCancelText: {
-    fontSize: 15,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
-  },
-  modalSaveBtn: {
-    flex: 1.5,
-    height: 54,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: themeTokens.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  modalSaveText: {
-    fontSize: 15,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    color: '#FFFFFF',
+    marginBottom: 20,
+    width: '100%',
   },
 });

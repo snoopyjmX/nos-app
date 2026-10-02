@@ -20,7 +20,7 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
 - [x] **PARADA 5**: usuário aprova o visual
 - [x] Fase 6: Recados
 - [x] Fase 7: Memórias
-- [ ] Fase 8: Datas
+- [x] Fase 8: Datas
 - [ ] Fase 9: Ajustes e vínculo
 - [ ] **PARADA 6**: usuário revisa as telas
 - [ ] Fase 10: Acessibilidade
@@ -172,3 +172,10 @@ Atualizado pelo agente ao fim de cada fase. Não apague este arquivo.
   - Removemos fundos blur caros e passamos a usar sombras leves e botões padronizados (`Button`, `IconButton`) com fallback nativo.
   - Skeletons padronizados via UI e substituição total de ícones para o Feather.
 - **Pendências:** Validar abertura do preview de fotos com o usuário.
+
+### Fase 8: Datas
+- **O que foi feito:**
+  - Migração de `DatesHeroCard`, `CountdownDigits`, `DateListItem`, `AddDateModal`, `FilterTabs` e `dates.tsx` para o `@/theme` e uso de Feather.
+  - O header agora é simples, com fundo sólido, para melhorar a performance.
+  - Remoção de blurs pesados em modais de adicionar evento, mantendo a experiência fluida no PWA web e iOS.
+- **Pendências:** Confirmar os tamanhos de fonte no contador se ficam bons em telas pequenas.

@@ -1,21 +1,13 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Platform, RefreshControl, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, RefreshControl, Alert, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useReducedMotion } from 'react-native-reanimated';
 
-import { AtmosphereBackground } from '@/design/ui/AtmosphereBackground';
-import { GlassSurface } from '@/design/ui/GlassSurface';
-import { EmptyState } from '@/design/ui/EmptyState';
-import { AppHeader } from '@/design/components/AppHeader';
-import { AnimatedTouchable } from '@/design/components/AnimatedTouchable';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Text } from 'react-native';
-
+import { EmptyState } from '@/components/ui';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { useTheme } from '@/theme';
 import { useTabBarHeight } from '@/lib/hooks/useTabBarHeight';
 import { useToast } from '@/lib/context/ToastContext';
 import { supabase } from '@/lib/core/supabase';
@@ -26,11 +18,11 @@ import { FilterTabs } from '@/features/dates/components/FilterTabs';
 import { DatesHeroCard } from '@/features/dates/components/DatesHeroCard';
 import { DateListItem } from '@/features/dates/components/DateListItem';
 import { AddDateModal } from '@/features/dates/components/AddDateModal';
+import { Feather } from '@expo/vector-icons';
+import { IconButton } from '@/components/ui';
 
 export default function DatesScreen() {
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
-  const styles = getStyles(themeTokens, isDark);
+  const { colors, typography, isDark } = useTheme();
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
@@ -193,9 +185,7 @@ export default function DatesScreen() {
     : pastEvents;
 
   return (
-    <View style={[styles.container, { backgroundColor: themeTokens.background }]}>
-      <AtmosphereBackground />
-
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={{
           paddingTop: insets.top + (Platform.OS === 'ios' ? 88 : 82),
@@ -207,8 +197,8 @@ export default function DatesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={themeTokens.primary}
-            colors={[themeTokens.primary]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       >
@@ -221,9 +211,9 @@ export default function DatesScreen() {
 
         {loading ? (
           <View style={styles.skeletonContainer}>
-            <View style={[styles.skeletonCard, { height: 240 }]} />
-            <View style={styles.skeletonCard} />
-            <View style={styles.skeletonCard} />
+            <View style={[styles.skeletonCard, { height: 240, backgroundColor: colors.surface }]} />
+            <View style={[styles.skeletonCard, { backgroundColor: colors.surface }]} />
+            <View style={[styles.skeletonCard, { backgroundColor: colors.surface }]} />
           </View>
         ) : (
           <>
@@ -233,9 +223,9 @@ export default function DatesScreen() {
 
             {activeTab === 'upcoming' && upcomingEvents.length === 0 && (
               <EmptyState
-                icon="calendar-outline"
+                icon="calendar"
                 title="Nenhuma data próxima"
-                subtitle="Planejem o próximo encontro ou viagem juntos!"
+                description="Planejem o próximo encontro ou viagem juntos!"
                 actionLabel="Nova Data"
                 onAction={handleOpenAddModal}
               />
@@ -243,9 +233,9 @@ export default function DatesScreen() {
 
             {activeTab === 'past' && pastEvents.length === 0 && (
               <EmptyState
-                icon="time-outline"
+                icon="clock"
                 title="Nenhum histórico"
-                subtitle="Momentos incríveis ainda estão por vir."
+                description="Momentos incríveis ainda estão por vir."
               />
             )}
 
@@ -263,34 +253,21 @@ export default function DatesScreen() {
         )}
       </ScrollView>
 
-      {/* Header Fixo com Blur */}
-      <View style={[styles.blurredHeaderContainer, { paddingTop: insets.top }]}>
-        <GlassSurface
-          intensity={Platform.OS === 'ios' ? 70 : 85}
-          tint={isDark ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              backgroundColor: isDark ? 'rgba(15, 13, 24, 0.45)' : 'rgba(248, 249, 252, 0.50)',
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-            },
-          ]}
-        />
+      {/* Header Fixo Sólido */}
+      <View 
+        style={[
+          styles.headerContainer, 
+          { 
+            paddingTop: insets.top,
+            backgroundColor: colors.background,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+          }
+        ]}
+      >
         <View style={styles.headerInnerRow}>
-          <AppHeader
-            sectionTitle="Datas Especiais"
-            containerStyle={{ marginBottom: 0, paddingTop: 4, paddingBottom: 8 }}
-            rightAction={
-              <AnimatedTouchable style={styles.headerAddBtn} onPress={handleOpenAddModal}>
-                <Ionicons name="add" size={20} color="#FFFFFF" />
-                <Text style={styles.headerAddBtnText}>Nova</Text>
-              </AnimatedTouchable>
-            }
-          />
+          <Text style={[styles.headerBrandTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>Datas Especiais</Text>
+          <IconButton icon="plus" variant="primary" onPress={handleOpenAddModal} accessibilityLabel="Nova Data" />
         </View>
       </View>
 
@@ -317,29 +294,25 @@ export default function DatesScreen() {
   );
 }
 
-const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: { flex: 1 },
-  blurredHeaderContainer: {
+  headerContainer: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, overflow: 'hidden',
   },
-  headerInnerRow: { paddingHorizontal: 20, paddingBottom: 4 },
-  headerAddBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: themeTokens.primary,
-    shadowColor: themeTokens.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25, shadowRadius: 6, elevation: 3,
+  headerInnerRow: {
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 8 : 10,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  headerAddBtnText: {
-    fontSize: 13, fontFamily: 'Nunito_700Bold', fontWeight: '700',
-    color: '#FFFFFF', letterSpacing: -0.2,
+  headerBrandTitle: {
+    fontSize: 27,
+    letterSpacing: -0.8,
   },
   skeletonContainer: { paddingTop: 10, gap: 16 },
   skeletonCard: {
-    width: '100%', height: 90, borderRadius: 24, borderWidth: 1,
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(142, 124, 232, 0.08)',
-    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(142, 124, 232, 0.15)',
+    width: '100%', height: 90, borderRadius: 24, borderWidth: 1, borderColor: 'transparent'
   },
 });

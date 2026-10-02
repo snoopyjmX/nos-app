@@ -1,8 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { PressableScale } from '@/design/ui/PressableScale';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { PressableScale } from '@/components/ui';
+import { useTheme } from '@/theme';
 
 interface FilterTabsProps {
   activeTab: 'upcoming' | 'past';
@@ -12,31 +11,48 @@ interface FilterTabsProps {
 }
 
 export function FilterTabs({ activeTab, setActiveTab, upcomingCount, pastCount }: FilterTabsProps) {
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
-  const styles = useMemo(() => getStyles(themeTokens, isDark), [themeTokens, isDark]);
+  const { colors, typography, radii, shadows } = useTheme();
 
   return (
-    <View style={styles.segmentedControl}>
+    <View style={[styles.segmentedControl, { backgroundColor: colors.primarySoft, borderRadius: radii.md }]}>
       <PressableScale
-        style={[styles.segmentButton, activeTab === 'upcoming' && styles.segmentButtonActive]}
+        style={[
+          styles.segmentButton,
+          { borderRadius: radii.md - 4 },
+          activeTab === 'upcoming' && [
+            { backgroundColor: colors.surface },
+            shadows.soft,
+          ],
+        ]}
         onPress={() => setActiveTab('upcoming')}
       >
         <Text
           style={[
             styles.segmentText,
-            activeTab === 'upcoming' && styles.segmentTextActive,
+            { color: colors.textSecondary, fontFamily: typography.fontFamily.bold },
+            activeTab === 'upcoming' && { color: colors.primary },
           ]}
         >
           Próximas ({upcomingCount})
         </Text>
       </PressableScale>
       <PressableScale
-        style={[styles.segmentButton, activeTab === 'past' && styles.segmentButtonActive]}
+        style={[
+          styles.segmentButton,
+          { borderRadius: radii.md - 4 },
+          activeTab === 'past' && [
+            { backgroundColor: colors.surface },
+            shadows.soft,
+          ],
+        ]}
         onPress={() => setActiveTab('past')}
       >
         <Text
-          style={[styles.segmentText, activeTab === 'past' && styles.segmentTextActive]}
+          style={[
+            styles.segmentText,
+            { color: colors.textSecondary, fontFamily: typography.fontFamily.bold },
+            activeTab === 'past' && { color: colors.primary },
+          ]}
         >
           Histórico ({pastCount})
         </Text>
@@ -45,11 +61,9 @@ export function FilterTabs({ activeTab, setActiveTab, upcomingCount, pastCount }
   );
 }
 
-const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
+const styles = StyleSheet.create({
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(124, 111, 224, 0.08)',
-    borderRadius: 16,
     padding: 4,
     marginBottom: 20,
   },
@@ -57,23 +71,8 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 12,
-  },
-  segmentButtonActive: {
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#FFFFFF',
-    shadowColor: themeTokens.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   segmentText: {
     fontSize: 14,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
-    color: themeTokens.textSecondary,
-  },
-  segmentTextActive: {
-    color: themeTokens.primary,
   },
 });

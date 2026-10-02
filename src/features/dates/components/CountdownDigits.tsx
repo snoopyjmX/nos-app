@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, AppState, AppStateStatus } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -9,9 +9,8 @@ import Animated, {
   FadeInDown,
   FadeOutDown,
 } from 'react-native-reanimated';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '@/theme';
 import { parseEventDate } from '../utils/formatting';
 
 let hasAnimatedProgressThisSession = false;
@@ -48,9 +47,7 @@ interface CountdownDigitsProps {
 }
 
 export const CountdownDigits = React.memo(function CountdownDigits({ targetDate, createdAt }: CountdownDigitsProps) {
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
-  const styles = useMemo(() => getStyles(themeTokens, isDark), [themeTokens, isDark]);
+  const { colors, typography, isDark } = useTheme();
   const reducedMotion = useReducedMotion();
 
   const calculateDiff = useCallback(() => {
@@ -101,209 +98,172 @@ export const CountdownDigits = React.memo(function CountdownDigits({ targetDate,
       }
     };
 
-    const handleVisibility = () => {
-      if (typeof document !== 'undefined') {
-        if (document.visibilityState === 'visible') {
-          setCountdown(calculateDiff());
-          startTimer();
-        } else {
-          stopTimer();
-        }
-      }
-    };
-
-    const appStateSub = AppState.addEventListener('change', handleAppState);
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', handleVisibility);
-    }
+    const sub = AppState.addEventListener('change', handleAppState);
 
     return () => {
       stopTimer();
-      appStateSub.remove();
-      if (typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', handleVisibility);
-      }
+      sub.remove();
     };
   }, [calculateDiff]);
 
-  const targetProgress = useMemo(() => {
-    const targetMs = new Date(targetDate).getTime();
-    if (isNaN(targetMs)) return 0.5;
-    const fallbackCreatedMs = targetMs - 30 * 24 * 60 * 60 * 1000;
-    const parsedCreatedMs = createdAt ? new Date(createdAt).getTime() : NaN;
-    const validCreatedMs = (!isNaN(parsedCreatedMs) && parsedCreatedMs < targetMs)
-      ? parsedCreatedMs
-      : fallbackCreatedMs;
-    const totalDuration = Math.max(1, targetMs - validCreatedMs);
-    const elapsed = Math.max(0, Math.min(totalDuration, Date.now() - validCreatedMs));
-    return Math.max(0.04, Math.min(1, elapsed / totalDuration));
-  }, [targetDate, createdAt]);
-
-  const progress = useSharedValue(hasAnimatedProgressThisSession ? targetProgress : 0);
+  const progressValue = useSharedValue(0);
 
   useEffect(() => {
-    if (!hasAnimatedProgressThisSession) {
-      hasAnimatedProgressThisSession = true;
-      progress.value = withTiming(targetProgress, {
-        duration: 800,
+    if (countdown.isNow || !createdAt) {
+      progressValue.value = 1;
+      return;
+    }
+
+    const targetTime = parseEventDate(targetDate).getTime();
+    const startTime = new Date(createdAt).getTime();
+    const totalDuration = targetTime - startTime;
+
+    if (totalDuration <= 0) {
+      progressValue.value = 1;
+      return;
+    }
+
+    const currentDuration = Date.now() - startTime;
+    let currentProgress = Math.max(0, Math.min(1, currentDuration / totalDuration));
+    if (isNaN(currentProgress)) currentProgress = 0;
+
+    if (!hasAnimatedProgressThisSession && !reducedMotion) {
+      progressValue.value = 0;
+      progressValue.value = withTiming(currentProgress, {
+        duration: 1500,
         easing: Easing.out(Easing.cubic),
       });
+      hasAnimatedProgressThisSession = true;
     } else {
-      progress.value = withTiming(targetProgress, { duration: 300 });
+      progressValue.value = withTiming(currentProgress, {
+        duration: 1000,
+        easing: Easing.linear,
+      });
     }
-  }, [targetProgress, progress]);
+  }, [countdown.isNow, createdAt, targetDate, reducedMotion]);
 
-  const progressBarStyle = useAnimatedStyle(() => ({
-    width: `${Math.max(4, Math.min(100, progress.value * 100))}%`,
-  }));
+  const progressStyle = useAnimatedStyle(() => {
+    return {
+      width: `${progressValue.value * 100}%`,
+    };
+  });
 
   if (countdown.isNow) {
     return (
-      <View style={styles.eventHappeningBox}>
-        <Ionicons name="heart" size={20} color="#7C3AED" />
-        <Text style={styles.eventHappeningText}>É hoje! Aproveitem cada segundo.</Text>
+      <View style={[styles.bottomSection, { borderTopColor: colors.border }]}>
+        <View style={styles.celebrationContainer}>
+          <Feather name="star" size={20} color={colors.accent} />
+          <Text style={[styles.celebrationText, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+            Esse momento chegou!
+          </Text>
+          <Feather name="star" size={20} color={colors.accent} />
+        </View>
       </View>
     );
   }
 
+  const formatDigit = (n: number) => n.toString().padStart(2, '0');
+
   return (
-    <View style={styles.lowerCountdownPanel}>
-      <View style={styles.progressBarTrack}>
-        <Animated.View style={[styles.progressBarFill, progressBarStyle]}>
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: '#8E7CE8', opacity: 0.8 }]} />
-          <View style={styles.progressTipHeart}>
-            <Ionicons name="heart" size={8} color="#FFFFFF" />
-          </View>
-        </Animated.View>
+    <View style={[styles.bottomSection, { borderTopColor: colors.border }]}>
+      <View style={styles.countdownGrid}>
+        <View style={styles.digitBox}>
+          <AnimatedDigitString
+            value={formatDigit(countdown.days)}
+            style={[styles.digitText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}
+            reducedMotion={reducedMotion}
+          />
+          <Text style={[styles.digitLabel, { color: colors.textSecondary }]}>DIAS</Text>
+        </View>
+        <Text style={[styles.digitSeparator, { color: colors.border }]}>:</Text>
+        <View style={styles.digitBox}>
+          <AnimatedDigitString
+            value={formatDigit(countdown.hours)}
+            style={[styles.digitText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}
+            reducedMotion={reducedMotion}
+          />
+          <Text style={[styles.digitLabel, { color: colors.textSecondary }]}>HRS</Text>
+        </View>
+        <Text style={[styles.digitSeparator, { color: colors.border }]}>:</Text>
+        <View style={styles.digitBox}>
+          <AnimatedDigitString
+            value={formatDigit(countdown.minutes)}
+            style={[styles.digitText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}
+            reducedMotion={reducedMotion}
+          />
+          <Text style={[styles.digitLabel, { color: colors.textSecondary }]}>MIN</Text>
+        </View>
+        <Text style={[styles.digitSeparator, { color: colors.border }]}>:</Text>
+        <View style={styles.digitBox}>
+          <AnimatedDigitString
+            value={formatDigit(countdown.seconds)}
+            style={[styles.digitText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}
+            reducedMotion={reducedMotion}
+          />
+          <Text style={[styles.digitLabel, { color: colors.textSecondary }]}>SEG</Text>
+        </View>
       </View>
 
-      <View style={styles.countdownColumnsRow}>
-        <View style={styles.countColumn}>
-          <AnimatedDigitString
-            value={String(countdown.days)}
-            style={styles.countNumber}
-            reducedMotion={reducedMotion}
-          />
-          <Text style={styles.countLabel}>DIAS</Text>
-        </View>
-
-        <View style={styles.columnDivider} />
-
-        <View style={styles.countColumn}>
-          <AnimatedDigitString
-            value={String(countdown.hours).padStart(2, '0')}
-            style={styles.countNumber}
-            reducedMotion={reducedMotion}
-          />
-          <Text style={styles.countLabel}>HORAS</Text>
-        </View>
-
-        <View style={styles.columnDivider} />
-
-        <View style={styles.countColumn}>
-          <AnimatedDigitString
-            value={String(countdown.minutes).padStart(2, '0')}
-            style={styles.countNumber}
-            reducedMotion={reducedMotion}
-          />
-          <Text style={styles.countLabel}>MINUTOS</Text>
-        </View>
-
-        <View style={styles.columnDivider} />
-
-        <View style={styles.countColumn}>
-          <AnimatedDigitString
-            value={String(countdown.seconds).padStart(2, '0')}
-            style={styles.countNumber}
-            reducedMotion={reducedMotion}
-          />
-          <Text style={styles.countLabel}>SEGUNDOS</Text>
+      <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBarTrack, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.08)' }]}>
+          <Animated.View style={[styles.progressBarFill, { backgroundColor: colors.primary }, progressStyle]} />
         </View>
       </View>
     </View>
   );
 });
 
-const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
-  lowerCountdownPanel: {
-    backgroundColor: isDark ? '#1C1835' : '#FFFFFF',
+const styles = StyleSheet.create({
+  bottomSection: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(124, 111, 224, 0.08)',
+    backgroundColor: 'rgba(0,0,0,0.02)',
+  },
+  celebrationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 12,
+  },
+  celebrationText: {
+    fontSize: 20,
+  },
+  countdownGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  digitBox: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  digitText: {
+    fontSize: 28,
+  },
+  digitLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginTop: 4,
+  },
+  digitSeparator: {
+    fontSize: 24,
+    fontWeight: '300',
+    marginTop: -16,
+  },
+  progressBarContainer: {
+    width: '100%',
   },
   progressBarTrack: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
-    marginBottom: 20,
-    overflow: 'visible',
-    position: 'relative',
+    overflow: 'hidden',
+    width: '100%',
   },
   progressBarFill: {
     height: '100%',
     borderRadius: 3,
-    position: 'relative',
-    overflow: 'visible',
-    justifyContent: 'center',
-  },
-  progressTipHeart: {
-    position: 'absolute',
-    right: -6,
-    top: -5,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: themeTokens.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: themeTokens.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  countdownColumnsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  countColumn: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  countNumber: {
-    fontSize: 22,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    color: themeTokens.textPrimary,
-    marginBottom: 4,
-  },
-  countLabel: {
-    fontSize: 10,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    color: themeTokens.textSecondary,
-    letterSpacing: 0.8,
-  },
-  columnDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(124, 111, 224, 0.15)',
-  },
-  eventHappeningBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: isDark ? 'rgba(124, 111, 224, 0.12)' : 'rgba(124, 111, 224, 0.05)',
-    borderTopWidth: 1,
-    borderTopColor: isDark ? 'rgba(124, 111, 224, 0.2)' : 'rgba(124, 111, 224, 0.1)',
-    gap: 8,
-  },
-  eventHappeningText: {
-    fontSize: 15,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    color: themeTokens.textPrimary,
   },
 });

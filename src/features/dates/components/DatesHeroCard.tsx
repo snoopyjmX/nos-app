@@ -1,13 +1,12 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SpecialDate } from '../types';
 import { getCategoryMeta, formatHeroDatePTBR } from '../utils/formatting';
 import { Floating3DHeart } from './Floating3DHeart';
 import { CountdownDigits } from './CountdownDigits';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { useTheme } from '@/theme';
 
 interface DatesHeroCardProps {
   nextEvent: SpecialDate | null;
@@ -15,9 +14,7 @@ interface DatesHeroCardProps {
 }
 
 export function DatesHeroCard({ nextEvent, reducedMotion }: DatesHeroCardProps) {
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
-  const styles = useMemo(() => getStyles(themeTokens, isDark), [themeTokens, isDark]);
+  const { colors, typography, radii, shadows } = useTheme();
 
   if (!nextEvent) return null;
 
@@ -28,27 +25,37 @@ export function DatesHeroCard({ nextEvent, reducedMotion }: DatesHeroCardProps) 
       entering={reducedMotion ? undefined : FadeInDown.duration(400).delay(100)}
       style={styles.heroCardContainer}
     >
-      <View style={[styles.heroGradientBackground, { backgroundColor: isDark ? '#1F1B3A' : '#FFFFFF' }]}>
+      <View 
+        style={[
+          styles.heroGradientBackground, 
+          { 
+            backgroundColor: colors.surface,
+            borderRadius: radii.lg,
+            borderColor: colors.border,
+            ...shadows.soft,
+          }
+        ]}
+      >
         <Floating3DHeart />
 
         <View style={styles.heroTopSection}>
           <View style={styles.heroTextContent}>
             <View style={[styles.categoryChip, { backgroundColor: meta.bg }]}>
-              <Ionicons name={meta.icon as any} size={11} color={meta.color} />
-              <Text style={[styles.categoryChipText, { color: meta.color }]}>{meta.label}</Text>
+              <Feather name={meta.icon as any} size={11} color={meta.color} />
+              <Text style={[styles.categoryChipText, { color: meta.color, fontFamily: typography.fontFamily.bold }]}>{meta.label}</Text>
             </View>
 
-            <Text style={styles.heroTag}>PRÓXIMO MOMENTO</Text>
+            <Text style={[styles.heroTag, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>PRÓXIMO MOMENTO</Text>
 
-            <Text style={styles.heroTitle} numberOfLines={2}>
+            <Text style={[styles.heroTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]} numberOfLines={2}>
               {nextEvent.title}
             </Text>
 
             <View style={styles.heroDateRow}>
-              <View style={styles.heroCalendarIconBox}>
-                <Ionicons name="calendar-outline" size={13} color={themeTokens.primary} />
+              <View style={[styles.heroCalendarIconBox, { backgroundColor: colors.primarySoft }]}>
+                <Feather name="calendar" size={13} color={colors.primary} />
               </View>
-              <Text style={styles.heroDateText}>
+              <Text style={[styles.heroDateText, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
                 {formatHeroDatePTBR(nextEvent.event_date)}
               </Text>
             </View>
@@ -61,20 +68,13 @@ export function DatesHeroCard({ nextEvent, reducedMotion }: DatesHeroCardProps) 
   );
 }
 
-const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
+const styles = StyleSheet.create({
   heroCardContainer: {
-    borderRadius: 28,
     marginBottom: 20,
-    shadowColor: themeTokens.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 4,
+    width: '100%',
   },
   heroGradientBackground: {
-    borderRadius: 28,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.85)',
     overflow: 'hidden',
   },
   heroTopSection: {
@@ -99,44 +99,31 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 8,
   },
   categoryChipText: {
-    fontSize: 11,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
+    fontSize: 10,
   },
   heroTag: {
-    fontSize: 10,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    letterSpacing: 1,
-    color: themeTokens.primary,
-    marginBottom: 6,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    marginBottom: 4,
   },
   heroTitle: {
-    fontSize: 22,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    color: themeTokens.textPrimary,
+    fontSize: 24,
     lineHeight: 28,
-    letterSpacing: -0.4,
     marginBottom: 10,
   },
   heroDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   heroCalendarIconBox: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: isDark ? 'rgba(124, 111, 224, 0.20)' : '#EDE9FE',
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroDateText: {
-    fontSize: 12,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
-    color: themeTokens.textSecondary,
+    fontSize: 13,
   },
 });

@@ -1,12 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown, SlideOutRight } from 'react-native-reanimated';
-import { PressableScale } from '@/design/ui/PressableScale';
+import { PressableScale } from '@/components/ui';
 import { SpecialDate } from '../types';
 import { getCategoryMeta, formatListItemDateTime } from '../utils/formatting';
-import { useAppTheme } from '@/lib/context/ThemeContext';
-import { getThemeTokens } from '@/design/tokens/theme';
+import { useTheme } from '@/theme';
 
 interface DateListItemProps {
   item: SpecialDate;
@@ -23,9 +22,7 @@ export const DateListItem = React.memo(function DateListItem({
   onEdit,
   onDelete,
 }: DateListItemProps) {
-  const { isDark } = useAppTheme();
-  const themeTokens = getThemeTokens(isDark);
-  const styles = useMemo(() => getStyles(themeTokens, isDark), [themeTokens, isDark]);
+  const { colors, typography, radii, shadows } = useTheme();
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const meta = getCategoryMeta(item.category);
@@ -46,35 +43,47 @@ export const DateListItem = React.memo(function DateListItem({
       exiting={reducedMotion ? undefined : SlideOutRight.duration(300)}
     >
       <PressableScale
-        style={styles.listItemCard}
+        style={[
+          styles.listItemCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.md,
+            ...shadows.soft,
+          }
+        ]}
         onPress={() => onEdit(item)}
       >
         <View style={[styles.listIconBox, { backgroundColor: meta.bg }]}>
-          <Ionicons name={meta.icon as any} size={22} color={meta.color} />
+          <Feather name={meta.icon as any} size={22} color={meta.color} />
         </View>
 
         <View style={styles.listContent}>
-          <Text style={styles.listTitle} numberOfLines={1}>
+          <Text style={[styles.listTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]} numberOfLines={1}>
             {item.title}
           </Text>
           <View style={styles.listMetaRow}>
-            <Text style={styles.listCategory}>{meta.label}</Text>
-            <View style={styles.listDot} />
-            <Text style={[styles.listDate, isPast && styles.pastListDate]}>
+            <Text style={[styles.listCategory, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>{meta.label}</Text>
+            <View style={[styles.listDot, { backgroundColor: colors.border }]} />
+            <Text style={[styles.listDate, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }, isPast && { color: colors.danger }]}>
               {formatListItemDateTime(item.event_date)}
             </Text>
           </View>
         </View>
 
         <PressableScale
-          style={[styles.deleteButton, confirmDelete && styles.deleteButtonConfirm]}
+          style={[
+            styles.deleteButton,
+            { backgroundColor: colors.primarySoft },
+            confirmDelete && { backgroundColor: colors.danger },
+          ]}
           onPress={handleDeletePress}
           hitSlop={10}
         >
-          <Ionicons
-            name={confirmDelete ? 'trash' : 'trash-outline'}
+          <Feather
+            name="trash-2"
             size={16}
-            color={confirmDelete ? '#FFFFFF' : '#F58FA8'}
+            color={confirmDelete ? '#FFFFFF' : colors.danger}
           />
         </PressableScale>
       </PressableScale>
@@ -82,15 +91,12 @@ export const DateListItem = React.memo(function DateListItem({
   );
 });
 
-const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
+const styles = StyleSheet.create({
   listItemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#FFFFFF',
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.12)',
     padding: 16,
-    borderRadius: 24,
     marginBottom: 12,
   },
   listIconBox: {
@@ -103,41 +109,27 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
   },
   listContent: {
     flex: 1,
-    paddingRight: 8,
+    justifyContent: 'center',
   },
   listTitle: {
     fontSize: 16,
-    fontFamily: 'Nunito_700Bold',
-    fontWeight: '700',
-    color: themeTokens.textPrimary,
     marginBottom: 4,
   },
   listMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
   },
   listCategory: {
-    fontSize: 12,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
-    color: themeTokens.textSecondary,
+    fontSize: 13,
   },
   listDot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: themeTokens.textMuted,
-    marginHorizontal: 6,
+    marginHorizontal: 8,
   },
   listDate: {
-    fontSize: 12,
-    fontFamily: 'Nunito_600SemiBold',
-    fontWeight: '600',
-    color: themeTokens.primary,
-  },
-  pastListDate: {
-    color: themeTokens.textSecondary,
+    fontSize: 13,
   },
   deleteButton: {
     width: 36,
@@ -145,9 +137,6 @@ const getStyles = (themeTokens: any, isDark: boolean) => StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: isDark ? 'rgba(245, 143, 168, 0.12)' : 'rgba(245, 143, 168, 0.1)',
-  },
-  deleteButtonConfirm: {
-    backgroundColor: '#F58FA8',
+    marginLeft: 10,
   },
 });
