@@ -23,7 +23,7 @@ export const colors = {
     dockIndicator: ['rgba(142,124,232,0.35)', 'rgba(124,58,237,0.25)', 'rgba(124,58,237,0.20)'],
     dockIndicatorGlint: ['rgba(255,255,255,0.40)', 'transparent'],
     dockIndicatorBorder: 'rgba(255,255,255,0.85)',
-    dockFade: ['transparent', 'rgba(248,246,254,0.65)', 'rgba(248,246,254,0.80)'],
+    dockFade: ['rgba(248,246,254,0)', 'rgba(248,246,254,0.65)', 'rgba(248,246,254,0.80)'],
     avatarBorder: 'rgba(0,0,0,0.10)',
 
     // Texto lavanda com contraste AA sobre vidro
@@ -87,7 +87,7 @@ export const colors = {
     dockIndicator: ['rgba(167,151,255,0.40)', 'rgba(139,92,246,0.30)', 'rgba(139,92,246,0.25)'],
     dockIndicatorGlint: ['rgba(255,255,255,0.10)', 'transparent'],
     dockIndicatorBorder: 'rgba(255,255,255,0.24)',
-    dockFade: ['transparent', 'rgba(21,18,42,0.60)', 'rgba(21,18,42,0.80)'],
+    dockFade: ['rgba(21,18,42,0)', 'rgba(21,18,42,0.60)', 'rgba(21,18,42,0.80)'],
     avatarBorder: 'rgba(255,255,255,0.20)',
 
     // Texto lavanda com contraste AA sobre vidro

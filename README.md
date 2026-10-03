@@ -1,180 +1,90 @@
-# 💜 nós. — Nosso Espaço a Dois
+# 💜 nós. — Um Espaço Só Nosso
 
 <p align="center">
-  <img src="assets/images/favicon.png" width="96" height="96" alt="nós icon" style="border-radius: 24px;" />
+  <img src="docs/redesign/refs/logo app.png" width="128" height="128" alt="nós. icon" style="border-radius: 32px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12);" />
 </p>
 
 <p align="center">
-  <strong>Um aplicativo íntimo, elegante e seguro desenvolvido exclusivamente para casais compartilharem suas vidas, memórias e momentos especiais.</strong>
+  <strong>Um aplicativo íntimo, refinado e seguro desenvolvido exclusivamente para casais compartilharem suas vidas, memórias e momentos especiais.</strong>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Expo-SDK_57-000020?style=for-the-badge&logo=expo" alt="Expo SDK 57" />
   <img src="https://img.shields.io/badge/React_Native-0.86-61DAFB?style=for-the-badge&logo=react" alt="React Native" />
-  <img src="https://img.shields.io/badge/Supabase-Database_%26_Auth-3ECF8E?style=for-the-badge&logo=supabase" alt="Supabase" />
+  <img src="https://img.shields.io/badge/Supabase-Auth_%26_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase" alt="Supabase" />
   <img src="https://img.shields.io/badge/Design-Apple_Liquid_Glass-8E7CE8?style=for-the-badge" alt="Apple Liquid Glass" />
 </p>
 
 ---
 
-## ✨ Experiência & Funcionalidades
+## ✨ Design & Experiência
 
-- **💎 Estética Apple Liquid Glass**:
-  - Dock flutuante suspensa em pílula vítrea com desfoque nativo (`expo-blur`).
-  - Microinterações táteis e resposta háptica em todos os toques (`expo-haptics`).
-  - Física fluida e transições elásticas de mola com **React Native Reanimated 4**.
-  - Atmosfera com gradientes difusos (Lavanda & Pêssego).
+O projeto segue um pilar estético rigoroso inspirado no **Apple Liquid Glass** (Minimalismo de Luxo). Cada componente foi desenhado para transmitir uma atmosfera noturna e serena (Lavanda, Ametista, Pêssego).
 
-- **⏳ Nossa Jornada (Home)**:
-  - Indicador de status "Conectados" com pulsar orgânico em tempo real.
-  - Contagem acumulada de tempo juntos em 4 cápsulas translúcidas (Meses, Dias, Horas e Minutos) animadas em cascata.
-  - Definição e edição rápida da data de início do relacionamento com persistência no banco.
+- **🪞 Vidro Líquido (Liquid Glass View)**: Blur nativo via `expo-blur` no iOS/Android e `-webkit-backdrop-filter` no PWA/Web. Sombras suaves isoladas do recorte do blur para máxima performance na thread de UI.
+- **✨ Física e Motion**: Transições elásticas de mola (`withSpring`), micro-interações em botões e navegação com **React Native Reanimated 4**.
+- **📳 Haptics**: Resposta tátil imersiva (`expo-haptics`) integrada harmonicamente às animações.
+- **📱 Floating Dock**: Navegação em cápsula flutuante com cálculo dinâmico de `safe-area-inset`, perfeita para o Safari no iPhone (PWA) e dispositivos nativos.
+- **🌗 Tema Dinâmico**: Sincronização em tempo real entre o esquema de cores do aparelho e as preferências do casal.
 
-- **📸 Módulo de Memórias (Galeria Privada)**:
-  - Upload direto para bucket privado no Supabase Storage.
-  - Segurança reforçada: imagens protegidas com **Signed URLs** temporárias geradas sob demanda.
-  - Visualização em cards elegantes com formatação de data localizada (PT-BR).
+## 🚀 Funcionalidades
 
-- **💬 Mensagens & Conexão**:
-  - Troca de mensagens em tempo real via canais do **Supabase Realtime**.
-  - Balões de conversa no padrão iOS com `KeyboardAvoidingView` e suporte inteligente ao teclado.
+- **⏳ Início (Nossa Jornada)**: Contagem acumulada de tempo juntos em cápsulas de vidro com física fluida, status de conexão em tempo real e ações rápidas.
+- **💬 Recados (Mensagens)**: Chat em tempo real via **Supabase Realtime**. Balões de mensagem assimétricos (vidro para recebidas, lavanda para enviadas) e teclado inteligente (`KeyboardAvoidingView`).
+- **📸 Memórias (Galeria Privada)**: Upload seguro para o Supabase Storage. Visualização editorial de fotografias com cache otimizado.
+- **🗓️ Datas & Celebrações**: Hero com contagem regressiva em displays independentes. Barra de progresso do ciclo anual e timeline de marcos do relacionamento.
+- **👤 Perfil do Casal**: Avatares integrados e geração de código de convite único seguro para o pareamento de contas.
 
-- **🗓️ Datas Especiais & Contagem Regressiva**:
-  - Hero Card com contagem regressiva em tempo real (dias, horas, minutos e segundos) para o próximo grande evento.
-  - Categorização dinâmica (Viagem, Encontro, Comemoração) com histórico de eventos concluídos.
-
-- **👤 Perfil & Identidade do Casal**:
-  - Avatares sincronizados lado a lado com indicador de conexão ativa.
-  - Troca de foto de perfil via `expo-image-picker`.
-  - Código de convite exclusivo para pareamento de contas.
-  - Encerramento de sessão seguro e limpeza completa de estado.
-
----
-
-## 🛠️ Stack Tecnológica
+## 🛠️ Stack e Arquitetura
 
 | Camada | Tecnologia |
 |---|---|
-| **Framework** | [React Native](https://reactnative.dev/) com [Expo SDK 57](https://expo.dev/) |
+| **Core** | [React Native](https://reactnative.dev/) + [Expo SDK 57](https://expo.dev/) + TypeScript Estrito |
 | **Roteamento** | [Expo Router](https://docs.expo.dev/router/introduction/) (File-based routing) |
-| **Backend & Autenticação** | [Supabase](https://supabase.com/) (Auth, PostgreSQL, Realtime, Storage) |
-| **Animações & Gestos** | [React Native Reanimated 4](https://docs.swmansion.com/react-native-reanimated/) |
-| **Efeitos Visuais** | `expo-blur`, `expo-linear-gradient`, `expo-haptics` |
-| **Linguagem & Tipagem** | TypeScript |
+| **Backend** | [Supabase](https://supabase.com/) (Auth, PostgreSQL, Realtime, Storage) |
+| **Animações** | [Reanimated 4](https://docs.swmansion.com/react-native-reanimated/) |
+| **Design System** | Sistema de tokens customizado (Cores, Tipografia `Plus Jakarta Sans`, Radii, Spacing) |
 
 ---
 
-## 🚀 Como Rodar o Projeto no MacBook (macOS)
+## 🔒 Segurança e Privacidade (RLS)
 
-Siga este passo a passo detalhado para rodar o app no seu MacBook em casa:
-
-### 1. Pré-requisitos no Mac
-
-Certifique-se de ter instalado no seu MacBook:
-- **Node.js** (versão 18 ou superior LTS): [nodejs.org](https://nodejs.org/) ou via Homebrew:
-  ```bash
-  brew install node
-  ```
-- **Git**:
-  ```bash
-  brew install git
-  ```
-- No celular (iPhone ou Android), instale o aplicativo **Expo Go** disponível na App Store ou Google Play Store.
-- *(Opcional)* Se quiser rodar no **Simulador iOS do Mac**:
-  - Instale o **Xcode** pela Mac App Store.
-  - Abra o Xcode uma vez e instale os componentes adicionais solicitados.
+A aplicação foi projetada do zero pensando na privacidade do casal (duas pessoas).
+- **Isolamento de Dados**: Utilização estrita de **Row Level Security (RLS)** no PostgreSQL. Todas as operações de leitura e escrita são validadas contra o `couple_id` do usuário logado.
+- **Ponta a Ponta (App)**: Acesso às memórias através de Signed URLs temporárias. Deleção em cascata e estado de `auth` limpo no lado do cliente.
 
 ---
 
-### 2. Clonando o Repositório
+## 💻 Como rodar o projeto localmente
 
-Abra o aplicativo **Terminal** (ou iTerm2) no seu Mac e clone o projeto:
+### 1. Pré-requisitos
+- **Node.js 18+** e **Git** instalados.
+- Conta e Projeto configurado no [Supabase](https://supabase.com).
 
+### 2. Instalação
 ```bash
-# 1. Navegue até a pasta onde deseja salvar o projeto
-cd ~/Documents
-
-# 2. Clone o repositório
-git clone https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git nos-app
-
-# 3. Acesse a pasta do projeto
+git clone https://github.com/SEU-USUARIO/nos-app.git
 cd nos-app
-```
-
----
-
-### 3. Instalando as Dependências
-
-Dentro da pasta do projeto no Mac, instale todas as dependências:
-
-```bash
 npm install
 ```
 
----
-
-### 4. Configurando as Variáveis de Ambiente (`.env`)
-
-Crie o arquivo `.env` na raiz do projeto com as credenciais do Supabase:
-
-```bash
-cp .env.example .env
-```
-
-Abra o arquivo `.env` no seu editor ou via terminal:
-```bash
-nano .env
-```
-
-Preencha com a URL e a chave pública anon do seu projeto Supabase:
+### 3. Variáveis de Ambiente
+Crie um arquivo `.env` na raiz do projeto:
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon-aqui
+EXPO_PUBLIC_SUPABASE_ANON_KEY=sua-chave-publica
 ```
-*(No nano: pressione `Ctrl + O` e `Enter` para salvar, e `Ctrl + X` para sair)*.
 
----
-
-### 5. Executando o Aplicativo
-
-Para iniciar o servidor de desenvolvimento com o cache limpo:
-
+### 4. Executando (Web, iOS, Android)
 ```bash
 npx expo start -c
 ```
-
-Um QR Code será exibido no seu terminal.
-
-#### 📱 Como abrir no celular:
-- **iPhone**: Abra a câmera nativa do iOS, aponte para o QR Code e toque na notificação para abrir no **Expo Go**.
-- **Android**: Abra o aplicativo **Expo Go**, toque em *"Scan QR code"* e aponte para a tela.
-- *(Dica: Certifique-se de que o MacBook e o celular estejam conectados na mesma rede Wi-Fi de casa)*.
-
-#### 💻 Como abrir no Simulador iOS do Mac:
-Com o terminal do `npx expo start` aberto, basta pressionar a tecla **`i`**. O Expo abrirá automaticamente o Simulador do iPhone no seu Mac!
+- Pressione `i` para abrir no Simulador iOS do Mac.
+- Pressione `w` para abrir no Navegador (Web/PWA).
+- Use o app **Expo Go** para ler o QR Code no seu celular físico.
 
 ---
 
-## 📂 Estrutura de Pastas
-
-```text
-nos-app/
-├── app/                  # Telas e rotas (Expo Router)
-│   ├── (auth)/           # Rotas de Login e Cadastro
-│   ├── (tabs)/           # Abas principais (Início, Mensagens, Memórias, Datas, Perfil)
-│   ├── onboarding.tsx    # Tela de criação e pareamento do casal
-│   └── _layout.tsx       # Layout raiz e observador de autenticação
-├── assets/               # Imagens, ícones e fontes
-├── components/           # Componentes reutilizáveis (AnimatedTouchable, etc.)
-├── context/              # Contextos globais (AuthContext, CoupleContext)
-├── lib/                  # Configurações do Supabase e utilitários de storage
-├── .env.example          # Exemplo de configuração de variáveis
-├── babel.config.js       # Configuração do compilador Babel e Reanimated
-└── package.json          # Dependências e scripts do projeto
-```
-
----
-
-## 🔒 Privacidade e Segurança
-
-Todas as consultas e uploads de arquivos são protegidos no nível de banco de dados via **Row Level Security (RLS)** do PostgreSQL no Supabase. Apenas usuários que pertencem ao mesmo `couple_id` têm permissão de leitura e gravação em suas respectivas mensagens, memórias e datas comemorativas.
+<p align="center">
+  <small><em>"Um espaço só nosso."</em></small>
+</p>
