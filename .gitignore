@@ -52,3 +52,6 @@ scratch/
 
 # TypeScript
 *.tsbuildinfo
+
+# Gerado pelo repomix
+repomix-output.xml

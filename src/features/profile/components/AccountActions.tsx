@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
-import { PressableScale } from '@/components/ui/PressableScale';
+import { AnimatedIcon, PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { useTheme } from '@/theme';
 
 interface AccountActionsProps {
@@ -10,40 +10,35 @@ interface AccountActionsProps {
 }
 
 export function AccountActions({ onSignOut }: AccountActionsProps) {
-  const { colors, typography, radii, spacing, isDark } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
   const router = useRouter();
+  const [pulse, setPulse] = React.useState(0);
 
   return (
-    <View style={styles.accountActionBlock}>
+    <View style={{ marginTop: spacing[8], marginBottom: spacing[20], gap: spacing[16] }}>
       <PressableScale
         onPress={onSignOut}
-        style={[
-          styles.signOutButton,
-          {
-            backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
-            borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.20)',
-            borderRadius: radii.pill,
-            paddingVertical: spacing[12],
-          },
-        ]}
-        accessibilityLabel="Encerrar Sessão"
+        onPressIn={() => setPulse((value) => value + 1)}
+        accessibilityRole="button"
+        accessibilityLabel="Encerrar sessão"
+        accessibilityHint="Sai da sua conta neste aparelho"
       >
-        <Feather name="log-out" size={18} color={isDark ? '#F87171' : '#DC2626'} />
-        <Text style={[styles.signOutText, { color: isDark ? '#F87171' : '#DC2626', fontFamily: typography.fontFamily.bold }]}>
-          Encerrar Sessão
-        </Text>
+        <LiquidGlassView variant="control" readable borderRadius={radii.pill} style={[styles.signOut, { gap: spacing[8] }]}>
+          <AnimatedIcon name="log-out" size={18} color={colors.dangerText} pulseKey={pulse} />
+          <Text style={[styles.signOutText, { color: colors.dangerText, ...typography.font.bold }]}>Encerrar sessão</Text>
+        </LiquidGlassView>
       </PressableScale>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginBottom: 16 }}>
-        <PressableScale onPress={() => router.push('/terms')}>
-          <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: typography.fontFamily.medium, textDecorationLine: 'underline' }}>Termos</Text>
+      <View style={[styles.links, { gap: spacing[16] }]}>
+        <PressableScale onPress={() => router.push('/terms')} style={styles.link} accessibilityRole="link" accessibilityLabel="Termos de uso">
+          <Text style={[styles.linkText, { color: colors.textSecondary, ...typography.font.medium }]}>Termos</Text>
         </PressableScale>
-        <PressableScale onPress={() => router.push('/privacy')}>
-          <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: typography.fontFamily.medium, textDecorationLine: 'underline' }}>Privacidade</Text>
+        <PressableScale onPress={() => router.push('/privacy')} style={styles.link} accessibilityRole="link" accessibilityLabel="Política de privacidade">
+          <Text style={[styles.linkText, { color: colors.textSecondary, ...typography.font.medium }]}>Privacidade</Text>
         </PressableScale>
       </View>
 
-      <Text style={[styles.footerNote, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+      <Text style={[styles.footerNote, { color: colors.textSecondary, ...typography.font.regular }]}>
         nós. • Um espaço só nosso
       </Text>
     </View>
@@ -51,20 +46,28 @@ export function AccountActions({ onSignOut }: AccountActionsProps) {
 }
 
 const styles = StyleSheet.create({
-  accountActionBlock: {
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  signOutButton: {
+  signOut: {
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    marginBottom: 16,
+    paddingHorizontal: 16,
   },
   signOutText: {
-    fontSize: 14,
+    fontSize: 15,
+  },
+  links: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  link: {
+    minHeight: 44,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+  },
+  linkText: {
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
   footerNote: {
     fontSize: 12,

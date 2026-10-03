@@ -147,7 +147,10 @@ Profundidade vem de camadas de vidro e luz suave, não de sombras pesadas.
 | Subtle | chips, badges, campos secundários | `rgba(255,255,255,0.05)` | nenhum | `rgba(255,255,255,0.08)` |
 | Sem vidro | fotos, parágrafos longos de memória, texto corrido | nenhum | nenhum | nenhum |
 
-- **Fallback obrigatório** (PWA, Reduce Transparency, baixa performance): fundo sólido `#1C1A26` a ~0,92 de opacidade, sem blur, mantendo a borda.
+- **Tinta do vidro**: bem translúcida, ~14% no claro e ~10% no escuro (tokens `glassSurface`). O efeito vem do blur (até 24px, saturação 160%) e do brilho no topo, não de fundo opaco. Quando há texto corrido sobre o vidro, use `glassSurfaceReadable` (~32% claro, ~38% escuro) para manter contraste AA. Os valores da tabela acima são a referência de hierarquia; os valores reais estão em `src/theme/colors.ts`.
+- **Web/PWA (Safari iOS)**: `backdrop-filter` e `-webkit-backdrop-filter` com blur real.
+- **Fallback sólido** (Reduce Transparency ativo ou navegador sem `backdrop-filter`): cor de superfície sólida, sem blur, mantendo a borda.
+- **Sombra**: fica em uma view externa sem `overflow`; o recorte em raio (`overflow: hidden`) fica em uma view interna.
 - No máximo 2 ou 3 camadas com blur visíveis ao mesmo tempo por tela.
 - **Brilho (glow)**: um único glow lavanda discreto (`0 0 16px rgba(167,151,255,0.25)`), só no item ativo da dock e no estado pressionado de controles principais.
 

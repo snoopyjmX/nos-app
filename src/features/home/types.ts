@@ -33,3 +33,11 @@ export interface AccumulatedTime {
   breakdownDays: number;
   breakdownHours: number;
 }
+
+export interface ThrowbackMemory {
+  id: string;
+  title: string;
+  memory_date: string;
+  displayUrl: string | null;
+  label: string;
+}

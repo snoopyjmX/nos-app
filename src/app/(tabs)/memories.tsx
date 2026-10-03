@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, Platform, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDockInset } from '@/lib/hooks/useDockInset';
+import { useDockInset, useDockTop } from '@/lib/hooks/useDockInset';
 import { useReducedMotion } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -9,7 +9,6 @@ import { DateTimePickerChangeEvent } from '@react-native-community/datetimepicke
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
 import { useTheme } from '@/theme';
-import { useTabBarHeight } from '@/lib/hooks/useTabBarHeight';
 import { useToast } from '@/lib/context/ToastContext';
 import { supabase } from '@/lib/core/supabase';
 import { normalizeAndCompressImage } from '@/lib/core/imageManipulation';
@@ -18,18 +17,17 @@ import { logger } from '@/lib/core/logger';
 import { MemoryItem } from '@/features/memories/types';
 import { useMemories } from '@/features/memories/api/useMemories';
 import { MemoryList } from '@/features/memories/components/MemoryList';
-import { MemoriesHeader } from '@/features/memories/components/MemoriesHeader';
 import { MemoryFAB } from '@/features/memories/components/MemoryFAB';
 import { AddMemoryModal } from '@/features/memories/components/AddMemoryModal';
 import { MemoryPreviewModal } from '@/features/memories/components/MemoryPreviewModal';
 
 export default function MemoriesScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
   const dockInset = useDockInset();
-  const { tabBarHeight } = useTabBarHeight();
+  const dockTop = useDockTop();
   const reducedMotion = useReducedMotion();
   const { showToast } = useToast();
 
@@ -38,6 +36,7 @@ export default function MemoriesScreen() {
     setMemories,
     loading,
     loadingMore,
+    hasMore,
     refreshing,
     profileMap,
     loadMoreMemories,
@@ -255,6 +254,7 @@ export default function MemoriesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
+      {/* A última memória rola livre acima da dock e do FAB (bottomInset) */}
       <MemoryList
         memories={memories}
         user={user}
@@ -264,7 +264,8 @@ export default function MemoriesScreen() {
         refreshing={refreshing}
         reducedMotion={reducedMotion}
         insets={insets}
-        tabBarHeight={tabBarHeight}
+        bottomInset={Math.max(dockInset, dockTop + 70)}
+        hasMore={hasMore}
         onRefresh={onRefresh}
         onLoadMore={loadMoreMemories}
         onPreview={setPreviewMemory}
@@ -272,9 +273,7 @@ export default function MemoriesScreen() {
         onAddMemory={handlePickImage}
       />
 
-      <MemoriesHeader insets={insets} />
-
-      <MemoryFAB onPress={handlePickImage} tabBarHeight={tabBarHeight} />
+      <MemoryFAB onPress={handlePickImage} />
 
       <AddMemoryModal
         visible={isAddModalVisible}

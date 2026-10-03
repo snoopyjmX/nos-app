@@ -3,7 +3,9 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { NextMilestone } from '../types';
+import { formatDaysUntil, formatMemoryDate } from '../utils/time';
 import { useTheme } from '@/theme';
 
 interface NextMilestoneCardProps {
@@ -17,106 +19,97 @@ export function NextMilestoneCard({
   handleOpenDates,
   shouldAnimateCascade,
 }: NextMilestoneCardProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
 
   if (!nextMilestone) return null;
+
+  const countdown = formatDaysUntil(nextMilestone.daysRemaining);
+  const dateLabel = formatMemoryDate(nextMilestone.event_date);
 
   return (
     <Animated.View
       entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(120) : undefined}
+      style={{ marginBottom: spacing[20] }}
     >
       <PressableScale
-        style={[
-          styles.milestoneCard,
-          {
-            backgroundColor: colors.surface,
-            borderRadius: radii.md,
-            borderWidth: 0,
-            ...shadows.soft,
-          },
-        ]}
         onPress={handleOpenDates}
+        accessibilityRole="button"
+        accessibilityLabel={`Próximo momento: ${nextMilestone.title}, ${countdown.toLowerCase()}`}
+        accessibilityHint="Abre as datas do casal"
       >
-        <View
-          style={[
-            styles.milestoneIconBox,
-            {
-              backgroundColor: colors.primarySoft,
-            },
-          ]}
-        >
-          <Feather name="star" size={20} color={colors.primary} />
-        </View>
+        <LiquidGlassView variant="card" readable borderRadius={radii.md} style={styles.card}>
+          <View style={[styles.iconBox, { backgroundColor: colors.primarySoft, borderRadius: radii.sm }]}>
+            <Feather name="star" size={20} color={colors.primaryText} />
+          </View>
 
-        <View style={styles.milestoneContent}>
-          <Text style={[styles.milestoneLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
-            PRÓXIMO MOMENTO
-          </Text>
-          <Text
-            style={[styles.milestoneTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}
-            numberOfLines={2}
-          >
-            {nextMilestone.title}
-          </Text>
-        </View>
+          <View style={styles.content}>
+            <Text style={[styles.label, { color: colors.textSecondary, ...typography.font.bold }]}>
+              PRÓXIMO MOMENTO
+            </Text>
+            <Text
+              style={[styles.title, { color: colors.textPrimary, ...typography.font.bold }]}
+              numberOfLines={2}
+            >
+              {nextMilestone.title}
+            </Text>
+            {dateLabel ? (
+              <Text style={[styles.meta, { color: colors.textSecondary, ...typography.font.regular }]}>
+                {dateLabel}
+              </Text>
+            ) : null}
+          </View>
 
-        <View
-          style={[
-            styles.milestoneChip,
-            {
-              backgroundColor: colors.primarySoft,
-              borderRadius: radii.pill,
-            },
-          ]}
-        >
-          <Text style={[styles.milestoneChipText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>
-            {nextMilestone.daysRemaining === 0
-              ? 'É hoje!'
-              : `em ${nextMilestone.daysRemaining}d`}
-          </Text>
-        </View>
+          <View style={[styles.chip, { backgroundColor: colors.primarySoft, borderRadius: radii.pill }]}>
+            <Text style={[styles.chipText, { color: colors.primaryText, ...typography.font.bold }]}>
+              {countdown}
+            </Text>
+          </View>
+        </LiquidGlassView>
       </PressableScale>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  milestoneCard: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     padding: 14,
-    borderWidth: 1,
-    marginBottom: 20,
+    gap: 14,
   },
-  milestoneIconBox: {
+  iconBox: {
     width: 44,
     height: 44,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
   },
-  milestoneContent: {
+  content: {
     flex: 1,
+    minWidth: 120,
     justifyContent: 'center',
-    paddingRight: 8,
   },
-  milestoneLabel: {
-    fontSize: 10,
+  label: {
+    fontSize: 11,
     letterSpacing: 0.8,
     marginBottom: 2,
   },
-  milestoneTitle: {
+  title: {
     fontSize: 16,
     letterSpacing: -0.3,
   },
-  milestoneChip: {
+  meta: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
+    minHeight: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  milestoneChipText: {
-    fontSize: 12,
+  chipText: {
+    fontSize: 13,
   },
 });

@@ -1,23 +1,15 @@
 import { logger } from '@/lib/core/logger';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Share,
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, Alert, Platform, Share } from 'react-native';
 import { useRouter } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 import { supabase } from '@/lib/core/supabase';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
+import { useCopyToClipboard } from '@/lib/hooks/useCopyToClipboard';
+import { useTheme } from '@/theme';
+import { AnimatedIcon, AuthScreen, Button, GlassButton, PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 
 type OnboardingStep = 'select' | 'create' | 'join';
 
@@ -30,6 +22,8 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [inputCode, setInputCode] = useState('');
+  const { colors, typography, radii, spacing } = useTheme();
+  const { copied, copy } = useCopyToClipboard();
 
   // 1. Fluxo de Criação de Casal + Geração de Código de Convite
   const handleCreateCouple = async () => {
@@ -142,147 +136,118 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)');
   };
 
+  const formattedInvite = inviteCode?.replace(/(\w{5})(?=\w)/g, '$1-') ?? '';
+
+  const subtitle =
+    step === 'select'
+      ? 'Vamos conectar você e o seu amor.'
+      : step === 'create'
+      ? 'Tudo pronto! Agora chame o seu amor.'
+      : 'Insira o código do seu casal.';
+
+  const title = step === 'select' ? 'Vínculo do casal' : step === 'create' ? 'Código do casal' : 'Entrar com código';
+
+  const handleSignOut = async () => {
+    clearCouple();
+    await signOut();
+    router.replace('/(auth)/login');
+  };
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+    <AuthScreen
+      title={title}
+      onBack={step !== 'select' && !loading ? () => setStep('select') : undefined}
+      bare={step === 'select'}
+      trailing={
+        <PressableScale
+          onPress={handleSignOut}
+          disabled={loading}
+          style={styles.signOut}
+          accessibilityRole="button"
+          accessibilityLabel="Sair da conta"
+        >
+          <Feather name="log-out" size={16} color={colors.textSecondary} />
+          <Text style={[styles.signOutText, { color: colors.textSecondary, ...typography.font.bold }]}>Sair</Text>
+        </PressableScale>
+      }
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Barra superior de ações */}
-        <View style={styles.topBar}>
-          {step !== 'select' ? (
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => setStep('select')}
-              disabled={loading}
-            >
-              <Ionicons name="arrow-back" size={22} color="#16151E" />
-            </TouchableOpacity>
-          ) : (
-            <View style={{ width: 40 }} />
-          )}
+      <Text style={[styles.subtitle, { color: colors.textSecondary, ...typography.font.medium }]}>{subtitle}</Text>
 
-          <TouchableOpacity
-            style={styles.signOutButton}
-            onPress={async () => {
-              clearCouple();
-              await signOut();
-              router.replace('/(auth)/login');
-            }}
+      {step === 'select' && (
+        <>
+          <ChoiceCard
+            icon="heart"
+            title="Criar nosso espaço"
+            description="Gere um código exclusivo para convidar o seu parceiro(a)."
+            loading={loading}
             disabled={loading}
-          >
-            <Ionicons name="log-out-outline" size={18} color="#686578" />
-            <Text style={styles.signOutText}>Sair</Text>
-          </TouchableOpacity>
-        </View>
+            onPress={handleCreateCouple}
+          />
+          <ChoiceCard
+            icon="key"
+            title="Já tenho um código"
+            description="Recebeu um convite? Conecte-se ao espaço já criado."
+            disabled={loading}
+            onPress={() => setStep('join')}
+          />
+        </>
+      )}
 
-        {/* Cabeçalho de Boas-Vindas */}
-        <View style={styles.header}>
-          <View style={styles.logoBadge}>
-            <Ionicons name="infinite" size={32} color="#8E7CE8" />
-          </View>
-          <Text style={styles.brandTitle}>nós</Text>
-          <Text style={styles.headerSubtitle}>
-            {step === 'select' && 'Vamos conectar você e o seu amor.'}
-            {step === 'create' && 'Tudo pronto! Agora chame o seu amor.'}
-            {step === 'join' && 'Insira o código do seu casal.'}
+      {step === 'create' && inviteCode && (
+        <>
+          <Text style={[styles.hint, { color: colors.textSecondary, ...typography.font.regular }]}>
+            Envie este código para o seu amor entrar no mesmo espaço:
           </Text>
-        </View>
 
-        {/* ETAPA 1: SELEÇÃO DE OPÇÃO */}
-        {step === 'select' && (
-          <View style={styles.optionsContainer}>
-            <TouchableOpacity
-              style={styles.glassCardButton}
-              onPress={handleCreateCouple}
-              disabled={loading}
-              activeOpacity={0.8}
+          <LiquidGlassView variant="pill" readable borderRadius={radii.md} style={[styles.codeBox, { paddingHorizontal: spacing[16] }]}>
+            <Text
+              style={[styles.codeText, { color: colors.textPrimary, ...typography.font.mono }]}
+              accessibilityLabel={`Código ${formattedInvite.split('').join(' ')}`}
+              selectable
             >
-              <View style={styles.cardIconWrapper}>
-                <Ionicons name="sparkles-outline" size={28} color="#8E7CE8" />
-              </View>
-              <View style={styles.cardTextWrapper}>
-                <Text style={styles.cardTitle}>Criar nosso espaço</Text>
-                <Text style={styles.cardDescription}>
-                  Gere um código exclusivo para convidar o seu parceiro(a).
-                </Text>
-              </View>
-              {loading ? (
-                <ActivityIndicator color="#8E7CE8" />
-              ) : (
-                <Ionicons name="chevron-forward" size={22} color="#8E7CE8" />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.glassCardButton}
-              onPress={() => setStep('join')}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              <View style={styles.cardIconWrapper}>
-                <Ionicons name="key-outline" size={28} color="#8E7CE8" />
-              </View>
-              <View style={styles.cardTextWrapper}>
-                <Text style={styles.cardTitle}>Já tenho um código</Text>
-                <Text style={styles.cardDescription}>
-                  Recebeu um convite? Conecte-se instantaneamente ao espaço já criado.
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={22} color="#8E7CE8" />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ETAPA 2: CÓDIGO GERADO */}
-        {step === 'create' && inviteCode && (
-          <View style={styles.formCard}>
-            <Text style={styles.sectionTitle}>Código do Casal</Text>
-            <Text style={styles.sectionSubtitle}>
-              Envie este código para o seu amor entrar no mesmo espaço:
+              {formattedInvite}
             </Text>
+          </LiquidGlassView>
 
-            <View style={styles.codeBox}>
-              <Text style={styles.codeText}>{inviteCode?.replace(/(\w{5})(?=\w)/g, '$1-')}</Text>
-            </View>
+          <GlassButton
+            label={copied ? 'Copiado!' : 'Copiar código'}
+            icon={copied ? 'check' : 'copy'}
+            onPress={() => copy(formattedInvite)}
+            accessibilityLabel={copied ? 'Código copiado' : 'Copiar código do casal'}
+          />
+          <GlassButton label="Compartilhar convite" icon="share" onPress={handleShareCode} />
 
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={handleShareCode}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="share-outline" size={20} color="#8E7CE8" />
-              <Text style={styles.secondaryButtonText}>Compartilhar convite</Text>
-            </TouchableOpacity>
+          <Button variant="primary" onPress={handleFinishCreate}>
+            Acessar o NÓS
+          </Button>
+        </>
+      )}
 
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleFinishCreate}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.primaryButtonText}>Acessar o NÓS</Text>
-              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        )}
+      {step === 'join' && (
+        <>
+          <Text style={[styles.hint, { color: colors.textSecondary, ...typography.font.regular }]}>
+            Digite ou cole o código que você recebeu do seu amor:
+          </Text>
 
-        {/* ETAPA 3: INSERIR CÓDIGO */}
-        {step === 'join' && (
-          <View style={styles.formCard}>
-            <Text style={styles.sectionTitle}>Conectar ao Espaço</Text>
-            <Text style={styles.sectionSubtitle}>
-              Digite ou cole o código que você recebeu do seu amor:
-            </Text>
-
+          <View
+            style={[
+              styles.codeInputBox,
+              { backgroundColor: colors.glassSurface, borderColor: colors.border, borderRadius: radii.md },
+            ]}
+          >
             <TextInput
-              style={styles.inputCode}
-              placeholder="CÓDIGO DE CONVITE"
-              placeholderTextColor="#686578"
+              style={[
+                styles.codeInput,
+                { color: colors.textPrimary, ...typography.font.mono },
+                Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null,
+              ]}
+              placeholder="XXXXX-XXXXX"
+              placeholderTextColor={colors.textMuted}
+              selectionColor={colors.primary}
+              cursorColor={colors.primary}
               autoCapitalize="characters"
               autoCorrect={false}
+              accessibilityLabel="Código de convite"
               value={inputCode}
               onChangeText={(text) => {
                 const clean = text.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, '');
@@ -294,230 +259,123 @@ export default function OnboardingScreen() {
               }}
               maxLength={11}
             />
-
-            <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
-              onPress={handleRedeemInvite}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <>
-                  <Text style={styles.primaryButtonText}>Conectar Casal</Text>
-                  <Ionicons name="heart" size={18} color="#FFFFFF" />
-                </>
-              )}
-            </TouchableOpacity>
           </View>
+
+          <Button variant="primary" onPress={handleRedeemInvite} loading={loading}>
+            Conectar casal
+          </Button>
+        </>
+      )}
+    </AuthScreen>
+  );
+}
+
+interface ChoiceCardProps {
+  icon: keyof typeof Feather.glyphMap;
+  title: string;
+  description: string;
+  loading?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}
+
+function ChoiceCard({ icon, title, description, loading = false, disabled = false, onPress }: ChoiceCardProps) {
+  const { colors, typography, radii, spacing } = useTheme();
+  const [pulse, setPulse] = useState(0);
+
+  return (
+    <PressableScale
+      onPress={onPress}
+      onPressIn={() => setPulse((value) => value + 1)}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${description}`}
+      accessibilityState={{ disabled, busy: loading }}
+    >
+      <LiquidGlassView variant="card" readable borderRadius={radii.lg} style={[styles.choice, { gap: spacing[16], padding: spacing[20] }]}>
+        <View style={[styles.choiceIcon, { backgroundColor: colors.primarySoft }]}>
+          <AnimatedIcon name={icon} size={24} color={colors.primaryText} pulseKey={pulse} />
+        </View>
+        <View style={styles.choiceText}>
+          <Text style={[styles.choiceTitle, { color: colors.textPrimary, ...typography.font.bold }]}>{title}</Text>
+          <Text style={[styles.choiceDescription, { color: colors.textSecondary, ...typography.font.regular }]}>
+            {description}
+          </Text>
+        </View>
+        {loading ? (
+          <ActivityIndicator color={colors.primaryText} />
+        ) : (
+          <Feather name="chevron-right" size={22} color={colors.textSecondary} />
         )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </LiquidGlassView>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FC',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 40,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  signOutButton: {
+  signOut: {
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
     gap: 6,
+    paddingHorizontal: 8,
   },
   signOutText: {
-    fontSize: 13,
-    color: '#686578',
-    fontWeight: '500',
+    fontSize: 14,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 36,
-  },
-  logoBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.25)',
-  },
-  brandTitle: {
-    fontSize: 34,
-    fontWeight: '700',
-    color: '#8E7CE8',
-    letterSpacing: 2,
-  },
-  headerSubtitle: {
-    fontSize: 15,
-    color: '#686578',
-    marginTop: 8,
+  subtitle: {
+    fontSize: 16,
+    lineHeight: 23,
     textAlign: 'center',
   },
-  optionsContainer: {
-    gap: 18,
+  hint: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
   },
-  glassCardButton: {
+  choice: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
-    elevation: 3,
   },
-  cardIconWrapper: {
+  choiceIcon: {
     width: 52,
     height: 52,
-    borderRadius: 18,
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
   },
-  cardTextWrapper: {
+  choiceText: {
     flex: 1,
-    paddingRight: 8,
+    minWidth: 0,
   },
-  cardTitle: {
+  choiceTitle: {
     fontSize: 17,
-    fontWeight: '600',
-    color: '#16151E',
+    marginBottom: 2,
   },
-  cardDescription: {
-    fontSize: 13,
-    color: '#686578',
-    marginTop: 4,
-    lineHeight: 18,
-  },
-  formCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    borderRadius: 28,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-    shadowColor: '#16151E',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 4,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#16151E',
-    marginBottom: 6,
-  },
-  sectionSubtitle: {
+  choiceDescription: {
     fontSize: 14,
-    color: '#686578',
-    marginBottom: 20,
     lineHeight: 20,
   },
   codeBox: {
-    backgroundColor: 'rgba(142, 124, 232, 0.1)',
-    borderRadius: 18,
-    paddingVertical: 18,
+    minHeight: 76,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(142, 124, 232, 0.3)',
-    borderStyle: 'dashed',
-    marginBottom: 20,
   },
   codeText: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#8E7CE8',
+    fontSize: 32,
     letterSpacing: 4,
-  },
-  inputCode: {
-    height: 56,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#16151E',
     textAlign: 'center',
-    letterSpacing: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(142, 124, 232, 0.25)',
-    marginBottom: 20,
   },
-  primaryButton: {
-    height: 54,
-    backgroundColor: '#8E7CE8',
-    borderRadius: 999,
-    flexDirection: 'row',
-    alignItems: 'center',
+  codeInputBox: {
+    minHeight: 64,
+    borderWidth: 0.8,
     justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#8E7CE8',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 3,
+    paddingHorizontal: 16,
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    height: 52,
-    backgroundColor: 'rgba(142, 124, 232, 0.12)',
-    borderRadius: 999,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  secondaryButtonText: {
-    color: '#8E7CE8',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
+  codeInput: {
+    fontSize: 26,
+    letterSpacing: 4,
+    textAlign: 'center',
+    paddingVertical: 12,
   },
 });

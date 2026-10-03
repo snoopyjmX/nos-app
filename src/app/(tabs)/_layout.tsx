@@ -4,10 +4,13 @@ import { TabBar } from '@/components/layout/TabBar';
 import { Gesture, GestureDetector, Directions } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { View, Platform } from 'react-native';
+import { useTheme } from '@/theme';
+import { MAX_CONTENT_WIDTH } from '@/theme/spacing';
 import * as Haptics from 'expo-haptics';
 
 export default function TabsLayout() {
   const router = useRouter();
+  const { colors } = useTheme();
   const pathname = usePathname();
 
   const tabOrder = ['/', '/messages', '/memories', '/dates', '/profile'];
@@ -57,7 +60,8 @@ export default function TabsLayout() {
 
   return (
     <GestureDetector gesture={swipeGesture}>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.background }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: MAX_CONTENT_WIDTH }}>
         <Tabs
           tabBar={(props) => <TabBar {...props} />}
           screenOptions={{
@@ -70,6 +74,7 @@ export default function TabsLayout() {
           <Tabs.Screen name="dates" options={{ title: 'Datas' }} />
           <Tabs.Screen name="profile" options={{ title: 'Perfil' }} />
         </Tabs>
+        </View>
       </View>
     </GestureDetector>
   );

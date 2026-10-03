@@ -1,40 +1,44 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressableScale } from '@/components/ui';
+import { useDockTop } from '@/lib/hooks/useDockInset';
 import { useTheme } from '@/theme';
+
+const FAB_SIZE = 56;
+const DOCK_GAP = 16;
 
 interface MemoryFABProps {
   onPress: () => void;
-  tabBarHeight: number;
 }
 
-export function MemoryFAB({ onPress, tabBarHeight }: MemoryFABProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+export function MemoryFAB({ onPress }: MemoryFABProps) {
+  const { colors, radii, shadows, spacing } = useTheme();
+  const dockTop = useDockTop();
 
   return (
+    // Camada externa: posição e sombra. A interna recorta o gradiente.
     <View
       style={[
-        styles.floatingButtonWrapper,
-        {
-          bottom: tabBarHeight + 16,
-          ...shadows.medium,
-        },
+        styles.wrapper,
+        { bottom: dockTop + DOCK_GAP, right: spacing[20], borderRadius: radii.pill },
+        shadows.medium,
       ]}
+      pointerEvents="box-none"
     >
       <PressableScale
         onPress={onPress}
+        accessibilityRole="button"
         accessibilityLabel="Adicionar nova memória"
       >
         <LinearGradient
-          colors={[colors.primary, colors.accent]}
+          colors={[colors.glow, colors.primary]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.floatingButtonGradient, { borderRadius: radii.pill }]}
+          end={{ x: 1, y: 1 }}
+          style={[styles.button, { borderRadius: radii.pill }]}
         >
-          <Feather name="camera" size={18} color="#FFFFFF" />
-          <Text style={[styles.floatingButtonText, { fontFamily: typography.fontFamily.bold }]}>Adicionar Memória</Text>
+          <Feather name="camera" size={22} color={colors.onPrimary} />
         </LinearGradient>
       </PressableScale>
     </View>
@@ -42,25 +46,15 @@ export function MemoryFAB({ onPress, tabBarHeight }: MemoryFABProps) {
 }
 
 const styles = StyleSheet.create({
-  floatingButtonWrapper: {
+  wrapper: {
     position: 'absolute',
-    right: 20,
     zIndex: 30,
-    borderRadius: 999,
   },
-  floatingButtonGradient: {
-    flexDirection: 'row',
+  button: {
+    width: FAB_SIZE,
+    height: FAB_SIZE,
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 13,
-    paddingHorizontal: 20,
-    borderWidth: 1,
+    justifyContent: 'center',
     overflow: 'hidden',
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  floatingButtonText: {
-    fontSize: 15,
-    color: '#FFFFFF',
-    letterSpacing: -0.2,
   },
 });

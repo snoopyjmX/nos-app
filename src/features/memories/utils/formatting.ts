@@ -53,3 +53,16 @@ export const formatSavedAtDateTime = (dateString?: string | null): string => {
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${day}/${month}/${year} às ${hours}:${minutes}`;
 };
+
+// "30 de setembro" (ano só quando difere do atual), lendo 'YYYY-MM-DD' como data de calendário.
+export const formatDayMonthPTBR = (dateString?: string | null): string => {
+  if (!dateString) return '';
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  if (!year || !month || !day) return '';
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    ...(year !== new Date().getFullYear() ? { year: 'numeric' as const } : {}),
+  });
+};

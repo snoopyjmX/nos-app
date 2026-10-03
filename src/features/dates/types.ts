@@ -1,4 +1,4 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Feather } from '@expo/vector-icons';
 
 export interface SpecialDate {
   id: string;
@@ -13,7 +13,7 @@ export interface SpecialDate {
 export interface CategoryOption {
   id: string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof Feather.glyphMap;
   color: string;
   bg: string;
 }

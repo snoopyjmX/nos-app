@@ -5,16 +5,15 @@ import {
   Platform,
   Keyboard,
   useWindowDimensions,
-  AccessibilityInfo,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
+  Easing,
   interpolateColor,
   runOnJS,
   useDerivedValue,
@@ -26,6 +25,11 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme';
+import { MAX_CONTENT_WIDTH } from '@/theme/spacing';
+import { motion } from '@/theme/motion';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
+import { AnimatedIcon } from '@/components/ui/AnimatedIcon';
+import { useReducedMotion } from '@/lib/hooks/useAccessibility';
 import { Image } from 'expo-image';
 import { useAuth } from '@/lib/context/AuthContext';
 import { supabase } from '@/lib/core/supabase';
@@ -41,24 +45,32 @@ const TAB_CONFIG: Record<
   profile: { label: 'Perfil', icon: 'user', focusedIcon: 'user' },
 };
 
-const INDICATOR_SPRING = { damping: 15, stiffness: 150, overshootClamping: true };
-const ICON_SPRING = { damping: 16, stiffness: 200, overshootClamping: true };
+const DOCK_SPRING = motion.easing.springDock;
+const REDUCED_SETTLE_MS = 120;
+
+// Move o indicador e os ícones: spring elástico, ou fade curto com Reduce Motion.
+function settle(value: number, reducedMotion: boolean) {
+  'worklet';
+  if (reducedMotion) {
+    return withTiming(value, { duration: REDUCED_SETTLE_MS, easing: Easing.out(Easing.cubic) });
+  }
+  return withSpring(value, DOCK_SPRING);
+}
 
 const DOCK_MARGIN = 16;
 const DOCK_HEIGHT = 64;
-const DOCK_RADIUS = 32;
 const INDICATOR_PADDING = 5;
 
 interface TabIconProps {
   routeName: string;
   index: number;
   activeIndex: SharedValue<number>;
-  isDark: boolean;
+  isCurrent: boolean;
   reducedMotion: boolean;
   avatarUrl?: string | null;
 }
 
-function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion, avatarUrl }: TabIconProps) {
+function TabIcon({ routeName, index, activeIndex, isCurrent, reducedMotion, avatarUrl }: TabIconProps) {
   const config = TAB_CONFIG[routeName] || {
     label: routeName,
     icon: 'circle' as const,
@@ -71,16 +83,12 @@ function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion, avatarU
     return Math.abs(activeIndex.value - index);
   });
 
+  // A escala e o balanço ficam no AnimatedIcon; com Reduce Motion só o destaque por opacidade.
   const animatedIconStyle = useAnimatedStyle(() => {
     if (reducedMotion) {
-      const opacity = proximity.value < 0.5 ? 1 : 0.65;
-      return { opacity };
+      return { opacity: proximity.value < 0.5 ? 1 : 0.65 };
     }
-    const scale = interpolate(proximity.value, [0, 1], [1.15, 1], Extrapolation.CLAMP);
-    const translateY = interpolate(proximity.value, [0, 1], [-2, 0], Extrapolation.CLAMP);
-    return {
-      transform: [{ scale }, { translateY }],
-    };
+    return {};
   });
 
   const animatedTextStyle = useAnimatedStyle(() => {
@@ -120,7 +128,7 @@ function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion, avatarU
             source={{ uri: avatarUrl }}
             style={[
               styles.avatarIcon,
-              { borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' },
+              { borderColor: theme.colors.avatarBorder },
             ]}
             contentFit="cover"
             cachePolicy="memory-disk"
@@ -128,10 +136,10 @@ function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion, avatarU
         ) : (
           <>
             <Animated.View style={unfocusedIconOpacity}>
-              <Feather name={config.icon} size={21} color={inactiveColor} />
+              <AnimatedIcon name={config.icon} size={21} color={inactiveColor} active={isCurrent} />
             </Animated.View>
             <Animated.View style={focusedIconOpacity}>
-              <Feather name={config.focusedIcon} size={21} color={activeColor} />
+              <AnimatedIcon name={config.focusedIcon} size={21} color={activeColor} active={isCurrent} />
             </Animated.View>
           </>
         )}
@@ -150,17 +158,16 @@ function TabIcon({ routeName, index, activeIndex, isDark, reducedMotion, avatarU
   );
 }
 
-interface LiquidTabBarProps {
+interface TabBarProps {
   state: any;
   descriptors: any;
   navigation: any;
 }
 
-export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
+export function TabBar({ state, descriptors, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const theme = useTheme();
-  const { isDark } = theme;
   const { user } = useAuth();
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
 
@@ -215,15 +222,10 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
   }, [user]);
 
   const tabCount = state.routes.length;
-  const dockWidth = screenWidth - DOCK_MARGIN * 2;
+  const dockWidth = Math.min(screenWidth, MAX_CONTENT_WIDTH) - DOCK_MARGIN * 2;
   const tabItemWidth = dockWidth / tabCount;
 
-  const [reducedMotion, setReducedMotion] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReducedMotion);
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReducedMotion);
-    return () => sub.remove();
-  }, []);
+  const reducedMotion = useReducedMotion();
 
   const indicatorX = useSharedValue(state.index * tabItemWidth);
   const activeIndex = useSharedValue(state.index);
@@ -254,15 +256,26 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
 
   useEffect(() => {
     if (!isDragging.value) {
-      indicatorX.value = withSpring(state.index * tabItemWidth, INDICATOR_SPRING);
-      activeIndex.value = withSpring(state.index, ICON_SPRING);
+      indicatorX.value = settle(state.index * tabItemWidth, reducedMotion);
+      activeIndex.value = settle(state.index, reducedMotion);
     }
-  }, [state.index, tabItemWidth]);
+  }, [state.index, tabItemWidth, reducedMotion]);
+
+  const fireHaptic = useCallback(() => {
+    if (Platform.OS !== 'web') {
+      try {
+        Haptics.selectionAsync();
+      } catch {}
+    }
+  }, []);
 
   const navigateToTab = useCallback(
-    (index: number) => {
+    (index: number, haptic = false) => {
       const route = state.routes[index];
       if (!route) return;
+
+      // Um toque leve a cada troca real de aba (o arrasto já vibra ao cruzar cada ícone).
+      if (haptic && index !== state.index) fireHaptic();
 
       const event = navigation.emit({
         type: 'tabPress',
@@ -274,16 +287,8 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
         navigation.navigate(route.name);
       }
     },
-    [state.routes, navigation]
+    [state.routes, state.index, navigation, fireHaptic]
   );
-
-  const fireHaptic = useCallback(() => {
-    if (Platform.OS !== 'web') {
-      try {
-        Haptics.selectionAsync();
-      } catch {}
-    }
-  }, []);
 
   const tapGesture = Gesture.Tap()
     .onEnd((e) => {
@@ -291,12 +296,11 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
       const tappedIndex = Math.floor(e.x / tabItemWidth);
       const clampedIndex = Math.max(0, Math.min(tappedIndex, tabCount - 1));
 
-      indicatorX.value = withSpring(clampedIndex * tabItemWidth, INDICATOR_SPRING);
-      activeIndex.value = withSpring(clampedIndex, ICON_SPRING);
-      indicatorScaleX.value = withSpring(1, INDICATOR_SPRING);
+      indicatorX.value = settle(clampedIndex * tabItemWidth, reducedMotion);
+      activeIndex.value = settle(clampedIndex, reducedMotion);
+      indicatorScaleX.value = settle(1, reducedMotion);
 
-      runOnJS(fireHaptic)();
-      runOnJS(navigateToTab)(clampedIndex);
+      runOnJS(navigateToTab)(clampedIndex, true);
     });
 
   const panGesture = Gesture.Pan()
@@ -334,9 +338,9 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
         Math.min(Math.round(e.x / tabItemWidth), tabCount - 1)
       );
 
-      indicatorX.value = withSpring(targetIndex * tabItemWidth, INDICATOR_SPRING);
-      activeIndex.value = withSpring(targetIndex, ICON_SPRING);
-      indicatorScaleX.value = withSpring(1, INDICATOR_SPRING);
+      indicatorX.value = settle(targetIndex * tabItemWidth, reducedMotion);
+      activeIndex.value = settle(targetIndex, reducedMotion);
+      indicatorScaleX.value = settle(1, reducedMotion);
 
       runOnJS(navigateToTab)(targetIndex);
     });
@@ -367,11 +371,7 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
     <>
       {/* Fade em gradiente suave sob a barra flutuante */}
       <LinearGradient
-        colors={[
-          'transparent',
-          isDark ? 'rgba(21, 18, 42, 0.60)' : 'rgba(248, 246, 254, 0.65)',
-          isDark ? 'rgba(21, 18, 42, 0.94)' : 'rgba(248, 246, 254, 0.96)',
-        ]}
+        colors={theme.colors.dockFade}
         style={[
           styles.dockFadeGradient,
           {
@@ -384,85 +384,36 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
       <Animated.View
         style={[
           styles.dockContainer,
-          {
-            bottom: bottomPosition as any,
-            left: DOCK_MARGIN,
-            right: DOCK_MARGIN,
-            shadowColor: theme.shadows.medium.shadowColor,
-            borderColor: theme.colors.border,
-            borderTopColor: isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.95)',
-            zIndex: 100,
-          },
+          { bottom: bottomPosition as any, left: DOCK_MARGIN, right: DOCK_MARGIN },
           containerAnimatedStyle,
         ]}
       >
-      {/* Camada 1: Blur View Ultra Thin Material */}
-      <View style={styles.blurWrapper}>
-        {Platform.OS === 'web' ? (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(21, 18, 42, 0.92)' : 'rgba(248, 246, 254, 0.94)' }]} />
-        ) : (
-          <BlurView
-            intensity={Platform.OS === 'ios' ? 70 : 85}
-            tint={isDark ? 'dark' : 'light'}
-            style={StyleSheet.absoluteFill}
-          />
-        )}
-      </View>
-
-      {/* Camada 2: Frosted Glass Tint Fill */}
-      <View
-        style={[
-          styles.tintLayer,
-          {
-            backgroundColor: isDark
-              ? 'rgba(15, 13, 24, 0.45)'
-              : 'rgba(248, 249, 252, 0.50)',
-          },
-        ]}
-      />
-
-      {/* Camada 3: Reflexo Especular Superior */}
-      <LinearGradient
-        colors={
-          isDark
-            ? ['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.02)', 'transparent']
-            : ['rgba(255, 255, 255, 0.70)', 'rgba(255, 255, 255, 0.12)', 'transparent']
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 0.65 }}
-        style={styles.specularHighlight}
-        pointerEvents="none"
-      />
-
+        {/* Vidro canônico: sombra na camada externa, blur/borda/reflexo na interna */}
+        <LiquidGlassView
+          variant="hero"
+          readable
+          borderRadius={theme.radii.pill}
+          style={styles.dockGlass}
+        >
       {/* Indicador Deslizante Liquid Glass */}
       <Animated.View style={[styles.slidingIndicator, indicatorStyle]}>
         <View
           style={[
             styles.indicatorInner,
             {
-              borderColor: isDark
-                ? 'rgba(255, 255, 255, 0.24)'
-                : 'rgba(255, 255, 255, 0.85)',
+              borderColor: theme.colors.dockIndicatorBorder,
               shadowColor: theme.colors.primary,
             },
           ]}
         >
           <LinearGradient
-            colors={
-              isDark
-                ? ['rgba(167, 151, 255, 0.40)', 'rgba(139, 92, 246, 0.30)', 'rgba(139, 92, 246, 0.25)']
-                : ['rgba(142, 124, 232, 0.35)', 'rgba(124, 58, 237, 0.25)', 'rgba(124, 58, 237, 0.20)']
-            }
+            colors={theme.colors.dockIndicator}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[StyleSheet.absoluteFill, { borderRadius: 999 }]}
           />
           <LinearGradient
-            colors={
-              isDark
-                ? ['rgba(255, 255, 255, 0.10)', 'transparent']
-                : ['rgba(255, 255, 255, 0.40)', 'transparent']
-            }
+            colors={theme.colors.dockIndicatorGlint}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 0.7 }}
             style={styles.indicatorGlint}
@@ -480,14 +431,15 @@ export function TabBar({ state, descriptors, navigation }: LiquidTabBarProps) {
               routeName={route.name}
               index={index}
               activeIndex={activeIndex}
-              isDark={isDark}
+              isCurrent={state.index === index}
               reducedMotion={reducedMotion}
               avatarUrl={route.name === 'profile' ? profileAvatar : undefined}
             />
           ))}
         </Animated.View>
       </GestureDetector>
-    </Animated.View>
+        </LiquidGlassView>
+      </Animated.View>
     </>
   );
 }
@@ -505,27 +457,11 @@ const styles = StyleSheet.create({
   dockContainer: {
     position: 'absolute',
     height: DOCK_HEIGHT,
-    borderRadius: 999,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
+    zIndex: 100,
+  },
+  dockGlass: {
+    flex: 1,
     justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  blurWrapper: {
-    ...StyleSheet.absoluteFill,
-  },
-  tintLayer: {
-    ...StyleSheet.absoluteFill,
-  },
-  specularHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '65%',
   },
   slidingIndicator: {
     position: 'absolute',

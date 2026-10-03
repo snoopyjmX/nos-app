@@ -1,69 +1,46 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, AppState, AppStateStatus } from 'react-native';
+import { View, Text, StyleSheet, AppState, AppStateStatus, LayoutChangeEvent } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   Easing,
-  useReducedMotion,
-  FadeInDown,
-  FadeOutDown,
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
+import { useReducedMotion } from '@/lib/hooks/useAccessibility';
 import { useTheme } from '@/theme';
-import { parseEventDate } from '../utils/formatting';
+import { parseEventDate, yearCycleProgress } from '../utils/formatting';
 
-let hasAnimatedProgressThisSession = false;
-
-interface AnimatedDigitStringProps {
-  value: string;
-  style?: any;
-  reducedMotion?: boolean;
-}
-
-const AnimatedDigitString = React.memo(function AnimatedDigitString({
-  value,
-  style,
-  reducedMotion,
-}: AnimatedDigitStringProps) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-      <Animated.Text
-        key={value}
-        entering={reducedMotion ? undefined : FadeInDown.duration(200)}
-        exiting={reducedMotion ? undefined : FadeOutDown.duration(200)}
-        style={[style, { fontVariant: ['tabular-nums'], position: 'absolute' }]}
-      >
-        {value}
-      </Animated.Text>
-      <Text style={[style, { opacity: 0, fontVariant: ['tabular-nums'] }]}>{value}</Text>
-    </View>
-  );
-});
+const PROGRESS_MS = 900;
 
 interface CountdownDigitsProps {
   targetDate: string;
-  createdAt?: string;
+  title: string;
 }
 
-export const CountdownDigits = React.memo(function CountdownDigits({ targetDate, createdAt }: CountdownDigitsProps) {
-  const { colors, typography, isDark } = useTheme();
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+// Folha isolada: o relógio de 1s re-renderiza só este componente, nunca a tela.
+export const CountdownDigits = React.memo(function CountdownDigits({ targetDate, title }: CountdownDigitsProps) {
+  const { colors, typography, radii, spacing } = useTheme();
   const reducedMotion = useReducedMotion();
 
   const calculateDiff = useCallback(() => {
-    const target = parseEventDate(targetDate).getTime();
-    const diff = target - Date.now();
+    const diff = parseEventDate(targetDate).getTime() - Date.now();
 
     if (diff <= 0) {
       return { days: 0, hours: 0, minutes: 0, seconds: 0, isNow: true };
     }
 
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-    return { days, hours, minutes, seconds, isNow: false };
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+      minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds: Math.floor((diff % (1000 * 60)) / 1000),
+      isNow: false,
+    };
   }, [targetDate]);
 
   const [countdown, setCountdown] = useState(calculateDiff);
@@ -74,9 +51,7 @@ export const CountdownDigits = React.memo(function CountdownDigits({ targetDate,
 
     const startTimer = () => {
       if (!interval) {
-        interval = setInterval(() => {
-          setCountdown(calculateDiff());
-        }, 1000);
+        interval = setInterval(() => setCountdown(calculateDiff()), 1000);
       }
     };
 
@@ -89,16 +64,14 @@ export const CountdownDigits = React.memo(function CountdownDigits({ targetDate,
 
     startTimer();
 
-    const handleAppState = (nextState: AppStateStatus) => {
+    const sub = AppState.addEventListener('change', (nextState: AppStateStatus) => {
       if (nextState === 'active') {
         setCountdown(calculateDiff());
         startTimer();
       } else {
         stopTimer();
       }
-    };
-
-    const sub = AppState.addEventListener('change', handleAppState);
+    });
 
     return () => {
       stopTimer();
@@ -106,107 +79,89 @@ export const CountdownDigits = React.memo(function CountdownDigits({ targetDate,
     };
   }, [calculateDiff]);
 
-  const progressValue = useSharedValue(0);
+  const cycle = yearCycleProgress(targetDate);
+  const [trackWidth, setTrackWidth] = useState(0);
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    if (countdown.isNow || !createdAt) {
-      progressValue.value = 1;
-      return;
-    }
+    progress.value = reducedMotion
+      ? cycle
+      : withTiming(cycle, { duration: PROGRESS_MS, easing: Easing.out(Easing.cubic) });
+  }, [cycle, reducedMotion]);
 
-    const targetTime = parseEventDate(targetDate).getTime();
-    const startTime = new Date(createdAt).getTime();
-    const totalDuration = targetTime - startTime;
-
-    if (totalDuration <= 0) {
-      progressValue.value = 1;
-      return;
-    }
-
-    const currentDuration = Date.now() - startTime;
-    let currentProgress = Math.max(0, Math.min(1, currentDuration / totalDuration));
-    if (isNaN(currentProgress)) currentProgress = 0;
-
-    if (!hasAnimatedProgressThisSession && !reducedMotion) {
-      progressValue.value = 0;
-      progressValue.value = withTiming(currentProgress, {
-        duration: 1500,
-        easing: Easing.out(Easing.cubic),
-      });
-      hasAnimatedProgressThisSession = true;
-    } else {
-      progressValue.value = withTiming(currentProgress, {
-        duration: 1000,
-        easing: Easing.linear,
-      });
-    }
-  }, [countdown.isNow, createdAt, targetDate, reducedMotion]);
-
-  const progressStyle = useAnimatedStyle(() => {
-    return {
-      width: `${progressValue.value * 100}%`,
-    };
-  });
+  // transform em vez de width: a barra desliza para dentro da trilha recortada
+  const fillStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: (progress.value - 1) * trackWidth }],
+  }));
 
   if (countdown.isNow) {
     return (
-      <View style={[styles.bottomSection, { borderTopColor: colors.border }]}>
-        <View style={styles.celebrationContainer}>
-          <Feather name="star" size={20} color={colors.accent} />
-          <Text style={[styles.celebrationText, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-            Esse momento chegou!
-          </Text>
-          <Feather name="star" size={20} color={colors.accent} />
-        </View>
+      <View style={[styles.celebration, { gap: spacing[12] }]} accessible accessibilityLabel={`Chegou o dia: ${title}`}>
+        <Feather name="star" size={20} color={colors.accentText} />
+        <Text style={[styles.celebrationText, { color: colors.textPrimary, ...typography.font.bold }]}>
+          Esse momento chegou!
+        </Text>
+        <Feather name="star" size={20} color={colors.accentText} />
       </View>
     );
   }
 
-  const formatDigit = (n: number) => n.toString().padStart(2, '0');
+  const displays = [
+    { key: 'days', value: countdown.days, label: 'DIAS' },
+    { key: 'hours', value: countdown.hours, label: 'HORAS' },
+    { key: 'minutes', value: countdown.minutes, label: 'MIN' },
+    { key: 'seconds', value: countdown.seconds, label: 'SEG' },
+  ];
+
+  // Um único rótulo falado; os segundos nunca são anunciados em loop.
+  const spokenLabel = `Faltam ${plural(countdown.days, 'dia', 'dias')}, ${plural(countdown.hours, 'hora', 'horas')} e ${plural(
+    countdown.minutes,
+    'minuto',
+    'minutos'
+  )} para ${title}. ${Math.round(cycle * 100)}% do ciclo anual vivido.`;
 
   return (
-    <View style={[styles.bottomSection, { borderTopColor: colors.border }]}>
-      <View style={styles.countdownGrid}>
-        <View style={styles.digitBox}>
-          <AnimatedDigitString
-            value={formatDigit(countdown.days)}
-            style={[styles.digitText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}
-            reducedMotion={reducedMotion}
-          />
-          <Text style={[styles.digitLabel, { color: colors.textSecondary }]}>DIAS</Text>
+    <View accessible accessibilityRole="timer" accessibilityLabel={spokenLabel}>
+      <View
+        style={{ gap: spacing[16] }}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View style={[styles.grid, { gap: spacing[8] }]}>
+          {displays.map((display) => (
+            <LiquidGlassView
+              key={display.key}
+              variant="pill"
+              borderRadius={radii.md}
+              style={styles.display}
+            >
+              <Text style={[styles.digit, { color: colors.textPrimary, ...typography.font.black }]}>
+                {display.value.toString().padStart(2, '0')}
+              </Text>
+              <Text style={[styles.digitLabel, { color: colors.textSecondary, ...typography.font.bold }]}>
+                {display.label}
+              </Text>
+            </LiquidGlassView>
+          ))}
         </View>
-        <Text style={[styles.digitSeparator, { color: colors.border }]}>:</Text>
-        <View style={styles.digitBox}>
-          <AnimatedDigitString
-            value={formatDigit(countdown.hours)}
-            style={[styles.digitText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}
-            reducedMotion={reducedMotion}
-          />
-          <Text style={[styles.digitLabel, { color: colors.textSecondary }]}>HRS</Text>
-        </View>
-        <Text style={[styles.digitSeparator, { color: colors.border }]}>:</Text>
-        <View style={styles.digitBox}>
-          <AnimatedDigitString
-            value={formatDigit(countdown.minutes)}
-            style={[styles.digitText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}
-            reducedMotion={reducedMotion}
-          />
-          <Text style={[styles.digitLabel, { color: colors.textSecondary }]}>MIN</Text>
-        </View>
-        <Text style={[styles.digitSeparator, { color: colors.border }]}>:</Text>
-        <View style={styles.digitBox}>
-          <AnimatedDigitString
-            value={formatDigit(countdown.seconds)}
-            style={[styles.digitText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}
-            reducedMotion={reducedMotion}
-          />
-          <Text style={[styles.digitLabel, { color: colors.textSecondary }]}>SEG</Text>
-        </View>
-      </View>
 
-      <View style={styles.progressBarContainer}>
-        <View style={[styles.progressBarTrack, { backgroundColor: isDark ? colors.countdownFillLight : colors.countdownFillDark }]}>
-          <Animated.View style={[styles.progressBarFill, { backgroundColor: colors.primary }, progressStyle]} />
+        <View style={{ gap: spacing[8] }}>
+          <View
+            style={[styles.track, { backgroundColor: colors.glassBorder }]}
+            onLayout={(event: LayoutChangeEvent) => setTrackWidth(event.nativeEvent.layout.width)}
+          >
+            <Animated.View style={[styles.fill, fillStyle]}>
+              <LinearGradient
+                colors={colors.progressGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          </View>
+          <Text style={[styles.progressLabel, { color: colors.textSecondary, ...typography.font.medium }]}>
+            {Math.round(cycle * 100)}% do ciclo anual vivido
+          </Text>
         </View>
       </View>
     </View>
@@ -214,56 +169,48 @@ export const CountdownDigits = React.memo(function CountdownDigits({ targetDate,
 });
 
 const styles = StyleSheet.create({
-  bottomSection: {
-    padding: 20,
-    borderTopWidth: 1,
-    backgroundColor: 'rgba(0,0,0,0.02)',
-  },
-  celebrationContainer: {
+  celebration: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
     paddingVertical: 10,
-    gap: 12,
   },
   celebrationText: {
     fontSize: 20,
   },
-  countdownGrid: {
+  grid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
   },
-  digitBox: {
-    alignItems: 'center',
+  display: {
     flex: 1,
+    minWidth: 0,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  digitText: {
+  digit: {
     fontSize: 28,
+    lineHeight: 34,
+    fontVariant: ['tabular-nums'],
   },
   digitLabel: {
     fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginTop: 4,
+    letterSpacing: 0.8,
+    marginTop: 2,
   },
-  digitSeparator: {
-    fontSize: 24,
-    fontWeight: '300',
-    marginTop: -16,
-  },
-  progressBarContainer: {
-    width: '100%',
-  },
-  progressBarTrack: {
+  track: {
     height: 6,
     borderRadius: 3,
     overflow: 'hidden',
     width: '100%',
   },
-  progressBarFill: {
-    height: '100%',
+  fill: {
+    ...StyleSheet.absoluteFill,
     borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressLabel: {
+    fontSize: 12,
   },
 });

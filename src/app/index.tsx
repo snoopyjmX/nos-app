@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
-import { AtmosphereBackground } from '@/design/ui/AtmosphereBackground';
-import { LiquidGlassView } from '@/design/ui/LiquidGlassView';
+import { AtmosphereBackground } from '@/components/ui/AtmosphereBackground';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 
 export default function IndexScreen() {
   const { session, isLoading: isLoadingAuth } = useAuth();

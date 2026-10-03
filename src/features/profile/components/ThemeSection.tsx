@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { AnimatedIcon } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
+import { LiquidThemeSelector } from '@/components/ui/LiquidThemeSelector';
 import { useTheme } from '@/theme';
-import { LiquidThemeSelector } from '@/design/ui/LiquidThemeSelector';
 
 interface ThemeSectionProps {
   mode: 'light' | 'dark';
@@ -10,98 +11,67 @@ interface ThemeSectionProps {
 }
 
 export function ThemeSection({ mode, setMode }: ThemeSectionProps) {
-  const { colors, typography, radii, isDark } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
 
   return (
-    <View style={styles.sectionBlock}>
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
-          APARÊNCIA & TEMA
-        </Text>
-      </View>
-
-      <View
-        style={[
-          styles.themeCard,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: radii.md,
-          },
-        ]}
+    <View style={{ marginBottom: spacing[20] }}>
+      <Text
+        accessibilityRole="header"
+        style={[styles.sectionTitle, { color: colors.textSecondary, marginBottom: spacing[8], ...typography.font.bold }]}
       >
-        <View style={styles.themeHeaderRow}>
-          <View
-            style={[
-              styles.themeIconCircle,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(157, 146, 240, 0.15)'
-                  : 'rgba(124, 111, 224, 0.10)',
-              },
-            ]}
-          >
-            <Feather
+        APARÊNCIA
+      </Text>
+
+      <LiquidGlassView variant="card" readable borderRadius={radii.md} style={{ padding: spacing[16], gap: spacing[16] }}>
+        <View style={[styles.headerRow, { gap: spacing[12] }]}>
+          <View style={[styles.iconCircle, { backgroundColor: colors.primarySoft }]}>
+            <AnimatedIcon
               name={mode === 'dark' ? 'moon' : 'sun'}
               size={20}
-              color={colors.primary}
+              color={colors.primaryText}
+              active={mode === 'dark'}
             />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.themeCardTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-              Tema do Aplicativo
-            </Text>
-            <Text style={[styles.themeCardDesc, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+          <View style={styles.headerText}>
+            <Text style={[styles.title, { color: colors.textPrimary, ...typography.font.bold }]}>Tema do aplicativo</Text>
+            <Text style={[styles.description, { color: colors.textSecondary, ...typography.font.regular }]}>
               {mode === 'dark' ? 'Modo Escuro (roxo-noite)' : 'Modo Claro'}
             </Text>
           </View>
         </View>
 
         <LiquidThemeSelector currentMode={mode} onChangeMode={setMode} />
-      </View>
+      </LiquidGlassView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionBlock: {
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    marginBottom: 10,
-    paddingHorizontal: 4,
-  },
   sectionTitle: {
     fontSize: 11,
     letterSpacing: 1.2,
+    paddingHorizontal: 4,
   },
-  themeCard: {
-    padding: 16,
-    borderWidth: 1,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  themeHeaderRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 14,
   },
-  themeIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  themeCardTitle: {
-    fontSize: 15,
+  headerText: {
+    flex: 1,
+    minWidth: 0,
   },
-  themeCardDesc: {
-    fontSize: 12,
+  title: {
+    fontSize: 16,
+  },
+  description: {
+    fontSize: 13,
     marginTop: 2,
   },
 });

@@ -2,13 +2,13 @@ import React from 'react';
 import { StyleSheet, View, useWindowDimensions, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useAppTheme } from '@/lib/context/ThemeContext';
-import { COLORS, DARK_COLORS } from '@/design/tokens/theme';
+import { getThemeColors } from '@/theme';
 
 export function AtmosphereBackground() {
   const { width, height } = useWindowDimensions();
   const { isDark } = useAppTheme();
 
-  const themeTokens = isDark ? DARK_COLORS : COLORS;
+  const themeTokens = getThemeColors(isDark);
 
   return (
     <View style={[styles.container, { backgroundColor: themeTokens.background }]} pointerEvents="none">

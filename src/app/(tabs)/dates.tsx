@@ -1,15 +1,14 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Platform, RefreshControl, Alert, Text } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDockInset } from '@/lib/hooks/useDockInset';
 import * as Haptics from 'expo-haptics';
 import { useReducedMotion } from 'react-native-reanimated';
 
-import { EmptyState } from '@/components/ui';
+import { EmptyState, ScreenTitleBar, Skeleton } from '@/components/ui';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
 import { useTheme } from '@/theme';
-import { useTabBarHeight } from '@/lib/hooks/useTabBarHeight';
 import { useToast } from '@/lib/context/ToastContext';
 import { supabase } from '@/lib/core/supabase';
 
@@ -19,15 +18,13 @@ import { FilterTabs } from '@/features/dates/components/FilterTabs';
 import { DatesHeroCard } from '@/features/dates/components/DatesHeroCard';
 import { DateListItem } from '@/features/dates/components/DateListItem';
 import { AddDateModal } from '@/features/dates/components/AddDateModal';
-import { IconButton } from '@/components/ui';
 
 export default function DatesScreen() {
-  const { colors, typography, isDark } = useTheme();
+  const { colors, radii, spacing } = useTheme();
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
   const dockInset = useDockInset();
-  const { paddingBottom: tabBarPaddingBottom } = useTabBarHeight();
   const reducedMotion = useReducedMotion();
   const { showToast } = useToast();
   
@@ -189,9 +186,8 @@ export default function DatesScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + (Platform.OS === 'ios' ? 88 : 82),
           paddingBottom: dockInset,
-          paddingHorizontal: 20,
+          paddingHorizontal: spacing[20],
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -203,6 +199,15 @@ export default function DatesScreen() {
           />
         }
       >
+        <ScreenTitleBar
+          title="Datas"
+          subtitle="Nossos próximos momentos juntos"
+          topInset={insets.top}
+          actionLabel="Nova data"
+          actionAccessibilityLabel="Adicionar nova data especial"
+          onAction={handleOpenAddModal}
+        />
+
         <FilterTabs
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -211,10 +216,10 @@ export default function DatesScreen() {
         />
 
         {loading ? (
-          <View style={styles.skeletonContainer}>
-            <View style={[styles.skeletonCard, { height: 240, backgroundColor: colors.surface }]} />
-            <View style={[styles.skeletonCard, { backgroundColor: colors.surface }]} />
-            <View style={[styles.skeletonCard, { backgroundColor: colors.surface }]} />
+          <View style={{ gap: spacing[16] }}>
+            <Skeleton width="100%" height={300} borderRadius={radii.lg} />
+            <Skeleton width="100%" height={96} borderRadius={radii.md} />
+            <Skeleton width="100%" height={96} borderRadius={radii.md} />
           </View>
         ) : (
           <>
@@ -254,24 +259,6 @@ export default function DatesScreen() {
         )}
       </ScrollView>
 
-      {/* Header Fixo Sólido */}
-      <View 
-        style={[
-          styles.headerContainer, 
-          { 
-            paddingTop: insets.top,
-            backgroundColor: colors.background,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }
-        ]}
-      >
-        <View style={styles.headerInnerRow}>
-          <Text style={[styles.headerBrandTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>Datas Especiais</Text>
-          <IconButton icon="plus" variant="primary" onPress={handleOpenAddModal} accessibilityLabel="Nova Data" />
-        </View>
-      </View>
-
       <AddDateModal
         visible={isAddModalVisible}
         onClose={() => setIsAddModalVisible(false)}
@@ -297,23 +284,4 @@ export default function DatesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerContainer: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, overflow: 'hidden',
-  },
-  headerInnerRow: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 8 : 10,
-    paddingBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerBrandTitle: {
-    fontSize: 27,
-    letterSpacing: -0.8,
-  },
-  skeletonContainer: { paddingTop: 10, gap: 16 },
-  skeletonCard: {
-    width: '100%', height: 90, borderRadius: 24, borderWidth: 1, borderColor: 'transparent'
-  },
 });

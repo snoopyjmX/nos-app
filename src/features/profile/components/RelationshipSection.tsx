@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { PressableScale } from '@/components/ui/PressableScale';
+import { AnimatedIcon, PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
+import { useCopyToClipboard } from '@/lib/hooks/useCopyToClipboard';
 import { useTheme } from '@/theme';
 import { formatFullDatePTBR } from '../utils/formatting';
 
@@ -17,278 +18,155 @@ export function RelationshipSection({
   coupleCode,
   onOpenDateModal,
 }: RelationshipSectionProps) {
-  const { colors, typography, radii, isDark } = useTheme();
-  const [copiedCode, setCopiedCode] = useState(false);
-
-  const copyCoupleCode = async () => {
-    if (!coupleCode) return;
-    try {
-      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(coupleCode);
-      }
-      setCopiedCode(true);
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      setTimeout(() => setCopiedCode(false), 2000);
-    } catch {
-      Alert.alert('Código do Casal', coupleCode);
-    }
-  };
+  const { colors, typography, radii, spacing } = useTheme();
+  const { copied: copiedCode, copy } = useCopyToClipboard();
+  const [editPulse, setEditPulse] = useState(0);
 
   return (
-    <View style={styles.sectionBlock}>
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
-          NOSSO RELACIONAMENTO
-        </Text>
-      </View>
-
-      <View
-        style={[
-          styles.relationshipCard,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: radii.md,
-          },
-        ]}
+    <View style={{ marginBottom: spacing[20] }}>
+      <Text
+        accessibilityRole="header"
+        style={[styles.sectionTitle, { color: colors.textSecondary, marginBottom: spacing[8], ...typography.font.bold }]}
       >
-        <View
-          style={[
-            styles.relationIconCircle,
-            {
-              backgroundColor: isDark
-                ? 'rgba(157, 146, 240, 0.15)'
-                : 'rgba(124, 111, 224, 0.10)',
-            },
-          ]}
-        >
-          <Feather name="calendar" size={22} color={colors.primary} />
-        </View>
+        NOSSO RELACIONAMENTO
+      </Text>
 
-        <View style={styles.relationContent}>
-          <Text style={[styles.relationLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.medium }]}>
-            Data de Início Oficial
-          </Text>
-          <Text style={[styles.relationDateValue, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-            {formatFullDatePTBR(anniversaryDate)}
-          </Text>
+      <LiquidGlassView variant="card" readable borderRadius={radii.md} style={[styles.card, { padding: spacing[16], gap: spacing[16] }]}>
+        <View style={[styles.row, { gap: spacing[12] }]}>
+          <View style={[styles.iconCircle, { backgroundColor: colors.primarySoft }]}>
+            <Feather name="calendar" size={22} color={colors.primaryText} />
+          </View>
+          <View style={styles.rowContent}>
+            <Text style={[styles.label, { color: colors.textSecondary, ...typography.font.medium }]}>
+              Data de início da história
+            </Text>
+            <Text style={[styles.dateValue, { color: colors.textPrimary, ...typography.font.bold }]}>
+              {formatFullDatePTBR(anniversaryDate)}
+            </Text>
+          </View>
         </View>
 
         <PressableScale
-          style={[
-            styles.editPill,
-            {
-              backgroundColor: isDark
-                ? 'rgba(157, 146, 240, 0.15)'
-                : 'rgba(124, 111, 224, 0.10)',
-              borderColor: isDark
-                ? 'rgba(157, 146, 240, 0.25)'
-                : 'rgba(124, 111, 224, 0.20)',
-            },
-          ]}
           onPress={onOpenDateModal}
-          accessibilityLabel="Editar data oficial"
+          onPressIn={() => setEditPulse((value) => value + 1)}
+          accessibilityRole="button"
+          accessibilityLabel="Alterar data de início da história"
+          style={styles.alignStart}
         >
-          <Feather name="edit-2" size={13} color={colors.primary} />
-          <Text style={[styles.editPillText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Editar</Text>
+          <LiquidGlassView variant="pill" readable borderRadius={radii.pill} style={[styles.pill, { gap: spacing[8] }]}>
+            <AnimatedIcon name="edit-2" size={14} color={colors.primaryText} pulseKey={editPulse} />
+            <Text style={[styles.pillText, { color: colors.primaryText, ...typography.font.bold }]}>Alterar data</Text>
+          </LiquidGlassView>
         </PressableScale>
-      </View>
 
-      {coupleCode && (
-        <View
-          style={[
-            styles.codeCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderRadius: radii.md,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.codeIconCircle,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(157, 146, 240, 0.15)'
-                  : 'rgba(124, 111, 224, 0.10)',
-              },
-            ]}
-          >
-            <Feather name="key" size={20} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1, paddingRight: 8 }}>
-            <View style={styles.codeHeaderRow}>
-              <Text style={[styles.codeLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.medium }]}>
-                Código do Casal
+        {coupleCode ? (
+          <View style={{ gap: spacing[8] }}>
+            <View style={[styles.codeHeader, { gap: spacing[8] }]}>
+              <Text style={[styles.label, { color: colors.textSecondary, ...typography.font.medium }]}>
+                Código de vínculo do casal
               </Text>
-              <View
-                style={[
-                  styles.linkedBadge,
-                  {
-                    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.10)',
-                  },
-                ]}
-              >
-                <Feather name="check-circle" size={13} color="#22C55E" />
-                <Text style={[styles.linkedBadgeText, { color: isDark ? '#4ADE80' : '#15803D', fontFamily: typography.fontFamily.bold }]}>
-                  Vinculado
-                </Text>
+              <View style={styles.linked}>
+                <Feather name="check-circle" size={13} color={colors.success} />
+                <Text style={[styles.linkedText, { color: colors.textPrimary, ...typography.font.bold }]}>Vinculado</Text>
               </View>
             </View>
-            <Text style={[styles.codeValue, { color: colors.textPrimary }]}>
-              {coupleCode}
-            </Text>
-          </View>
 
-          <PressableScale
-            style={[
-              styles.copyPill,
-              {
-                backgroundColor: copiedCode
-                  ? (isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.12)')
-                  : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.10)'),
-                borderColor: copiedCode
-                  ? '#22C55E'
-                  : (isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(124, 111, 224, 0.20)'),
-              },
-            ]}
-            onPress={copyCoupleCode}
-            accessibilityLabel="Copiar código de casal"
-          >
-            <Feather
-              name={copiedCode ? "check" : "copy"}
-              size={14}
-              color={copiedCode ? '#22C55E' : colors.primary}
-            />
-            <Text
-              style={[
-                styles.copyPillText,
-                { color: copiedCode ? '#22C55E' : colors.primary, fontFamily: typography.fontFamily.bold },
-              ]}
+            <PressableScale
+              onPress={() => copy(coupleCode)}
+              accessibilityRole="button"
+              accessibilityLabel={copiedCode ? 'Código copiado' : `Código do casal ${coupleCode.split('').join(' ')}. Toque para copiar`}
+              accessibilityLiveRegion="polite"
             >
-              {copiedCode ? 'Copiado!' : 'Copiar'}
-            </Text>
-          </PressableScale>
-        </View>
-      )}
+              <LiquidGlassView variant="pill" readable borderRadius={radii.pill} style={[styles.codeCapsule, { gap: spacing[12], paddingHorizontal: spacing[16] }]}>
+                <Text style={[styles.code, { color: colors.textPrimary, ...typography.font.mono }]} selectable={false}>
+                  {coupleCode}
+                </Text>
+                <View style={styles.copyState}>
+                  <Feather name={copiedCode ? 'check' : 'copy'} size={14} color={copiedCode ? colors.success : colors.primaryText} />
+                  <Text style={[styles.copyText, { color: copiedCode ? colors.textPrimary : colors.primaryText, ...typography.font.bold }]}>
+                    {copiedCode ? 'Copiado!' : 'Copiar'}
+                  </Text>
+                </View>
+              </LiquidGlassView>
+            </PressableScale>
+          </View>
+        ) : null}
+      </LiquidGlassView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionBlock: {
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    marginBottom: 10,
-    paddingHorizontal: 4,
-  },
   sectionTitle: {
     fontSize: 11,
     letterSpacing: 1.2,
+    paddingHorizontal: 4,
   },
-  relationshipCard: {
+  card: {},
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderWidth: 1,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
-  relationIconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  relationContent: {
+  rowContent: {
     flex: 1,
+    minWidth: 0,
   },
-  relationLabel: {
-    fontSize: 11,
-    marginBottom: 2,
+  label: {
+    fontSize: 12,
   },
-  relationDateValue: {
-    fontSize: 16,
-    fontVariant: ['tabular-nums'],
+  dateValue: {
+    fontSize: 17,
+    marginTop: 2,
   },
-  editPill: {
+  alignStart: {
+    alignSelf: 'flex-start',
+  },
+  pill: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  pillText: {
+    fontSize: 13,
+  },
+  codeHeader: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  linked: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
   },
-  editPillText: {
+  linkedText: {
     fontSize: 12,
   },
-  codeCard: {
+  codeCapsule: {
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderWidth: 1,
-    marginTop: 12,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  codeIconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  codeHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 2,
+    justifyContent: 'space-between',
     flexWrap: 'wrap',
   },
-  codeLabel: {
-    fontSize: 11,
+  code: {
+    fontSize: 18,
+    letterSpacing: 3,
   },
-  codeValue: {
-    fontSize: 16,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    fontWeight: '700',
-    letterSpacing: 2,
-  },
-  linkedBadge: {
+  copyState: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
+    gap: 6,
   },
-  linkedBadgeText: {
-    fontSize: 11,
-  },
-  copyPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  copyPillText: {
-    fontSize: 12,
+  copyText: {
+    fontSize: 13,
   },
 });

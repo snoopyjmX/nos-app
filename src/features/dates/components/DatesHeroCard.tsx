@@ -2,9 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { SpecialDate } from '../types';
 import { getCategoryMeta, formatHeroDatePTBR } from '../utils/formatting';
-import { Floating3DHeart } from './Floating3DHeart';
 import { CountdownDigits } from './CountdownDigits';
 import { useTheme } from '@/theme';
 
@@ -14,7 +14,7 @@ interface DatesHeroCardProps {
 }
 
 export function DatesHeroCard({ nextEvent, reducedMotion }: DatesHeroCardProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
 
   if (!nextEvent) return null;
 
@@ -22,108 +22,74 @@ export function DatesHeroCard({ nextEvent, reducedMotion }: DatesHeroCardProps) 
 
   return (
     <Animated.View
-      entering={reducedMotion ? undefined : FadeInDown.duration(400).delay(100)}
-      style={styles.heroCardContainer}
+      entering={reducedMotion ? undefined : FadeInDown.duration(350)}
+      style={{ marginBottom: spacing[20] }}
     >
-      <View 
-        style={[
-          styles.heroGradientBackground, 
-          { 
-            backgroundColor: colors.surface,
-            borderRadius: radii.lg,
-            borderColor: colors.border,
-            ...shadows.soft,
-          }
-        ]}
+      <LiquidGlassView
+        variant="hero"
+        borderRadius={radii.lg}
+        style={[styles.card, { padding: spacing[20], gap: spacing[16] }]}
       >
-        <Floating3DHeart />
+        <View style={[styles.categoryChip, { backgroundColor: meta.bg }]}>
+          <Feather name={meta.icon} size={12} color={meta.color} />
+          <Text style={[styles.categoryChipText, { color: meta.color, ...typography.font.bold }]}>{meta.label}</Text>
+        </View>
 
-        <View style={styles.heroTopSection}>
-          <View style={styles.heroTextContent}>
-            <View style={[styles.categoryChip, { backgroundColor: meta.bg }]}>
-              <Feather name={meta.icon as any} size={11} color={meta.color} />
-              <Text style={[styles.categoryChipText, { color: meta.color, fontFamily: typography.fontFamily.bold }]}>{meta.label}</Text>
-            </View>
-
-            <Text style={[styles.heroTag, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>PRÓXIMO MOMENTO</Text>
-
-            <Text style={[styles.heroTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]} numberOfLines={2}>
-              {nextEvent.title}
+        <View style={{ gap: spacing[8] }}>
+          <Text style={[styles.tag, { color: colors.textSecondary, ...typography.font.bold }]}>PRÓXIMO MOMENTO</Text>
+          <Text
+            accessibilityRole="header"
+            style={[styles.title, { color: colors.textPrimary, ...typography.font.black }]}
+          >
+            {nextEvent.title}
+          </Text>
+          <View style={styles.dateRow}>
+            <Feather name="calendar" size={14} color={colors.primaryText} />
+            <Text style={[styles.dateText, { color: colors.textSecondary, ...typography.font.medium }]}>
+              {formatHeroDatePTBR(nextEvent.event_date)}
             </Text>
-
-            <View style={styles.heroDateRow}>
-              <View style={[styles.heroCalendarIconBox, { backgroundColor: colors.primarySoft }]}>
-                <Feather name="calendar" size={13} color={colors.primary} />
-              </View>
-              <Text style={[styles.heroDateText, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
-                {formatHeroDatePTBR(nextEvent.event_date)}
-              </Text>
-            </View>
           </View>
         </View>
 
-        <CountdownDigits targetDate={nextEvent.event_date} createdAt={nextEvent.created_at} />
-      </View>
+        <CountdownDigits targetDate={nextEvent.event_date} title={nextEvent.title} />
+      </LiquidGlassView>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  heroCardContainer: {
-    marginBottom: 20,
+  card: {
     width: '100%',
-  },
-  heroGradientBackground: {
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  heroTopSection: {
-    position: 'relative',
-    flexDirection: 'row',
-    padding: 20,
-    minHeight: 120,
-  },
-  heroTextContent: {
-    flex: 1,
-    paddingRight: 110,
-    justifyContent: 'center',
   },
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 999,
     alignSelf: 'flex-start',
-    marginBottom: 8,
   },
   categoryChipText: {
-    fontSize: 10,
-  },
-  heroTag: {
     fontSize: 11,
-    letterSpacing: 0.6,
-    marginBottom: 4,
   },
-  heroTitle: {
-    fontSize: 24,
-    lineHeight: 28,
-    marginBottom: 10,
+  tag: {
+    fontSize: 11,
+    letterSpacing: 0.8,
   },
-  heroDateRow: {
+  title: {
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.7,
+  },
+  dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  heroCalendarIconBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroDateText: {
-    fontSize: 13,
+  dateText: {
+    fontSize: 14,
+    flexShrink: 1,
   },
 });

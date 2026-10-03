@@ -1,5 +1,3 @@
-import { useDockInset } from '@/lib/hooks/useDockInset';
-
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
@@ -12,9 +10,12 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { Screen, Skeleton } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
+import { useDockInset } from '@/lib/hooks/useDockInset';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
 import { useTheme } from '@/theme';
@@ -31,7 +32,7 @@ import { ThrowbackMemoryCard } from '@/features/home/components/ThrowbackMemoryC
 let hasPlayedHomeEntranceInSession = false;
 
 export default function HomeScreen() {
-  const { colors, typography, radii, shadows, isDark } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
   const router = useRouter();
   const dockInset = useDockInset();
   const { user } = useAuth();
@@ -45,8 +46,8 @@ export default function HomeScreen() {
   }, []);
 
   const {
-    coupleTitle,
     ownerFirstName,
+    partnerFirstName,
     effectiveStartDateStr,
     recentMemory,
     throwbackMemory,
@@ -66,46 +67,46 @@ export default function HomeScreen() {
     const name = ownerFirstName?.trim() || getFirstName(user?.user_metadata?.display_name) || '';
     const nameSuffix = name && name.toLowerCase() !== 'você' ? `, ${name}` : '';
     if (hour >= 5 && hour < 12) {
-      return `Bom dia${nameSuffix} ☀️`;
+      return `Bom dia${nameSuffix}`;
     }
     if (hour >= 12 && hour < 18) {
-      return `Boa tarde${nameSuffix} 🌤️`;
+      return `Boa tarde${nameSuffix}`;
     }
-    return `Boa noite${nameSuffix} 🌙`;
+    return `Boa noite${nameSuffix}`;
   }, [ownerFirstName, user]);
 
   const heroImageUri = recentMemory?.displayUrl || recentMemory?.image_url;
 
-  const handleOpenMemories = () => {
+  const goTo = (route: '/(tabs)/memories' | '/(tabs)/messages' | '/(tabs)/dates') => {
     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/(tabs)/memories');
+    router.push(route);
   };
 
-  const handleOpenMessages = () => {
-    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/(tabs)/messages');
-  };
-
-  const handleOpenDates = () => {
-    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/(tabs)/dates');
-  };
+  const handleOpenMemories = () => goTo('/(tabs)/memories');
+  const handleOpenMessages = () => goTo('/(tabs)/messages');
+  const handleOpenDates = () => goTo('/(tabs)/dates');
 
   return (
     <Screen style={{ paddingHorizontal: 0 }}>
-      {/* Header Inline */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-            {coupleTitle || 'nós.'}
-          </Text>
-        </View>
-        <View style={styles.headerRight}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22C55E' }} />
-            <Text style={{ color: colors.textSecondary, fontSize: 13, fontFamily: typography.fontFamily.medium }}>Online</Text>
-          </View>
-        </View>
+      {/* Topo: o Screen já soma o inset superior (insets.top ou env(safe-area-inset-top)); aqui entram os 12px de respiro */}
+      <View style={[styles.header, { paddingTop: spacing[12], paddingHorizontal: spacing[16] }]}>
+        <Text
+          accessibilityRole="header"
+          style={[styles.greeting, { color: colors.textPrimary, ...typography.font.black }]}
+        >
+          {contextualGreeting}
+        </Text>
+        {partnerFirstName ? (
+          <LiquidGlassView variant="pill" readable borderRadius={radii.pill} style={styles.partnerBadge}>
+            <Feather name="heart" size={12} color={colors.accentText} />
+            <Text
+              style={[styles.partnerBadgeText, { color: colors.textSecondary, ...typography.font.bold }]}
+              numberOfLines={1}
+            >
+              Com {partnerFirstName}
+            </Text>
+          </LiquidGlassView>
+        ) : null}
       </View>
 
       <ScrollView
@@ -122,67 +123,41 @@ export default function HomeScreen() {
       >
         {loading ? (
           <View style={{ gap: 16 }}>
-            <Skeleton width="100%" height={245} borderRadius={radii.lg} />
-            <Skeleton width="100%" height={52} borderRadius={radii.md} />
+            <Skeleton width="100%" height={420} borderRadius={radii.lg} />
+            <Skeleton width="100%" height={48} borderRadius={radii.pill} />
             <Skeleton width="100%" height={80} borderRadius={radii.md} />
           </View>
         ) : (
           <View>
-            <View style={styles.greetingContainer}>
-              <Text style={[styles.greetingText, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-                {contextualGreeting}
-              </Text>
-            </View>
-
             {celebration ? (
               <Animated.View
                 entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(0) : undefined}
                 style={styles.celebrationWrapper}
               >
-                <View
-                  style={[
-                    styles.celebrationCard,
-                    {
-                      backgroundColor: colors.accentSoft,
-                      borderColor: 'transparent',
-                      borderRadius: radii.md,
-                      ...shadows.soft,
-                    },
-                  ]}
-                >
-                  <View style={styles.celebrationHeader}>
-                    <View
-                      style={[
-                        styles.celebrationBadge,
-                        {
-                          backgroundColor: isDark ? 'rgba(245, 143, 168, 0.22)' : 'rgba(245, 143, 168, 0.16)',
-                        },
-                      ]}
-                    >
-                      <Feather name="star" size={13} color={colors.accent} />
-                      <Text style={[styles.celebrationBadgeText, { color: colors.accent, fontFamily: typography.fontFamily.bold }]}>
-                        {celebration.badge}
-                      </Text>
-                    </View>
+                <LiquidGlassView variant="card" readable borderRadius={radii.md} style={styles.celebrationCard}>
+                  <LinearGradient
+                    colors={colors.celebrationGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[StyleSheet.absoluteFill, { borderRadius: radii.md }]}
+                    pointerEvents="none"
+                  />
+                  <View style={[styles.celebrationBadge, { backgroundColor: colors.accentGlass }]}>
+                    <Feather name="star" size={13} color={colors.accentText} />
+                    <Text style={[styles.celebrationBadgeText, { color: colors.accentText, ...typography.font.bold }]}>
+                      {celebration.badge}
+                    </Text>
                   </View>
-
                   <Text
-                    style={[
-                      styles.celebrationTitle,
-                      { color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
-                    ]}
+                    accessibilityRole="header"
+                    style={[styles.celebrationTitle, { color: colors.textPrimary, ...typography.font.bold }]}
                   >
                     {celebration.title}
                   </Text>
-                  <Text
-                    style={[
-                      styles.celebrationSubtitle,
-                      { color: colors.textSecondary, fontFamily: typography.fontFamily.regular },
-                    ]}
-                  >
+                  <Text style={[styles.celebrationSubtitle, { color: colors.textSecondary, ...typography.font.regular }]}>
                     {celebration.subtitle}
                   </Text>
-                </View>
+                </LiquidGlassView>
               </Animated.View>
             ) : null}
 
@@ -226,50 +201,41 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   header: {
+    gap: 10,
+    paddingBottom: 16,
+  },
+  greeting: {
+    fontSize: 32,
+    lineHeight: 38,
+    letterSpacing: -0.8,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  partnerBadge: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
     paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingVertical: 6,
+    minHeight: 28,
   },
-  headerLeft: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    letterSpacing: -0.5,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    gap: 8,
+  partnerBadgeText: {
+    fontSize: 13,
+    flexShrink: 1,
   },
   scrollContent: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    
-  },
-  greetingContainer: {
-    marginBottom: 20,
-  },
-  greetingText: {
-    fontSize: 22,
-    letterSpacing: -0.4,
+    paddingHorizontal: 16,
   },
   celebrationWrapper: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   celebrationCard: {
     padding: 20,
-    borderWidth: 1,
-  },
-  celebrationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    gap: 8,
   },
   celebrationBadge: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -285,9 +251,9 @@ const styles = StyleSheet.create({
   celebrationTitle: {
     fontSize: 24,
     letterSpacing: -0.5,
-    marginBottom: 4,
   },
   celebrationSubtitle: {
     fontSize: 15,
+    lineHeight: 22,
   },
 });

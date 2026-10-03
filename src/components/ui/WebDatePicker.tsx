@@ -55,7 +55,7 @@ export function WebDatePicker({ value, onChange, mode = 'date' }: WebDatePickerP
           backgroundColor: colors.surface,
           color: colors.textPrimary,
           fontSize: '16px',
-          fontFamily: typography.fontFamily.medium,
+          ...typography.font.medium,
           outline: 'none',
           width: '100%',
         },

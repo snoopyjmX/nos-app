@@ -7,12 +7,11 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 
-import { AppHeader } from '@/design/components/AppHeader';
+import { ScreenTitleBar, Skeleton } from '@/components/ui';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
 import { useAppTheme } from '@/lib/context/ThemeContext';
 import { useTheme } from '@/theme';
-import { useTabBarHeight } from '@/lib/hooks/useTabBarHeight';
 import { supabase } from '@/lib/core/supabase';
 import { normalizeAndCompressImage } from '@/lib/core/imageManipulation';
 
@@ -25,14 +24,13 @@ import { AccountActions } from '@/features/profile/components/AccountActions';
 import { AnniversaryModal } from '@/features/profile/components/AnniversaryModal';
 
 export default function ProfileScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors, radii, spacing } = useTheme();
   const { mode, setMode } = useAppTheme();
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { coupleId, clearCouple } = useCouple();
   const insets = useSafeAreaInsets();
   const dockInset = useDockInset();
-  const { paddingBottom: tabBarPaddingBottom } = useTabBarHeight();
 
   const {
     myProfile,
@@ -205,21 +203,10 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.headerContainer, { paddingTop: insets.top, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <View style={styles.headerInnerRow}>
-          <AppHeader
-            sectionTitle="perfil"
-            coupleSubtitle="Configurações e nós dois"
-            containerStyle={{ marginBottom: 0, paddingTop: 6, paddingBottom: 6 }}
-          />
-        </View>
-      </View>
-
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + (Platform.OS === 'ios' ? 98 : 92),
-          paddingBottom: tabBarPaddingBottom,
-          paddingHorizontal: 20,
+          paddingBottom: dockInset,
+          paddingHorizontal: spacing[20],
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -231,26 +218,12 @@ export default function ProfileScreen() {
           />
         }
       >
+        <ScreenTitleBar title="Ajustes" subtitle="Configurações e nós dois" topInset={insets.top} />
+
         {loading ? (
-          <View style={styles.skeletonContainer}>
-            <View
-              style={[
-                styles.skeletonHeroCard,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(124, 111, 224, 0.08)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(124, 111, 224, 0.15)',
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.skeletonCard,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(124, 111, 224, 0.08)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(124, 111, 224, 0.15)',
-                },
-              ]}
-            />
+          <View style={{ gap: spacing[16] }}>
+            <Skeleton width="100%" height={240} borderRadius={radii.lg} />
+            <Skeleton width="100%" height={160} borderRadius={radii.md} />
           </View>
         ) : (
           <>
@@ -269,7 +242,6 @@ export default function ProfileScreen() {
               onOpenDateModal={handleOpenDateModal}
             />
 
-            {/* Ocultando seletor de tema temporariamente conforme pedido */}
             <ThemeSection
               mode={mode}
               setMode={setMode}
@@ -301,33 +273,5 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  headerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 20,
-    borderBottomWidth: 1,
-  },
-  headerInnerRow: {
-    paddingHorizontal: 20,
-    paddingBottom: 4,
-  },
-  skeletonContainer: {
-    paddingTop: 10,
-    gap: 18,
-  },
-  skeletonHeroCard: {
-    width: '100%',
-    height: 180,
-    borderRadius: 28,
-    borderWidth: 1,
-  },
-  skeletonCard: {
-    width: '100%',
-    height: 90,
-    borderRadius: 20,
-    borderWidth: 1,
   },
 });

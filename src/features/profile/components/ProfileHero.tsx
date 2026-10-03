@@ -1,23 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  cancelAnimation,
-  useReducedMotion,
-  Easing,
-} from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { PressableScale } from '@/components/ui/PressableScale';
-import { usePathname } from 'expo-router';
+import { AnimatedIcon, PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { useTheme } from '@/theme';
 import { ProfileData } from '../types';
 import { getFirstName } from '../utils/formatting';
+
+const AVATAR_SIZE = 84;
+const RING_GAP = 3;
 
 interface ProfileHeroProps {
   myProfile: ProfileData | null;
@@ -28,6 +20,37 @@ interface ProfileHeroProps {
   onPickAvatar: () => void;
 }
 
+interface AvatarRingProps {
+  uri?: string | null;
+  loading?: boolean;
+}
+
+// Anel luminoso de 1px ao redor da foto.
+function AvatarRing({ uri, loading = false }: AvatarRingProps) {
+  const { colors, radii } = useTheme();
+
+  return (
+    <View style={[styles.ring, { borderColor: colors.glow, borderRadius: radii.pill, padding: RING_GAP }]}>
+      <View style={[styles.avatarInner, { backgroundColor: colors.primarySoft, borderRadius: radii.pill }]}>
+        {loading ? (
+          <ActivityIndicator color={colors.primary} size="small" />
+        ) : uri ? (
+          <Image
+            source={{ uri }}
+            style={styles.avatarImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          />
+        ) : (
+          <Feather name="user" size={32} color={colors.primaryText} />
+        )}
+      </View>
+    </View>
+  );
+}
+
 export function ProfileHero({
   myProfile,
   partnerProfile,
@@ -36,204 +59,85 @@ export function ProfileHero({
   uploadingAvatar,
   onPickAvatar,
 }: ProfileHeroProps) {
-  const pathname = usePathname();
-  const isFocused = pathname.includes('/profile');
-  const reducedMotion = useReducedMotion();
-  const heartScale = useSharedValue(1);
-  const { colors, typography, isDark } = useTheme();
-
-  useEffect(() => {
-    if (!isFocused || reducedMotion) {
-      cancelAnimation(heartScale);
-      heartScale.value = 1;
-      return;
-    }
-
-    heartScale.value = withRepeat(
-      withSequence(
-        withTiming(1.06, { duration: 1100, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    );
-
-    return () => {
-      cancelAnimation(heartScale);
-    };
-  }, [isFocused, reducedMotion]);
-
-  const animatedHeartStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: heartScale.value }],
-  }));
+  const { colors, typography, radii, spacing } = useTheme();
+  const [cameraPulse, setCameraPulse] = useState(0);
 
   return (
-    <View style={styles.heroCardContainer}>
-      <View
-        style={[
-          styles.coupleHeroCard,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          },
-        ]}
+    <View style={{ marginBottom: spacing[20] }}>
+      <LiquidGlassView
+        variant="hero"
+        borderRadius={radii.lg}
+        style={[styles.card, { padding: spacing[20], gap: spacing[16] }]}
       >
-        <View style={styles.avatarsRow}>
-          {/* Avatar do Usuário Logado */}
+        <View style={[styles.avatarsRow, { gap: spacing[12] }]}>
+          {/* Eu: toque para alterar a foto */}
           <PressableScale
-            style={styles.avatarWrapper}
+            style={styles.person}
             onPress={onPickAvatar}
+            onPressIn={() => setCameraPulse((value) => value + 1)}
             disabled={uploadingAvatar}
+            accessibilityRole="button"
             accessibilityLabel="Alterar minha foto de perfil"
           >
-            <View style={styles.avatarGradientRingWrapper}>
-              <LinearGradient
-                colors={['#7C6FE0', '#F58FA8']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.avatarGradientRing}
-              >
-                <View style={[styles.avatarInnerContainer, { backgroundColor: isDark ? '#15122A' : '#FFFFFF' }]}>
-                  {uploadingAvatar ? (
-                    <ActivityIndicator color={colors.primary} size="small" />
-                  ) : myProfile?.displayAvatarUrl ? (
-                    <Image
-                      source={{ uri: myProfile.displayAvatarUrl }}
-                      style={styles.avatarImage}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
-                  ) : (
-                    <Feather name="user" size={32} color={colors.primary} />
-                  )}
-                </View>
-              </LinearGradient>
-              <View style={[styles.cameraBadge, { backgroundColor: colors.primary }]}>
-                <Feather name="camera" size={12} color="#FFFFFF" />
+            <View>
+              <AvatarRing uri={myProfile?.displayAvatarUrl} loading={uploadingAvatar} />
+              <View style={[styles.cameraBadge, { backgroundColor: colors.glow, borderColor: colors.surface }]}>
+                <AnimatedIcon name="camera" size={13} color={colors.onPrimary} pulseKey={cameraPulse} />
               </View>
             </View>
-
-            <Text style={[styles.avatarLabel, { color: colors.textPrimary, fontFamily: typography.fontFamily.black }]} numberOfLines={2}>
+            <Text style={[styles.name, { color: colors.textPrimary, ...typography.font.black }]} numberOfLines={2}>
               {getFirstName(myName)}
             </Text>
-            <Text style={[styles.avatarSubLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>Você</Text>
+            <Text style={[styles.role, { color: colors.textSecondary, ...typography.font.bold }]}>Você</Text>
           </PressableScale>
 
-          {/* Conector Central */}
-          <View style={styles.connectorCenter}>
-            <View style={[styles.connectorLine, { backgroundColor: colors.border }]} />
-            <Animated.View style={[styles.heartCircleContainer, animatedHeartStyle]}>
-              <LinearGradient
-                colors={['#7C6FE0', '#F58FA8']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.heartCircle}
-              >
-                <Feather name="heart" size={16} color="#FFFFFF" />
-              </LinearGradient>
-            </Animated.View>
-            <View style={[styles.connectorLine, { backgroundColor: colors.border }]} />
+          {/* Conector estático: nada pulsa em loop */}
+          <View style={[styles.connector, { backgroundColor: colors.primarySoft }]}>
+            <Feather name="heart" size={16} color={colors.accentText} />
           </View>
 
-          {/* Avatar do Parceiro/Parceira */}
-          <View style={styles.avatarWrapper}>
-            <View style={styles.avatarGradientRingWrapper}>
-              <LinearGradient
-                colors={['#F58FA8', '#7C6FE0']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.avatarGradientRing}
-              >
-                <View style={[styles.avatarInnerContainer, { backgroundColor: isDark ? '#15122A' : '#FFFFFF' }]}>
-                  {partnerProfile?.displayAvatarUrl ? (
-                    <Image
-                      source={{ uri: partnerProfile.displayAvatarUrl }}
-                      style={styles.avatarImage}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
-                  ) : (
-                    <Feather name="user" size={32} color={colors.primary} />
-                  )}
-                </View>
-              </LinearGradient>
-            </View>
-
-            <Text style={[styles.avatarLabel, { color: colors.textPrimary, fontFamily: typography.fontFamily.black }]} numberOfLines={2}>
+          <View style={styles.person} accessible accessibilityLabel={`Parceiro: ${getFirstName(partnerName)}`}>
+            <AvatarRing uri={partnerProfile?.displayAvatarUrl} />
+            <Text style={[styles.name, { color: colors.textPrimary, ...typography.font.black }]} numberOfLines={2}>
               {getFirstName(partnerName)}
             </Text>
-            <Text style={[styles.avatarSubLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>Parceiro(a)</Text>
+            <Text style={[styles.role, { color: colors.textSecondary, ...typography.font.bold }]}>Parceiro(a)</Text>
           </View>
         </View>
 
-        {/* Badge de Sincronização Ativa */}
-        <View
-          style={[
-            styles.syncStatusBadge,
-            {
-              backgroundColor: isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.10)',
-              borderColor: isDark ? 'rgba(34, 197, 94, 0.25)' : 'rgba(34, 197, 94, 0.20)',
-            },
-          ]}
-        >
-          <View style={styles.greenPulseDot} />
-          <Text style={[styles.syncStatusText, { color: isDark ? '#4ADE80' : '#15803D', fontFamily: typography.fontFamily.bold }]}>
-            Espaço Compartilhado Sincronizado
+        <LiquidGlassView variant="pill" readable borderRadius={radii.pill} style={styles.badge}>
+          <Text style={[styles.badgeText, { color: colors.textSecondary, ...typography.font.bold }]}>
+            Espaço privado do casal
           </Text>
-        </View>
-      </View>
+        </LiquidGlassView>
+      </LiquidGlassView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  heroCardContainer: {
-    marginBottom: 20,
-  },
-  coupleHeroCard: {
-    borderRadius: 28,
-    padding: 22,
+  card: {
     alignItems: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
   },
   avatarsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     width: '100%',
-    marginBottom: 16,
   },
-  avatarWrapper: {
+  person: {
+    flex: 1,
     alignItems: 'center',
-    minWidth: 96,
-    maxWidth: 120,
-    paddingHorizontal: 4,
+    minWidth: 0,
+    maxWidth: 130,
   },
-  avatarGradientRingWrapper: {
-    position: 'relative',
-    width: 80,
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
+  ring: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderWidth: 1,
   },
-  avatarGradientRing: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    padding: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInnerContainer: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 37,
+  avatarInner: {
+    flex: 1,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -246,62 +150,35 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    elevation: 2,
   },
-  avatarLabel: {
-    fontSize: 15,
-    marginTop: 8,
+  name: {
+    fontSize: 16,
+    marginTop: 10,
     textAlign: 'center',
   },
-  avatarSubLabel: {
+  role: {
     fontSize: 12,
     marginTop: 2,
   },
-  connectorCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    marginBottom: 24,
-  },
-  connectorLine: {
-    width: 14,
-    height: 2,
-  },
-  heartCircleContainer: {
+  connector: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    overflow: 'hidden',
-  },
-  heartCircle: {
-    width: 32,
-    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: AVATAR_SIZE / 2 - 16,
   },
-  syncStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  badge: {
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
   },
-  greenPulseDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#22C55E',
-  },
-  syncStatusText: {
-    fontSize: 11,
+  badgeText: {
+    fontSize: 12,
   },
 });

@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, FlatList, ActivityIndicator, StyleSheet, ScrollView, RefreshControl, Platform } from 'react-native';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { EmptyState, Skeleton } from '@/components/ui';
 import { useTheme } from '@/theme';
 import { MemoryCard } from './MemoryCard';
+import { MemoriesHeader } from './MemoriesHeader';
 import { MemoryItem, MemberProfile } from '../types';
 
 interface MemoryListProps {
@@ -14,7 +16,8 @@ interface MemoryListProps {
   refreshing: boolean;
   reducedMotion: boolean;
   insets: any;
-  tabBarHeight: number;
+  bottomInset: number;
+  hasMore: boolean;
   onRefresh: () => void;
   onLoadMore: () => void;
   onPreview: (item: MemoryItem) => void;
@@ -31,20 +34,31 @@ export function MemoryList({
   refreshing,
   reducedMotion,
   insets,
-  tabBarHeight,
+  bottomInset,
+  hasMore,
   onRefresh,
   onLoadMore,
   onPreview,
   onDelete,
   onAddMemory,
 }: MemoryListProps) {
-  const { colors, radii, shadows } = useTheme();
+  const { colors, radii } = useTheme();
+
+  const header = (
+    <MemoriesHeader
+      topInset={insets.top}
+      count={memories.length}
+      hasMore={hasMore}
+      onAddMemory={onAddMemory}
+    />
+  );
 
   if (loading) {
     return (
-      <View style={[styles.skeletonContainer, { paddingTop: insets.top + (Platform.OS === 'ios' ? 90 : 86) }]}>
-        {[1, 2, 3].map((_, i) => (
-          <Skeleton key={i} width="100%" height={320} borderRadius={radii.md} />
+      <View style={styles.skeletonContainer}>
+        {header}
+        {[1, 2].map((_, i) => (
+          <Skeleton key={i} width="100%" height={300} borderRadius={radii.lg} />
         ))}
       </View>
     );
@@ -53,7 +67,7 @@ export function MemoryList({
   if (memories.length === 0) {
     return (
       <ScrollView
-        contentContainerStyle={[styles.centerContainer, { paddingTop: insets.top + 100 }]}
+        contentContainerStyle={[styles.centerContainer, { paddingBottom: bottomInset }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -63,16 +77,8 @@ export function MemoryList({
           />
         }
       >
-        <View
-          style={[
-            styles.emptyCard,
-            {
-              backgroundColor: colors.surface,
-              borderRadius: radii.md,
-              ...shadows.soft,
-            },
-          ]}
-        >
+        {header}
+        <LiquidGlassView variant="card" readable borderRadius={radii.md} style={styles.emptyCard}>
           <EmptyState
             icon="image"
             title="Ainda não temos memórias por aqui"
@@ -80,7 +86,7 @@ export function MemoryList({
             actionLabel="Criar primeira memória"
             onAction={onAddMemory}
           />
-        </View>
+        </LiquidGlassView>
       </ScrollView>
     );
   }
@@ -91,11 +97,9 @@ export function MemoryList({
       keyExtractor={(item) => item.id}
       contentContainerStyle={[
         styles.listContent,
-        {
-          paddingTop: insets.top + (Platform.OS === 'ios' ? 90 : 86),
-          paddingBottom: tabBarHeight + 60,
-        },
+        { paddingBottom: bottomInset },
       ]}
+      ListHeaderComponent={header}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -133,17 +137,14 @@ export function MemoryList({
 const styles = StyleSheet.create({
   skeletonContainer: {
     paddingHorizontal: 20,
-    gap: 20,
+    gap: 24,
   },
   centerContainer: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   emptyCard: {
     width: '100%',
-    padding: 24,
   },
   listContent: {
     paddingHorizontal: 20,

@@ -20,21 +20,21 @@ export function LegalDocumentView({ title, text }: LegalDocumentViewProps) {
     return lines.map((line, index) => {
       if (line.startsWith('## ')) {
         return (
-          <Text key={index} accessibilityRole="header" style={[styles.h2, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+          <Text key={index} accessibilityRole="header" style={[styles.h2, { color: colors.textPrimary, ...typography.font.bold }]}>
             {line.replace('## ', '')}
           </Text>
         );
       }
       if (line.startsWith('# ')) {
         return (
-          <Text key={index} accessibilityRole="header" style={[styles.h1, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+          <Text key={index} accessibilityRole="header" style={[styles.h1, { color: colors.textPrimary, ...typography.font.bold }]}>
             {line.replace('# ', '')}
           </Text>
         );
       }
       if (line.startsWith('- ')) {
         return (
-          <Text key={index} style={[styles.listItem, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+          <Text key={index} style={[styles.listItem, { color: colors.textSecondary, ...typography.font.regular }]}>
             • {line.replace('- ', '')}
           </Text>
         );
@@ -43,7 +43,7 @@ export function LegalDocumentView({ title, text }: LegalDocumentViewProps) {
         return <View key={index} style={styles.spacer} />;
       }
       return (
-        <Text key={index} style={[styles.paragraph, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+        <Text key={index} style={[styles.paragraph, { color: colors.textSecondary, ...typography.font.regular }]}>
           {line}
         </Text>
       );
@@ -59,7 +59,7 @@ export function LegalDocumentView({ title, text }: LegalDocumentViewProps) {
           onPress={() => router.back()} 
           accessibilityLabel="Voltar"
         />
-        <Text style={[styles.headerTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary, ...typography.font.bold }]}>
           {title}
         </Text>
         <View style={{ width: 44 }} />

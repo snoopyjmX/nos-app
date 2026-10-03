@@ -1,10 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, Platform, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  Platform,
+  useWindowDimensions,
+  ScrollView,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
-import { PressableScale } from '@/components/ui/PressableScale';
+import { Button, PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { WebDatePicker } from '@/components/ui/WebDatePicker';
+import { useReducedMotion } from '@/lib/hooks/useAccessibility';
 import { useTheme } from '@/theme';
 
 interface AnniversaryModalProps {
@@ -28,226 +39,182 @@ export function AnniversaryModal({
   onSave,
   onClose,
 }: AnniversaryModalProps) {
-  const { colors, typography, isDark } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
+
+  const formattedDate = tempDate.toLocaleDateString('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={() => !savingDate && onClose()}
     >
-      <View style={styles.modalOverlay}>
-        <View
-          style={[
-            styles.modalCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
+      <View style={styles.overlay}>
+        {/* Fundo: scrim de vidro que desfoca suavemente a interface */}
+        <LiquidGlassView variant="scrim" borderRadius={0} style={StyleSheet.absoluteFill} />
+
+        <Animated.View
+          entering={reducedMotion ? FadeIn.duration(150) : SlideInDown.springify().damping(20).stiffness(180)}
         >
-          <View style={[styles.modalHandle, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#E2E8F0' }]} />
+          <LiquidGlassView
+            variant="hero"
+            readable
+            borderRadius={0}
+            corners={{ borderTopLeftRadius: radii.lg + 8, borderTopRightRadius: radii.lg + 8 }}
+            style={[
+              styles.sheet,
+              {
+                paddingHorizontal: spacing[20],
+                paddingBottom: insets.bottom + spacing[24],
+                maxHeight: windowHeight * 0.9,
+              },
+            ]}
+          >
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
-          <View style={styles.modalHeaderRow}>
-            <View
-              style={[
-                styles.modalIconBadge,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(157, 146, 240, 0.15)'
-                    : 'rgba(124, 111, 224, 0.12)',
-                },
-              ]}
-            >
-              <Feather name="calendar" size={22} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.black }]}>
-                Início do Relacionamento
-              </Text>
-              <Text style={[styles.modalSubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
-                Essa data alimenta o contador da tela Início e a contagem da jornada de vocês.
-              </Text>
-            </View>
-          </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: spacing[16] }}>
+              <View style={[styles.headerRow, { gap: spacing[12] }]}>
+                <View style={[styles.iconBadge, { backgroundColor: colors.primarySoft }]}>
+                  <Feather name="calendar" size={22} color={colors.primaryText} />
+                </View>
+                <View style={styles.headerText}>
+                  <Text
+                    accessibilityRole="header"
+                    style={[styles.title, { color: colors.textPrimary, ...typography.font.black }]}
+                  >
+                    Início da nossa história
+                  </Text>
+                  <Text style={[styles.subtitle, { color: colors.textSecondary, ...typography.font.regular }]}>
+                    Essa data alimenta o contador da tela Início e a jornada de vocês.
+                  </Text>
+                </View>
+              </View>
 
-          {/* Botão de abrir picker no Android */}
-          {Platform.OS === 'android' && (
-            <PressableScale
-              style={styles.androidDateButton}
-              onPress={() => setShowAndroidPicker(true)}
-            >
-              <Feather name="calendar" size={20} color={colors.primary} />
-              <Text style={[styles.androidDateText, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-                {tempDate.toLocaleDateString('pt-BR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </Text>
-            </PressableScale>
-          )}
-
-          {/* Picker nativo no iOS ou quando ativado no Android */}
-          {Platform.OS !== 'web' && (Platform.OS === 'ios' || showAndroidPicker) && (
-            <View style={styles.pickerBox}>
-              <DateTimePicker
-                value={tempDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                maximumDate={new Date()}
-                onChange={onDateChange}
-                textColor={colors.textPrimary}
-              />
-            </View>
-          )}
-
-          {Platform.OS === 'web' && (
-            <WebDatePicker
-              value={tempDate}
-              onChange={(date) => onDateChange({ type: 'set', nativeEvent: { timestamp: date.getTime() } } as any, date)}
-              mode="date"
-            />
-          )}
-
-          {/* Botões de Ação do Modal */}
-          <View style={styles.modalActionsRow}>
-            <PressableScale
-              style={[
-                styles.modalCancelBtn,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(104, 101, 120, 0.08)',
-                },
-              ]}
-              onPress={onClose}
-              disabled={savingDate}
-              accessibilityLabel="Cancelar edição de data"
-            >
-              <Text style={[styles.modalCancelText, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
-                Cancelar
-              </Text>
-            </PressableScale>
-
-            <PressableScale
-              style={[
-                styles.modalSaveBtn,
-                savingDate && styles.btnDisabled,
-              ]}
-              onPress={onSave}
-              disabled={savingDate}
-              accessibilityLabel="Salvar data comemorativa"
-            >
-              <LinearGradient
-                colors={['#7C6FE0', '#F58FA8']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFill}
-              />
-              {savingDate ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <Text style={[styles.modalSaveText, { fontFamily: typography.fontFamily.bold }]}>Salvar Data</Text>
-                  <Feather name="heart" size={16} color="#FFFFFF" />
-                </>
+              {Platform.OS === 'android' && (
+                <PressableScale
+                  onPress={() => setShowAndroidPicker(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Data de início: ${formattedDate}. Toque para alterar`}
+                >
+                  <View style={[styles.dateButton, { backgroundColor: colors.primarySoft, borderRadius: radii.md }]}>
+                    <Feather name="calendar" size={20} color={colors.primaryText} />
+                    <Text style={[styles.dateText, { color: colors.textPrimary, ...typography.font.bold }]}>
+                      {formattedDate}
+                    </Text>
+                  </View>
+                </PressableScale>
               )}
-            </PressableScale>
-          </View>
-        </View>
+
+              {Platform.OS !== 'web' && (Platform.OS === 'ios' || showAndroidPicker) && (
+                <View style={styles.pickerBox}>
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    maximumDate={new Date()}
+                    onChange={onDateChange}
+                    textColor={colors.textPrimary}
+                  />
+                </View>
+              )}
+
+              {Platform.OS === 'web' && (
+                <WebDatePicker
+                  value={tempDate}
+                  onChange={(date) =>
+                    onDateChange({ type: 'set', nativeEvent: { timestamp: date.getTime() } } as any, date)
+                  }
+                  mode="date"
+                />
+              )}
+
+              <View style={[styles.actions, { gap: spacing[12] }]}>
+                <View style={styles.actionCancel}>
+                  <Button variant="secondary" onPress={onClose} disabled={savingDate}>
+                    Cancelar
+                  </Button>
+                </View>
+                <View style={styles.actionSave}>
+                  <Button variant="primary" onPress={onSave} loading={savingDate}>
+                    Salvar data
+                  </Button>
+                </View>
+              </View>
+            </ScrollView>
+          </LiquidGlassView>
+        </Animated.View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'flex-end',
   },
-  modalCard: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+  sheet: {
     paddingTop: 12,
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 26,
-    borderWidth: 1,
   },
-  modalHandle: {
+  handle: {
     width: 40,
     height: 4,
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 16,
   },
-  modalHeaderRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
   },
-  modalIconBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+  iconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalTitle: {
-    fontSize: 18,
+  headerText: {
+    flex: 1,
+    minWidth: 0,
   },
-  modalSubtitle: {
-    fontSize: 12,
+  title: {
+    fontSize: 20,
+  },
+  subtitle: {
+    fontSize: 13,
     marginTop: 2,
-    lineHeight: 16,
+    lineHeight: 18,
   },
-  androidDateButton: {
+  dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 12,
+    minHeight: 48,
     paddingHorizontal: 16,
-    borderRadius: 14,
-    marginBottom: 14,
   },
-  androidDateText: {
-    fontSize: 14,
+  dateText: {
+    fontSize: 15,
+    flexShrink: 1,
   },
   pickerBox: {
     alignItems: 'center',
-    marginBottom: 16,
   },
-  modalActionsRow: {
+  actions: {
     flexDirection: 'row',
-    gap: 12,
-    width: '100%',
   },
-  modalCancelBtn: {
+  actionCancel: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  modalCancelText: {
-    fontSize: 14,
-  },
-  modalSaveBtn: {
-    flex: 2,
-    flexDirection: 'row',
-    paddingVertical: 14,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    overflow: 'hidden',
-  },
-  modalSaveText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-  },
-  btnDisabled: {
-    opacity: 0.7,
+  actionSave: {
+    flex: 1.4,
   },
 });

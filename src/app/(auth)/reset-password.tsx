@@ -1,25 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TextInput, Pressable, Alert } from 'react-native';
+import { Text, StyleSheet, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 
 import { supabase } from '@/lib/core/supabase';
 import { useTheme } from '@/theme';
-import { Button, IconButton } from '@/components/ui';
+import { AuthScreen, Button, GlassField } from '@/components/ui';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { colors, typography } = useTheme();
   const params = useLocalSearchParams();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
   const [isError, setIsError] = useState(false);
   
   // Trata os deep links / query params no mount
@@ -60,22 +56,15 @@ export default function ResetPasswordScreen() {
   // Se erro no token (link expirado/inválido)
   if (isError) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.errorCenter}>
-          <Feather name="x-circle" size={48} color={colors.danger} style={{ marginBottom: 16 }} />
-          <Text style={[styles.errorTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-            Link inválido
-          </Text>
-          <Text style={[styles.errorMsg, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
-            Esse link expirou. Peça um novo.
-          </Text>
-          <View style={{ marginTop: 24, width: '100%', maxWidth: 300 }}>
-            <Button variant="primary" onPress={() => router.replace('/(auth)/login')}>
-              Voltar ao Login
-            </Button>
-          </View>
-        </View>
-      </View>
+      <AuthScreen title="Link inválido" onBack={() => router.replace('/(auth)/login')}>
+        <Feather name="x-circle" size={40} color={colors.dangerText} style={styles.errorIcon} />
+        <Text style={[styles.errorMsg, { color: colors.textSecondary, ...typography.font.regular }]}>
+          Esse link expirou. Peça um novo.
+        </Text>
+        <Button variant="primary" onPress={() => router.replace('/(auth)/login')}>
+          Voltar ao login
+        </Button>
+      </AuthScreen>
     );
   }
 
@@ -108,118 +97,54 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <IconButton 
-          icon="arrow-left" 
-          variant="ghost" 
-          onPress={() => router.replace('/(auth)/login')} 
-          accessibilityLabel="Voltar"
-        />
-        <Text style={[styles.headerTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>Nova Senha</Text>
-        <View style={{ width: 44 }} />
-      </View>
+    <AuthScreen title="Nova senha" onBack={() => router.replace('/(auth)/login')}>
+      <Text style={[styles.instruction, { color: colors.textSecondary, ...typography.font.regular }]}>
+        Crie uma nova senha segura com no mínimo 8 caracteres.
+      </Text>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardAvoid}
-      >
-        <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: Math.max(insets.bottom, 24) + 16 },
-          ]}
-          bounces={false}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.formCard}>
-            <Text style={[styles.instructionText, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
-              Crie uma nova senha segura com no mínimo 8 caracteres.
-            </Text>
+      <GlassField
+        label="Nova senha"
+        icon="lock"
+        placeholder="Nova senha"
+        secureTextEntry
+        autoCapitalize="none"
+        autoComplete="new-password"
+        textContentType="newPassword"
+        value={password}
+        onChangeText={setPassword}
+      />
 
-            <View style={styles.inputWrapper}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>Nova Senha</Text>
-              <View style={[styles.inputBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Feather name="lock" size={20} color={colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.textPrimary, fontFamily: typography.fontFamily.medium }, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
-                  placeholderTextColor={colors.textSecondary}
-                  selectionColor={colors.primary}
-                  cursorColor={colors.primary}
-                  placeholder="Nova senha"
-                  secureTextEntry={!isPasswordVisible}
-                  autoCapitalize="none"
-                  value={password}
-                  onChangeText={setPassword}
-                />
-                <Pressable 
-                  onPress={() => setIsPasswordVisible(!isPasswordVisible)} 
-                  style={styles.eyeButton}
-                  accessibilityLabel={isPasswordVisible ? 'Ocultar senha' : 'Mostrar senha'}
-                >
-                  <Feather name={isPasswordVisible ? 'eye-off' : 'eye'} size={20} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-            </View>
+      <GlassField
+        label="Confirmar senha"
+        icon="check-circle"
+        placeholder="Confirme a nova senha"
+        secureTextEntry
+        autoCapitalize="none"
+        autoComplete="new-password"
+        textContentType="newPassword"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+      />
 
-            <View style={styles.inputWrapper}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>Confirmar Senha</Text>
-              <View style={[styles.inputBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Feather name="check-circle" size={20} color={colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.textPrimary, fontFamily: typography.fontFamily.medium }, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
-                  placeholderTextColor={colors.textSecondary}
-                  selectionColor={colors.primary}
-                  cursorColor={colors.primary}
-                  placeholder="Confirme a nova senha"
-                  secureTextEntry={!isConfirmVisible}
-                  autoCapitalize="none"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                />
-                <Pressable 
-                  onPress={() => setIsConfirmVisible(!isConfirmVisible)} 
-                  style={styles.eyeButton}
-                  accessibilityLabel={isConfirmVisible ? 'Ocultar senha' : 'Mostrar senha'}
-                >
-                  <Feather name={isConfirmVisible ? 'eye-off' : 'eye'} size={20} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-            </View>
-
-            <View style={styles.buttonContainer}>
-              <Button
-                onPress={handleSave}
-                loading={loading}
-                variant="primary"
-              >
-                Salvar Senha
-              </Button>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+      <Button onPress={handleSave} loading={loading} variant="primary">
+        Salvar nova senha
+      </Button>
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
-  headerTitle: { fontSize: 18 },
-  keyboardAvoid: { flex: 1 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24 },
-  formCard: { width: '100%', maxWidth: 420, alignSelf: 'center', gap: 20 },
-  instructionText: { fontSize: 15, marginBottom: 10, textAlign: 'center' },
-  inputWrapper: { width: '100%' },
-  inputLabel: { fontSize: 14, marginBottom: 8, marginLeft: 4 },
-  inputBox: { flexDirection: 'row', alignItems: 'center', height: 56, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1.5 },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, height: '100%', fontSize: 16 },
-  eyeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
-  buttonContainer: { marginTop: 16 },
-  errorCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorTitle: { fontSize: 22, marginBottom: 8 },
-  errorMsg: { fontSize: 16, textAlign: 'center' }
+  instruction: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  errorIcon: {
+    alignSelf: 'center',
+  },
+  errorMsg: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
 });

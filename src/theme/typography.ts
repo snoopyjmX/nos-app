@@ -1,11 +1,34 @@
-export const typography = {
-  fontFamily: {
-    regular: 'Nunito_400Regular',
-    medium: 'Nunito_600SemiBold',
-    bold: 'Nunito_700Bold',
-    black: 'Nunito_800ExtraBold',
-    display: 'Fraunces_700Bold', // Ou Quicksand_700Bold dependendo do que estiver instalado
+import { Platform } from 'react-native';
+
+// Plus Jakarta Sans na web/PWA (carregada em +html.tsx) e San Francisco (System) no nativo.
+const FONT_STACK = Platform.select({
+  web: '"Plus Jakarta Sans", -apple-system, sans-serif',
+  default: 'System',
+}) as string;
+
+const fontFamily = {
+  regular: FONT_STACK,
+  medium: FONT_STACK,
+  bold: FONT_STACK,
+  black: FONT_STACK,
+} as const;
+
+// A família é a mesma nos quatro pesos, então o peso viaja junto: use `...typography.font.bold`.
+const font = {
+  regular: { fontFamily: fontFamily.regular, fontWeight: '400' },
+  medium: { fontFamily: fontFamily.medium, fontWeight: '600' },
+  bold: { fontFamily: fontFamily.bold, fontWeight: '700' },
+  black: { fontFamily: fontFamily.black, fontWeight: '800' },
+  // Códigos (ex.: vínculo do casal): caracteres de largura fixa
+  mono: {
+    fontFamily: Platform.select({ ios: 'Menlo', web: 'ui-monospace, Menlo, monospace', default: 'monospace' }) as string,
+    fontWeight: '700',
   },
+} as const;
+
+export const typography = {
+  fontFamily,
+  font,
   fontSize: {
     xs: 12,
     sm: 14,

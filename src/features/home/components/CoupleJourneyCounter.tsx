@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, AppState, AppStateStatus } from 'react-native';
-import { calculateAccumulatedTime } from '../utils/time';
+import { calculateAccumulatedTime, formatFullDate } from '../utils/time';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 
 import { useTheme } from '@/theme';
 
@@ -13,7 +14,7 @@ interface CoupleJourneyCounterProps {
 export const CoupleJourneyCounter = React.memo(function CoupleJourneyCounter({
   startDate,
 }: CoupleJourneyCounterProps) {
-  const { colors, typography, isDark } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
   const [timeTotals, setTimeTotals] = useState(() => calculateAccumulatedTime(startDate));
   const [animatedDays, setAnimatedDays] = useState(() => {
     return hasAnimatedHeroCounterThisSession ? timeTotals.days : 0;
@@ -111,77 +112,104 @@ export const CoupleJourneyCounter = React.memo(function CoupleJourneyCounter({
     return () => cancelAnimationFrame(frameId);
   }, [timeTotals.days]);
 
+  const { breakdownMonths, breakdownDays, breakdownHours } = timeTotals;
+  const sinceLabel = startDate ? `Desde ${formatFullDate(startDate)}` : 'Nossa jornada';
+
+  const capsules = [
+    { key: 'months', value: breakdownMonths, label: breakdownMonths === 1 ? 'mês' : 'meses' },
+    { key: 'days', value: breakdownDays, label: breakdownDays === 1 ? 'dia' : 'dias' },
+    { key: 'hours', value: breakdownHours, label: breakdownHours === 1 ? 'hora' : 'horas' },
+  ];
+
+  const spokenLabel = `${sinceLabel}. Juntos há ${timeTotals.days} ${
+    timeTotals.days === 1 ? 'dia' : 'dias'
+  }: ${capsules.map((c) => `${c.value} ${c.label}`).join(', ')}`;
+
   return (
-    <View style={styles.journeyContent}>
-      <Text style={styles.journeyLabel}>NOSSA JORNADA</Text>
-      <Text style={styles.journeyTitle}>Juntos há</Text>
-      <Text style={styles.journeyDaysDisplay}>{animatedDays} dias</Text>
+    <View accessible accessibilityRole="text" accessibilityLabel={spokenLabel}>
       <View
-        style={[
-          styles.journeyBreakdownPill,
-          {
-            backgroundColor: colors.primarySoft,
-            borderColor: colors.border,
-          },
-        ]}
+        style={{ gap: spacing[16] }}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
       >
-        <Text
-          style={[
-            styles.journeyBreakdownText,
-            { color: colors.primary },
-          ]}
-        >
-          {timeTotals.breakdownMonths}{' '}
-          {timeTotals.breakdownMonths === 1 ? 'mês' : 'meses'} •{' '}
-          {timeTotals.breakdownDays}{' '}
-          {timeTotals.breakdownDays === 1 ? 'dia' : 'dias'} •{' '}
-          {timeTotals.breakdownHours}h
-        </Text>
+        <View style={styles.headline}>
+          <Text style={[styles.since, { color: colors.textSecondary, ...typography.font.bold }]}>
+            {sinceLabel.toUpperCase()}
+          </Text>
+          <View style={styles.daysRow}>
+            <Text style={[styles.daysNumber, { color: colors.textPrimary, ...typography.font.black }]}>
+              {animatedDays}
+            </Text>
+            <Text style={[styles.daysUnit, { color: colors.primaryText, ...typography.font.black }]}>
+              {timeTotals.days === 1 ? 'dia juntos' : 'dias juntos'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={[styles.capsules, { gap: spacing[8] }]}>
+          {capsules.map((capsule) => (
+            <LiquidGlassView
+              key={capsule.key}
+              variant="pill"
+              borderRadius={radii.md}
+              style={styles.capsule}
+            >
+              <Text style={[styles.capsuleValue, { color: colors.textPrimary, ...typography.font.black }]}>
+                {capsule.value}
+              </Text>
+              <Text style={[styles.capsuleLabel, { color: colors.textSecondary, ...typography.font.medium }]}>
+                {capsule.label}
+              </Text>
+            </LiquidGlassView>
+          ))}
+        </View>
       </View>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  journeyContent: {
-    alignSelf: 'flex-start',
+  headline: {
+    gap: 2,
   },
-  journeyLabel: {
-    fontSize: 11,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
+  since: {
+    fontSize: 12,
     letterSpacing: 1.2,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginBottom: 2,
   },
-  journeyTitle: {
-    fontSize: 22,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
+  daysRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    columnGap: 10,
   },
-  journeyDaysDisplay: {
-    fontSize: 40,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    color: '#DDD6FE',
-    letterSpacing: -0.8,
-    lineHeight: 44,
-    marginBottom: 10,
+  daysNumber: {
+    fontSize: 64,
+    lineHeight: 72,
+    letterSpacing: -2,
     fontVariant: ['tabular-nums'],
   },
-  journeyBreakdownPill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
+  daysUnit: {
+    fontSize: 20,
+    letterSpacing: -0.3,
   },
-  journeyBreakdownText: {
-    fontSize: 13,
-    fontFamily: 'Nunito_800ExtraBold',
-    fontWeight: '800',
-    letterSpacing: -0.2,
+  capsules: {
+    flexDirection: 'row',
+  },
+  capsule: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  capsuleValue: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontVariant: ['tabular-nums'],
+  },
+  capsuleLabel: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });

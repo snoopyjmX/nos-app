@@ -23,3 +23,6 @@ export const radii = {
 
 export type SpacingToken = keyof typeof spacing;
 export type RadiiToken = keyof typeof radii;
+
+// Largura máxima da coluna de conteúdo e da dock em telas largas (iPad, desktop, Safari largo).
+export const MAX_CONTENT_WIDTH = 560;

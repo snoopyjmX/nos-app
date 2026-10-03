@@ -45,7 +45,7 @@ export function EmptyState({
           styles.title,
           {
             color: colors.textPrimary,
-            fontFamily: typography.fontFamily.bold,
+            ...typography.font.bold,
             fontSize: typography.fontSize.lg,
             marginBottom: spacing[8],
           },
@@ -58,7 +58,7 @@ export function EmptyState({
           styles.description,
           {
             color: colors.textSecondary,
-            fontFamily: typography.fontFamily.regular,
+            ...typography.font.regular,
             fontSize: typography.fontSize.md,
             marginBottom: actionLabel ? spacing[24] : 0,
           },

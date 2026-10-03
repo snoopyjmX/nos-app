@@ -74,7 +74,7 @@ export function Toast() {
             styles.messageText,
             { 
               color: colors.textPrimary,
-              fontFamily: typography.fontFamily.medium,
+              ...typography.font.medium,
               fontSize: typography.fontSize.sm,
             }
           ]}
@@ -100,7 +100,7 @@ export function Toast() {
                 styles.actionButtonText, 
                 { 
                   color: colors.accent,
-                  fontFamily: typography.fontFamily.bold,
+                  ...typography.font.bold,
                 }
               ]}
             >

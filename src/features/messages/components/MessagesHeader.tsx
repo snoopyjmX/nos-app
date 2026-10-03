@@ -1,81 +1,82 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
-import { IconButton } from '@/components/ui';
+import { View, Text, StyleSheet } from 'react-native';
+import { Avatar, IconButton } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { useTheme } from '@/theme';
 
 interface MessagesHeaderProps {
-  insets: any;
+  topInset: number;
   onGoBack: () => void;
-  partnerName?: string;
-  
+  partnerName: string;
+  partnerAvatarUri?: string | null;
 }
 
-export function MessagesHeader({ insets, onGoBack, partnerName, }: MessagesHeaderProps) {
-  const { colors, typography, shadows } = useTheme();
+export function MessagesHeader({
+  topInset,
+  onGoBack,
+  partnerName,
+  partnerAvatarUri,
+}: MessagesHeaderProps) {
+  const { colors, typography, radii, spacing } = useTheme();
 
   return (
-    <View 
-      style={[
-        styles.headerContainer, 
-        { 
-          paddingTop: insets.top,
-          backgroundColor: colors.background,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          ...shadows.soft,
-        }
-      ]}
+    <View
+      style={{ paddingTop: topInset + spacing[8], paddingHorizontal: spacing[16] }}
     >
-      <View style={styles.headerContentRow}>
-        <IconButton 
-          icon="arrow-left" 
-          variant="secondary" 
-          onPress={onGoBack} 
+      <LiquidGlassView
+        variant="hero"
+        borderRadius={radii.lg}
+        style={[styles.card, { gap: spacing[12], paddingHorizontal: spacing[12], paddingVertical: spacing[12] }]}
+      >
+        <IconButton
+          icon="arrow-left"
+          variant="secondary"
+          onPress={onGoBack}
           accessibilityLabel="Voltar"
         />
 
-        <View style={styles.headerBrandWrapper}>
-          <Text style={[styles.headerBrandTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-            {partnerName || 'nós.'}
-          </Text>
+        <Avatar url={partnerAvatarUri} name={partnerName} size={44} />
+
+        <View style={styles.identity}>
           <Text
-            style={[styles.headerCoupleSubtitle, { color: colors.primary, fontFamily: typography.fontFamily.medium }]}
+            accessibilityRole="header"
+            style={[styles.name, { color: colors.textPrimary, ...typography.font.black }]}
             numberOfLines={1}
           >
-            'Bilhetes carinhosos'
+            {partnerName}
           </Text>
+          <LiquidGlassView variant="pill" readable borderRadius={radii.pill} style={styles.badge}>
+            <Text style={[styles.badgeText, { color: colors.textSecondary, ...typography.font.bold }]}>
+              Espaço privado
+            </Text>
+          </LiquidGlassView>
         </View>
-      </View>
+      </LiquidGlassView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 30,
-  },
-  headerContentRow: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 8 : 10,
-    paddingBottom: 12,
-    gap: 12,
   },
-  headerBrandWrapper: {
+  identity: {
     flex: 1,
-    justifyContent: 'center',
+    minWidth: 0,
+    gap: 4,
+    alignItems: 'flex-start',
   },
-  headerBrandTitle: {
+  name: {
     fontSize: 20,
     letterSpacing: -0.4,
+    alignSelf: 'stretch',
   },
-  headerCoupleSubtitle: {
-    fontSize: 13,
-    marginTop: -2,
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  badgeText: {
+    fontSize: 12,
   },
 });

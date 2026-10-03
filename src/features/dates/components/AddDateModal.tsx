@@ -8,10 +8,15 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Button, IconButton, PressableScale, WebDatePicker } from '@/components/ui';
+import { AnimatedIcon, Button, IconButton, PressableScale, WebDatePicker } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
+import { useReducedMotion } from '@/lib/hooks/useAccessibility';
 import { useTheme } from '@/theme';
 import { formatFullDatePTBR, formatTimePTBR, CATEGORIES } from '../utils/formatting';
 
@@ -54,37 +59,44 @@ export function AddDateModal({
   submitting,
   onSave,
 }: AddDateModalProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={StyleSheet.absoluteFill} />
+        {/* Fundo: scrim de vidro que desfoca suavemente a interface */}
+        <LiquidGlassView variant="scrim" borderRadius={0} style={StyleSheet.absoluteFill} />
 
-        <View
+        <Animated.View
+          entering={reducedMotion ? FadeIn.duration(150) : SlideInDown.springify().damping(20).stiffness(180)}
+        >
+        <LiquidGlassView
+          variant="hero"
+          readable
+          borderRadius={0}
+          corners={{ borderTopLeftRadius: radii.lg + 8, borderTopRightRadius: radii.lg + 8 }}
           style={[
             styles.modalContent,
-            {
-              backgroundColor: colors.surface,
-              borderRadius: radii.lg,
-              ...shadows.medium,
-            },
+            { paddingBottom: insets.bottom + spacing[24], maxHeight: windowHeight * 0.9 },
           ]}
         >
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+            <Text accessibilityRole="header" style={[styles.modalTitle, { color: colors.textPrimary, ...typography.font.bold }]}>
               {isEditing ? 'Editar Data' : 'Nova Data Especial'}
             </Text>
-            <IconButton icon="x" variant="ghost" onPress={onClose} />
+            <IconButton icon="x" variant="ghost" onPress={onClose} accessibilityLabel="Fechar" />
           </View>
 
           <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
             {/* O que vamos celebrar? */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, ...typography.font.bold }]}>
                 O que vamos celebrar?
               </Text>
               <View
@@ -97,9 +109,10 @@ export function AddDateModal({
                 ]}
               >
                 <TextInput
-                  style={[styles.textInput, { color: colors.textPrimary, fontFamily: typography.fontFamily.regular }]}
+                  style={[styles.textInput, { color: colors.textPrimary, ...typography.font.regular }]}
                   placeholder="Ex: Aniversário de namoro, Viagem para Paris..."
-                  placeholderTextColor={colors.textSecondary}
+                  placeholderTextColor={colors.textMuted}
+                  accessibilityLabel="Nome da data especial"
                   value={newTitle}
                   onChangeText={setNewTitle}
                   maxLength={50}
@@ -110,7 +123,7 @@ export function AddDateModal({
 
             {/* Categoria */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, ...typography.font.bold }]}>
                 Categoria
               </Text>
               <View style={styles.categoriesRow}>
@@ -119,28 +132,35 @@ export function AddDateModal({
                   return (
                     <PressableScale
                       key={cat.id}
-                      style={[
-                        styles.categoryOption,
-                        {
-                          backgroundColor: isSelected ? cat.color : colors.primarySoft,
-                          borderRadius: radii.pill,
-                        },
-                      ]}
                       onPress={() => setNewCategory(cat.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Categoria ${cat.label}`}
+                      accessibilityState={{ selected: isSelected }}
                     >
-                      <Feather
-                        name={cat.icon as any}
-                        size={14}
-                        color={isSelected ? '#FFFFFF' : colors.textSecondary}
-                      />
-                      <Text
-                        style={[
-                          styles.categoryOptionText,
-                          { color: isSelected ? '#FFFFFF' : colors.textSecondary, fontFamily: typography.fontFamily.regular },
-                        ]}
+                      <LiquidGlassView
+                        variant="pill"
+                        readable
+                        tintColor={isSelected ? colors.primarySoft : undefined}
+                        borderRadius={radii.pill}
+                        style={styles.categoryOption}
                       >
-                        {cat.label}
-                      </Text>
+                        <AnimatedIcon
+                          name={cat.icon}
+                          size={15}
+                          color={isSelected ? colors.primaryText : colors.textSecondary}
+                          active={isSelected}
+                        />
+                        <Text
+                          style={[
+                            styles.categoryOptionText,
+                            isSelected
+                              ? { color: colors.primaryText, ...typography.font.bold }
+                              : { color: colors.textSecondary, ...typography.font.medium },
+                          ]}
+                        >
+                          {cat.label}
+                        </Text>
+                      </LiquidGlassView>
                     </PressableScale>
                   );
                 })}
@@ -149,7 +169,7 @@ export function AddDateModal({
 
             {/* Data */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, ...typography.font.bold }]}>
                 Data do Evento
               </Text>
               <PressableScale
@@ -167,8 +187,8 @@ export function AddDateModal({
                   if (showTimePicker) setShowTimePicker(false);
                 }}
               >
-                <Feather name="calendar" size={18} color={colors.primary} />
-                <Text style={[styles.dateTimeButtonText, { color: colors.textPrimary, fontFamily: typography.fontFamily.regular }]}>
+                <Feather name="calendar" size={18} color={colors.primaryText} />
+                <Text style={[styles.dateTimeButtonText, { color: colors.textPrimary, ...typography.font.regular }]}>
                   {formatFullDatePTBR(selectedDate.toISOString())}
                 </Text>
                 <Feather
@@ -181,8 +201,8 @@ export function AddDateModal({
 
             {/* DatePicker */}
             {Platform.OS !== 'web' && showDatePicker && (
-              <View style={styles.pickerBox}>
-                <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+              <View style={[styles.pickerBox, { backgroundColor: colors.primarySoft }]}>
+                <Text style={[styles.pickerTitle, { color: colors.textSecondary, ...typography.font.bold }]}>
                   Selecione o Dia
                 </Text>
                 <DateTimePicker
@@ -201,8 +221,8 @@ export function AddDateModal({
             )}
 
             {Platform.OS === 'web' && showDatePicker && (
-              <View style={styles.pickerBox}>
-                <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+              <View style={[styles.pickerBox, { backgroundColor: colors.primarySoft }]}>
+                <Text style={[styles.pickerTitle, { color: colors.textSecondary, ...typography.font.bold }]}>
                   Selecione o Dia
                 </Text>
                 <WebDatePicker
@@ -218,7 +238,7 @@ export function AddDateModal({
 
             {/* Horário Opcional */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, ...typography.font.bold }]}>
                 Horário (Opcional)
               </Text>
               <PressableScale
@@ -241,8 +261,8 @@ export function AddDateModal({
                   }
                 }}
               >
-                <Feather name="clock" size={18} color={colors.primary} />
-                <Text style={[styles.dateTimeButtonText, { color: colors.textPrimary, fontFamily: typography.fontFamily.regular }]}>
+                <Feather name="clock" size={18} color={colors.primaryText} />
+                <Text style={[styles.dateTimeButtonText, { color: colors.textPrimary, ...typography.font.regular }]}>
                   {selectedTime ? formatTimePTBR(selectedTime.toISOString()) : 'Adicionar Horário'}
                 </Text>
                 <Feather
@@ -260,7 +280,7 @@ export function AddDateModal({
                     setShowTimePicker(false);
                   }}
                 >
-                  <Text style={[styles.clearTimeText, { color: colors.danger, fontFamily: typography.fontFamily.regular }]}>
+                  <Text style={[styles.clearTimeText, { color: colors.danger, ...typography.font.regular }]}>
                     Remover Horário
                   </Text>
                 </PressableScale>
@@ -269,8 +289,8 @@ export function AddDateModal({
 
             {/* TimePicker */}
             {Platform.OS !== 'web' && showTimePicker && (
-              <View style={styles.pickerBox}>
-                <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+              <View style={[styles.pickerBox, { backgroundColor: colors.primarySoft }]}>
+                <Text style={[styles.pickerTitle, { color: colors.textSecondary, ...typography.font.bold }]}>
                   Selecione o Horário
                 </Text>
                 <DateTimePicker
@@ -290,8 +310,8 @@ export function AddDateModal({
             )}
 
             {Platform.OS === 'web' && showTimePicker && (
-              <View style={styles.pickerBox}>
-                <Text style={[styles.pickerTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
+              <View style={[styles.pickerBox, { backgroundColor: colors.primarySoft }]}>
+                <Text style={[styles.pickerTitle, { color: colors.textSecondary, ...typography.font.bold }]}>
                   Selecione o Horário
                 </Text>
                 <WebDatePicker
@@ -314,7 +334,8 @@ export function AddDateModal({
               </View>
             </View>
           </ScrollView>
-        </View>
+        </LiquidGlassView>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -323,13 +344,10 @@ export function AddDateModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'flex-end',
   },
   modalContent: {
     paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
-    maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -368,11 +386,9 @@ const styles = StyleSheet.create({
   categoryOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    minHeight: 44,
   },
   categoryOptionText: {
     fontSize: 13,
@@ -398,7 +414,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   pickerBox: {
-    backgroundColor: 'rgba(0,0,0,0.02)',
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,

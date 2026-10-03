@@ -14,6 +14,10 @@ export const theme = {
   motion,
 } as const;
 
+export function getThemeColors(isDark: boolean) {
+  return isDark ? colors.dark : colors.light;
+}
+
 export function useTheme() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';

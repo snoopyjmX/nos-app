@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme';
 import { PressableScale } from './PressableScale';
 
@@ -27,7 +28,7 @@ export function Button({
     if (disabled && variant === 'primary') return colors.primarySoft;
     switch (variant) {
       case 'primary':
-        return colors.primary;
+        return 'transparent'; // o gradiente lavanda é desenhado atrás do texto
       case 'secondary':
         return colors.primarySoft;
       case 'ghost':
@@ -41,12 +42,12 @@ export function Button({
     if (disabled && variant === 'primary') return colors.textSecondary;
     switch (variant) {
       case 'primary':
-        return colors.surface; // Texto claro sobre fundo escuro
+        return colors.onPrimary; // texto escuro sobre lavanda
       case 'secondary':
       case 'ghost':
-        return colors.primary;
+        return colors.primaryText;
       default:
-        return colors.surface;
+        return colors.onPrimary;
     }
   };
 
@@ -57,15 +58,24 @@ export function Button({
       style={[
         styles.button,
         {
-          backgroundColor: getBackgroundColor(),
           borderRadius: radii.pill,
           paddingVertical: spacing[12],
           paddingHorizontal: spacing[24],
           width: fullWidth ? '100%' : 'auto',
           opacity: disabled && variant !== 'primary' ? 0.5 : 1,
+          overflow: 'hidden',
+          backgroundColor: disabled && variant === 'primary' ? colors.primarySoft : getBackgroundColor(),
         },
       ]}
     >
+      {variant === 'primary' && !disabled ? (
+        <LinearGradient
+          colors={[colors.glow, colors.primary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       {loading ? (
         <ActivityIndicator color={getTextColor()} />
       ) : (
@@ -74,7 +84,7 @@ export function Button({
             styles.text,
             {
               color: getTextColor(),
-              fontFamily: typography.fontFamily.bold,
+              ...typography.font.bold,
               fontSize: typography.fontSize.md,
             },
           ]}

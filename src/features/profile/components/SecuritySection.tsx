@@ -1,126 +1,88 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { AnimatedIcon } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { useTheme } from '@/theme';
 
+const ITEMS = [
+  {
+    key: 'private',
+    icon: 'shield' as const,
+    title: 'Espaço privado e exclusivo',
+    description: 'Apenas você e seu parceiro(a) têm acesso a este espaço.',
+  },
+  {
+    key: 'confidential',
+    icon: 'lock' as const,
+    title: 'Só de vocês dois',
+    description: 'Suas fotos, memórias e recados ficam visíveis somente para o casal.',
+  },
+];
+
 export function SecuritySection() {
-  const { colors, typography, radii, isDark } = useTheme();
-  
+  const { colors, typography, radii, spacing } = useTheme();
 
   return (
-    <View style={styles.sectionBlock}>
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.bold }]}>
-          PREFERÊNCIAS & SEGURANÇA
-        </Text>
-      </View>
-
-      <View
-        style={[
-          styles.securityCard,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: radii.md,
-          },
-        ]}
+    <View style={{ marginBottom: spacing[20] }}>
+      <Text
+        accessibilityRole="header"
+        style={[styles.sectionTitle, { color: colors.textSecondary, marginBottom: spacing[8], ...typography.font.bold }]}
       >
-        <View style={styles.securityRow}>
-          <View
-            style={[
-              styles.securityIconBox,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(34, 197, 94, 0.15)'
-                  : 'rgba(34, 197, 94, 0.10)',
-              },
-            ]}
-          >
-            <Feather name="shield" size={20} color="#22C55E" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.securityTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-              Espaço Privado & Seguro
-            </Text>
-            <Text style={[styles.securitySubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
-              Apenas você e seu parceiro(a) têm acesso a este espaço. Tudo é guardado com segurança.
-            </Text>
-          </View>
-        </View>
+        PRIVACIDADE
+      </Text>
 
-        <View style={[styles.securityDivider, { backgroundColor: colors.border }]} />
-
-        <View style={styles.securityRow}>
-          <View
-            style={[
-              styles.securityIconBox,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(157, 146, 240, 0.15)'
-                  : 'rgba(124, 111, 224, 0.10)',
-              },
-            ]}
-          >
-            <Feather name="lock" size={20} color={colors.primary} />
+      <LiquidGlassView variant="card" readable borderRadius={radii.md} style={{ padding: spacing[16], gap: spacing[16] }}>
+        {ITEMS.map((item, index) => (
+          <View key={item.key}>
+            {index > 0 ? <View style={[styles.divider, { backgroundColor: colors.border, marginBottom: spacing[16] }]} /> : null}
+            <View style={[styles.row, { gap: spacing[12] }]}>
+              <View style={[styles.iconBox, { backgroundColor: colors.primarySoft }]}>
+                <AnimatedIcon name={item.icon} size={20} color={colors.primaryText} />
+              </View>
+              <View style={styles.text}>
+                <Text style={[styles.title, { color: colors.textPrimary, ...typography.font.bold }]}>{item.title}</Text>
+                <Text style={[styles.description, { color: colors.textSecondary, ...typography.font.regular }]}>
+                  {item.description}
+                </Text>
+              </View>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.securityTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
-              Privado e Protegido
-            </Text>
-            <Text style={[styles.securitySubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
-              Suas fotos, memórias e recados são estritamente confidenciais.
-            </Text>
-          </View>
-        </View>
-
-      </View>
+        ))}
+      </LiquidGlassView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionBlock: {
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    marginBottom: 10,
-    paddingHorizontal: 4,
-  },
   sectionTitle: {
     fontSize: 11,
     letterSpacing: 1.2,
+    paddingHorizontal: 4,
   },
-  securityCard: {
-    padding: 16,
-    borderWidth: 1,
-    shadowColor: '#5B4294',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  securityRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
-  securityIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  securityTitle: {
-    fontSize: 14,
+  text: {
+    flex: 1,
+    minWidth: 0,
+  },
+  title: {
+    fontSize: 15,
     marginBottom: 2,
   },
-  securitySubtitle: {
-    fontSize: 12,
-    lineHeight: 17,
+  description: {
+    fontSize: 13,
+    lineHeight: 19,
   },
-  securityDivider: {
-    height: 1,
-    marginVertical: 12,
+  divider: {
+    height: StyleSheet.hairlineWidth,
   },
 });

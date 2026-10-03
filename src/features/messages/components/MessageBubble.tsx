@@ -1,11 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { ZoomIn, FadeIn } from 'react-native-reanimated';
+import { Avatar } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { useTheme } from '@/theme';
 import { Message, UserProfile } from '../types';
 import { formatMessageTime } from '../utils/dateFormatting';
+
+const BUBBLE_RADIUS = 20;
+const TAIL_RADIUS = 6;
+const AVATAR_SIZE = 28;
 
 interface MessageBubbleProps {
   item: Message;
@@ -32,227 +37,146 @@ export function MessageBubble({
   reducedMotion,
   isNew,
 }: MessageBubbleProps) {
-  const { colors, typography, shadows, isDark } = useTheme();
-
-  const avatar = (
-    <View
-      style={[
-        styles.avatarContainer,
-        {
-          backgroundColor: colors.primarySoft,
-          borderColor: isMe ? colors.primary : colors.border,
-        },
-      ]}
-    >
-      {avatarUri ? (
-        <Image
-          source={{ uri: avatarUri }}
-          style={styles.avatarImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.avatarFallback}>
-          <LinearGradient
-            colors={
-              isMe
-                ? [colors.primary, colors.primary]
-                : [colors.primarySoft, colors.primarySoft]
-            }
-            style={StyleSheet.absoluteFill}
-          />
-          <Feather
-            name="user"
-            size={14}
-            color={isMe ? '#FFFFFF' : colors.primary}
-          />
-        </View>
-      )}
-    </View>
-  );
+  const { colors, typography, radii, spacing } = useTheme();
 
   const balloonEntering = isNew
-    ? (reducedMotion ? FadeIn.duration(150) : ZoomIn.duration(220))
+    ? reducedMotion
+      ? FadeIn.duration(150)
+      : ZoomIn.duration(220)
     : undefined;
+
+  const time = formatMessageTime(item.created_at);
+  const authorName = isMe ? 'Você' : authorProfile?.name?.split(' ')[0] || 'Seu amor';
+  const statusLabel = isSending ? 'Enviando…' : time;
+
+  // Cauda sutil só no último balão do grupo, no canto junto ao autor.
+  const corners = isMe
+    ? { borderBottomRightRadius: isLastInGroup ? TAIL_RADIUS : BUBBLE_RADIUS }
+    : { borderBottomLeftRadius: isLastInGroup ? TAIL_RADIUS : BUBBLE_RADIUS };
 
   return (
     <View>
       {showDaySeparator && (
-        <View style={styles.daySeparatorContainer}>
-          <View
-            style={[
-              styles.daySeparatorChip,
-              {
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(124, 111, 224, 0.08)',
-                borderColor: colors.border,
-              },
-            ]}
-          >
+        <View style={[styles.daySeparator, { marginVertical: spacing[16] }]}>
+          <LiquidGlassView variant="pill" readable borderRadius={radii.pill} style={styles.dayChip}>
             <Text
-              style={[
-                styles.daySeparatorText,
-                { color: colors.textSecondary, fontFamily: typography.fontFamily.bold },
-              ]}
+              accessibilityRole="header"
+              style={[styles.dayText, { color: colors.textSecondary, ...typography.font.bold }]}
             >
               {dayLabel}
             </Text>
-          </View>
+          </LiquidGlassView>
         </View>
       )}
 
       <View
         style={[
-          styles.messageRow,
-          isMe ? styles.messageRowMe : styles.messageRowPartner,
-          { marginBottom: isLastInGroup ? 12 : 3 },
+          styles.row,
+          isMe ? styles.rowMe : styles.rowPartner,
+          { marginBottom: isLastInGroup ? 14 : 4 },
         ]}
       >
-        {!isMe && (isLastInGroup ? avatar : <View style={styles.avatarSpacer} />)}
+        {!isMe &&
+          (isLastInGroup ? (
+            <Avatar url={avatarUri} name={authorName} size={AVATAR_SIZE} />
+          ) : (
+            <View style={styles.avatarSpacer} />
+          ))}
 
-        {isMe ? (
-          <Animated.View
-            entering={balloonEntering}
-            style={[
-              styles.messageBubble,
-              styles.bubbleMe,
-              !isLastInGroup && { borderBottomRightRadius: 20 },
-              isSending && { opacity: 0.7 },
-              shadows.soft,
-            ]}
-          >
-            <LinearGradient
-              colors={[colors.primary, colors.primary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <Text style={[styles.messageTextMe, { fontFamily: typography.fontFamily.regular }]}>{item.content}</Text>
-            <Text style={[styles.messageTimeMe, { fontFamily: typography.fontFamily.regular }]}>
-              {isSending ? 'enviando...' : formatMessageTime(item.created_at)}
-            </Text>
-          </Animated.View>
-        ) : (
-          <Animated.View
-            entering={balloonEntering}
-            style={[
-              styles.messageBubble,
-              styles.bubblePartner,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-              !isLastInGroup && { borderBottomLeftRadius: 20 },
-              shadows.soft,
-            ]}
-          >
-            <Text
+        <Animated.View
+          entering={balloonEntering}
+          style={[styles.balloonWrapper, isSending && styles.sending]}
+          accessible
+          accessibilityLabel={`${authorName}, ${isSending ? 'enviando' : time}: ${item.content}`}
+        >
+          {isMe ? (
+            <View
               style={[
-                styles.messageTextPartner,
-                { color: colors.textPrimary, fontFamily: typography.fontFamily.regular },
+                styles.bubble,
+                styles.bubbleMe,
+                { borderRadius: BUBBLE_RADIUS },
+                corners,
               ]}
             >
-              {item.content}
-            </Text>
-            <Text
-              style={[
-                styles.messageTimePartner,
-                { color: colors.textSecondary, fontFamily: typography.fontFamily.regular },
-              ]}
+              <LinearGradient
+                colors={colors.bubbleSent}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Text style={[styles.text, { color: colors.white, ...typography.font.regular }]}>
+                {item.content}
+              </Text>
+              <Text style={[styles.time, { color: colors.white, ...typography.font.medium }]}>
+                {statusLabel}
+              </Text>
+            </View>
+          ) : (
+            <LiquidGlassView
+              variant="card"
+              readable
+              borderRadius={BUBBLE_RADIUS}
+              corners={corners}
+              style={styles.bubble}
             >
-              {formatMessageTime(item.created_at)}
-            </Text>
-          </Animated.View>
-        )}
-
-        {isMe && (isLastInGroup ? avatar : <View style={styles.avatarSpacer} />)}
+              <Text style={[styles.text, { color: colors.textPrimary, ...typography.font.regular }]}>
+                {item.content}
+              </Text>
+              <Text style={[styles.time, { color: colors.textSecondary, ...typography.font.regular }]}>
+                {time}
+              </Text>
+            </LiquidGlassView>
+          )}
+        </Animated.View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  daySeparatorContainer: {
+  daySeparator: {
     alignItems: 'center',
-    marginVertical: 18,
   },
-  daySeparatorChip: {
+  dayChip: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
   },
-  daySeparatorText: {
+  dayText: {
     fontSize: 12,
   },
-  messageRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    width: '100%',
+    gap: 8,
   },
-  messageRowMe: {
+  rowMe: {
     justifyContent: 'flex-end',
   },
-  messageRowPartner: {
+  rowPartner: {
     justifyContent: 'flex-start',
   },
-  avatarContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
-  avatarFallback: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   avatarSpacer: {
-    width: 28,
+    width: AVATAR_SIZE,
   },
-  messageBubble: {
-    maxWidth: '75%',
+  balloonWrapper: {
+    maxWidth: '78%',
+    flexShrink: 1,
+  },
+  sending: {
+    opacity: 0.7,
+  },
+  bubble: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    overflow: 'hidden',
   },
   bubbleMe: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 4,
-    marginRight: 8,
+    overflow: 'hidden',
   },
-  bubblePartner: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 4,
-    borderBottomRightRadius: 20,
-    marginLeft: 8,
-    borderWidth: 1,
-  },
-  messageTextMe: {
-    color: '#FFFFFF',
+  text: {
     fontSize: 16,
     lineHeight: 22,
   },
-  messageTextPartner: {
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  messageTimeMe: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 11,
-    alignSelf: 'flex-end',
-    marginTop: 4,
-  },
-  messageTimePartner: {
+  time: {
     fontSize: 11,
     alignSelf: 'flex-end',
     marginTop: 4,

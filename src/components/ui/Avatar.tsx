@@ -46,7 +46,7 @@ export function Avatar({ url, name, size = 48, style }: AvatarProps) {
             styles.initials,
             {
               color: colors.primary,
-              fontFamily: typography.fontFamily.bold,
+              ...typography.font.bold,
               fontSize: size * 0.4,
             },
           ]}

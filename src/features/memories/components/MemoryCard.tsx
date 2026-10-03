@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { useTheme } from '@/theme';
 import { MemoryItem, MemberProfile } from '../types';
-import { formatFullDatePTBR, formatSavedAtDateTime } from '../utils/formatting';
+import { formatDayMonthPTBR, formatFullDatePTBR, formatSavedAtDateTime } from '../utils/formatting';
 
 interface MemoryCardProps {
   item: MemoryItem;
@@ -27,7 +29,7 @@ export function MemoryCard({
   onPreview,
   onDelete,
 }: MemoryCardProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+  const { colors, typography, radii, shadows, spacing } = useTheme();
   const imageUrl = item.displayThumbUrl || item.displayUrl || item.image_url;
   const authorProfile = item.created_by ? profileMap.get(item.created_by) : undefined;
   const isMe = item.created_by === user?.id;
@@ -37,74 +39,66 @@ export function MemoryCard({
   return (
     <Animated.View
       layout={reducedMotion ? undefined : LinearTransition.duration(250)}
-      style={styles.cardWrapper}
+      style={[styles.cardWrapper, { marginBottom: spacing[32] }]}
     >
       <PressableScale
         onPress={() => onPreview(item)}
         onLongPress={() => onDelete(item)}
+        accessibilityRole="button"
+        accessibilityLabel={`Memória: ${item.title}, ${formatFullDatePTBR(item.memory_date)}`}
+        accessibilityHint="Toque para ver em tela cheia. Segure para remover."
       >
-        <View
-          style={[
-            styles.memoryCard,
-            {
-              backgroundColor: colors.surface,
-              borderRadius: radii.md,
-              ...shadows.soft,
-            },
-            isHero && styles.heroMemoryCard,
-          ]}
-        >
-          <Image
-            source={{ uri: imageUrl }}
-            style={[styles.cardImage, isHero && styles.heroCardImage]}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-            placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-            recyclingKey={item.id}
-          />
+        {/* Camada externa: só sombra e raio. A interna recorta a foto. */}
+        <View style={[{ borderRadius: radii.lg, backgroundColor: colors.primarySoft }, shadows.soft]}>
+          <View style={[styles.photo, { borderRadius: radii.lg }]}>
+            <Image
+              source={{ uri: imageUrl }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+              recyclingKey={item.id}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            />
+            <LinearGradient colors={colors.photoScrimTop} style={styles.topScrim} pointerEvents="none" />
 
-          <View style={styles.cardContent}>
-            <View style={styles.cardMetaRow}>
-              <View
-                style={[
-                  styles.datePill,
-                  {
-                    backgroundColor: colors.primarySoft,
-                    borderRadius: radii.pill,
-                  },
-                ]}
-              >
-                <Feather name="calendar" size={13} color={colors.primary} />
-                <Text style={[styles.datePillText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>
-                  {formatFullDatePTBR(item.memory_date)}
-                </Text>
-              </View>
-
-              <View style={styles.signatureBadge}>
-                <Feather name="star" size={11} color={colors.accent} />
-                <Text style={[styles.signatureAuthorText, { color: colors.primary, fontFamily: typography.fontFamily.regular }]} numberOfLines={1}>
-                  Eternizado por {authorName}
-                </Text>
-              </View>
-            </View>
-
-            <Text
-              style={[
-                styles.cardTitle,
-                { color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
-                isHero && styles.heroCardTitle,
-              ]}
+            <LiquidGlassView
+              variant="pill"
+              tintColor={colors.photoBadge}
+              borderRadius={radii.pill}
+              style={[styles.dateBadge, { gap: spacing[8] }]}
             >
-              {item.title}
-            </Text>
-
-            <View style={styles.footerRow}>
-              <Text style={[styles.savedAtText, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
-                {formatSavedAtDateTime(item.created_at)}
+              <Feather name="calendar" size={13} color={colors.white} />
+              <Text style={[styles.dateBadgeText, { color: colors.white, ...typography.font.bold }]}>
+                {formatDayMonthPTBR(item.memory_date)}
               </Text>
-            </View>
+            </LiquidGlassView>
           </View>
+        </View>
+
+        {/* Texto corrido sem vidro: legível e completo */}
+        <View style={[styles.textBlock, { gap: spacing[8], paddingHorizontal: spacing[4], paddingTop: spacing[16] }]}>
+          <View style={styles.metaRow}>
+            <Feather name="star" size={12} color={colors.accentText} />
+            <Text style={[styles.meta, { color: colors.textSecondary, ...typography.font.medium }]}>
+              Eternizado por {authorName}
+            </Text>
+            <Text style={[styles.meta, { color: colors.textSecondary, ...typography.font.regular }]}>
+              · {formatSavedAtDateTime(item.created_at)}
+            </Text>
+          </View>
+
+          <Text
+            style={[
+              styles.title,
+              { color: colors.textPrimary, ...typography.font.black },
+              isHero && styles.heroTitle,
+            ]}
+          >
+            {item.title}
+          </Text>
         </View>
       </PressableScale>
     </Animated.View>
@@ -113,94 +107,53 @@ export function MemoryCard({
 
 const styles = StyleSheet.create({
   cardWrapper: {
-    marginBottom: 20,
     width: '100%',
   },
-  memoryCard: {
+  photo: {
+    width: '100%',
+    aspectRatio: 4 / 3,
     overflow: 'hidden',
   },
-  heroMemoryCard: {
-    // hero card style
+  topScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '35%',
   },
-  cardImage: {
-    width: '100%',
-    height: 180,
-    backgroundColor: '#EAEAEA',
-  },
-  heroCardImage: {
-    height: 280,
-  },
-  cardContent: {
-    padding: 16,
-  },
-  cardMetaRow: {
+  dateBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    maxWidth: '85%',
   },
-  datePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    gap: 6,
-  },
-  datePillText: {
-    fontSize: 12,
-  },
-  signatureBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flexShrink: 1,
-    marginLeft: 8,
-  },
-  signatureAuthorText: {
-    fontSize: 11,
+  dateBadgeText: {
+    fontSize: 13,
     flexShrink: 1,
   },
-  cardTitle: {
-    fontSize: 20,
-    letterSpacing: -0.4,
-    marginBottom: 8,
-  },
-  heroCardTitle: {
-    fontSize: 24,
-    letterSpacing: -0.6,
-  },
-  cardDescription: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  heroCardDescription: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  footerRow: {
+  textBlock: {},
+  metaRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
+    columnGap: 6,
+    rowGap: 2,
   },
-  savedAtText: {
-    fontSize: 11,
+  meta: {
+    fontSize: 13,
   },
-  syncContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  title: {
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.5,
   },
-  syncText: {
-    fontSize: 11,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  errorText: {
-    fontSize: 11,
+  heroTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    letterSpacing: -0.7,
   },
 });

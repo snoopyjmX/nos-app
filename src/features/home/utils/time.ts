@@ -71,13 +71,58 @@ export const calculateAccumulatedTime = (startDateString?: string | null): Accum
   };
 };
 
+// Datas 'YYYY-MM-DD' são calendário, não instante: lê as partes em hora local (sem deslocar por fuso).
+const parseCalendarDate = (dateString?: string | null): Date | null => {
+  if (!dateString) return null;
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  if (!year || !month || !day) return null;
+  const date = new Date(year, month - 1, day);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+const startOfToday = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
+
 export const formatMemoryDate = (dateString?: string | null): string => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return '';
+  const date = parseCalendarDate(dateString);
+  if (!date) return '';
 
   return date.toLocaleDateString('pt-BR', {
     day: 'numeric',
     month: 'long',
   });
+};
+
+export const formatFullDate = (dateString?: string | null): string => {
+  const date = parseCalendarDate(dateString);
+  if (!date) return '';
+
+  return date.toLocaleDateString('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+export const formatRelativePast = (dateString?: string | null): string => {
+  const date = parseCalendarDate(dateString);
+  if (!date) return '';
+
+  const days = Math.round((startOfToday().getTime() - date.getTime()) / 86400000);
+  if (days <= 0) return 'Hoje';
+  if (days === 1) return 'Ontem';
+  if (days < 7) return `Há ${days} dias`;
+  if (days < 30) return `Há ${plural(Math.floor(days / 7), 'semana', 'semanas')}`;
+  if (days < 365) return `Há ${plural(Math.floor(days / 30), 'mês', 'meses')}`;
+  return `Há ${plural(Math.floor(days / 365), 'ano', 'anos')}`;
+};
+
+export const formatDaysUntil = (days: number): string => {
+  if (days <= 0) return 'Hoje';
+  if (days === 1) return 'Amanhã';
+  return `Em ${days} dias`;
 };

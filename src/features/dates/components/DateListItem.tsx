@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown, SlideOutRight } from 'react-native-reanimated';
-import { PressableScale } from '@/components/ui';
+import { AnimatedIcon, PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { SpecialDate } from '../types';
-import { getCategoryMeta, formatListItemDateTime } from '../utils/formatting';
+import { getCategoryMeta, formatEventBadge, formatLongDatePTBR } from '../utils/formatting';
 import { useTheme } from '@/theme';
 
 interface DateListItemProps {
@@ -22,11 +23,13 @@ export const DateListItem = React.memo(function DateListItem({
   onEdit,
   onDelete,
 }: DateListItemProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pulse, setPulse] = useState(0);
   const meta = getCategoryMeta(item.category);
-  const isPast = new Date(item.event_date).getTime() < Date.now();
+  const badge = formatEventBadge(item.event_date);
+  const longDate = formatLongDatePTBR(item.event_date);
 
   const handleDeletePress = () => {
     if (!confirmDelete) {
@@ -41,102 +44,104 @@ export const DateListItem = React.memo(function DateListItem({
     <Animated.View
       entering={reducedMotion ? undefined : FadeInDown.duration(300).delay(index * 50)}
       exiting={reducedMotion ? undefined : SlideOutRight.duration(300)}
+      style={{ marginBottom: spacing[12] }}
     >
       <PressableScale
-        style={[
-          styles.listItemCard,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: radii.md,
-            ...shadows.soft,
-          }
-        ]}
         onPress={() => onEdit(item)}
+        onPressIn={() => setPulse((value) => value + 1)}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.title}, ${meta.label}, ${badge}, ${longDate}`}
+        accessibilityHint="Toque para editar esta data"
       >
-        <View style={[styles.listIconBox, { backgroundColor: meta.bg }]}>
-          <Feather name={meta.icon as any} size={22} color={meta.color} />
-        </View>
-
-        <View style={styles.listContent}>
-          <Text style={[styles.listTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <View style={styles.listMetaRow}>
-            <Text style={[styles.listCategory, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>{meta.label}</Text>
-            <View style={[styles.listDot, { backgroundColor: colors.border }]} />
-            <Text style={[styles.listDate, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }, isPast && { color: colors.danger }]}>
-              {formatListItemDateTime(item.event_date)}
-            </Text>
+        <LiquidGlassView variant="card" readable borderRadius={radii.md} style={[styles.card, { gap: spacing[12], padding: spacing[16] }]}>
+          <View style={[styles.iconCircle, { backgroundColor: meta.bg }]}>
+            <AnimatedIcon name={meta.icon} size={22} color={meta.color} pulseKey={pulse} />
           </View>
-        </View>
 
-        <PressableScale
-          style={[
-            styles.deleteButton,
-            { backgroundColor: colors.primarySoft },
-            confirmDelete && { backgroundColor: colors.danger },
-          ]}
-          onPress={handleDeletePress}
-          hitSlop={10}
-        >
-          <Feather
-            name="trash-2"
-            size={16}
-            color={confirmDelete ? '#FFFFFF' : colors.danger}
-          />
-        </PressableScale>
+          <View style={styles.content}>
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, { color: colors.textPrimary, ...typography.font.bold }]}>{item.title}</Text>
+              <View style={[styles.badge, { backgroundColor: colors.primarySoft }]}>
+                <Text style={[styles.badgeText, { color: colors.primaryText, ...typography.font.bold }]}>{badge}</Text>
+              </View>
+            </View>
+            <Text style={[styles.date, { color: colors.textSecondary, ...typography.font.regular }]}>{longDate}</Text>
+            <View style={styles.categoryRow}>
+              <Feather name={meta.icon} size={12} color={colors.textSecondary} />
+              <Text style={[styles.category, { color: colors.textSecondary, ...typography.font.medium }]}>
+                {meta.label}
+              </Text>
+            </View>
+          </View>
+
+          <PressableScale
+            style={[styles.deleteButton, { backgroundColor: confirmDelete ? colors.danger : colors.primarySoft }]}
+            onPress={handleDeletePress}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={confirmDelete ? `Confirmar exclusão de ${item.title}` : `Excluir ${item.title}`}
+            accessibilityHint={confirmDelete ? undefined : 'Toque duas vezes para excluir'}
+          >
+            <Feather name="trash-2" size={16} color={confirmDelete ? colors.white : colors.danger} />
+          </PressableScale>
+        </LiquidGlassView>
       </PressableScale>
     </Animated.View>
   );
 });
 
 const styles = StyleSheet.create({
-  listItemCard: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 12,
   },
-  listIconBox: {
+  iconCircle: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
   },
-  listContent: {
+  content: {
     flex: 1,
-    justifyContent: 'center',
+    minWidth: 0,
+    gap: 4,
   },
-  listTitle: {
+  titleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    columnGap: 8,
+    rowGap: 4,
+  },
+  title: {
     fontSize: 16,
-    marginBottom: 4,
+    flexShrink: 1,
   },
-  listMetaRow: {
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  badgeText: {
+    fontSize: 12,
+  },
+  date: {
+    fontSize: 13,
+  },
+  categoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
-  listCategory: {
-    fontSize: 13,
-  },
-  listDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    marginHorizontal: 8,
-  },
-  listDate: {
-    fontSize: 13,
+  category: {
+    fontSize: 12,
   },
   deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 10,
   },
 });

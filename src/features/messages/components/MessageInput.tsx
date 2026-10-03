@@ -1,9 +1,26 @@
-import React from 'react';
-import { View, TextInput, StyleSheet, Platform, ActivityIndicator } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+  TextInput,
+  StyleSheet,
+  Platform,
+  ActivityIndicator,
+  LayoutChangeEvent,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { PressableScale } from '@/components/ui';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { AnimatedIcon, PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
+import { useReducedMotion } from '@/lib/hooks/useAccessibility';
 import { useTheme } from '@/theme';
+
+const FLOAT_GAP = 12;
+const KEYBOARD_GAP = 8;
 
 interface MessageInputProps {
   inputText: string;
@@ -11,8 +28,14 @@ interface MessageInputProps {
   sending: boolean;
   onSend: () => void;
   isKeyboardVisible: boolean;
-  visualKeyboardHeight: number;
-  dockInset: number;
+  keyboardHeight: number;
+  dockTop: number;
+  onLayout?: (event: LayoutChangeEvent) => void;
+}
+
+// Distância da base da tela até a base do input: 12px acima da dock, ou colado ao teclado.
+export function getInputOffset(isKeyboardVisible: boolean, keyboardHeight: number, dockTop: number) {
+  return isKeyboardVisible ? keyboardHeight + KEYBOARD_GAP : dockTop + FLOAT_GAP;
 }
 
 export function MessageInput({
@@ -21,121 +44,125 @@ export function MessageInput({
   sending,
   onSend,
   isKeyboardVisible,
-  visualKeyboardHeight,
-  dockInset,
+  keyboardHeight,
+  dockTop,
+  onLayout,
 }: MessageInputProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+  const { colors, typography, radii, spacing, motion } = useTheme();
+  const reducedMotion = useReducedMotion();
+
+  const offset = getInputOffset(isKeyboardVisible, keyboardHeight, dockTop);
+  const lift = useSharedValue(offset);
+
+  useEffect(() => {
+    lift.value = reducedMotion
+      ? withTiming(offset, { duration: 120, easing: Easing.out(Easing.cubic) })
+      : withSpring(offset, motion.easing.springDock);
+  }, [offset, reducedMotion]);
+
+  const liftStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -lift.value }],
+  }));
+
+  const [sendPulse, setSendPulse] = useState(0);
+  const canSend = inputText.trim().length > 0 && !sending;
 
   return (
-    <View
-      style={[
-        styles.inputContainer,
-        {
-          backgroundColor: colors.background,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          paddingBottom: isKeyboardVisible
-            ? (Platform.OS === 'ios' ? 10 : 12)
-            : dockInset,
-          marginBottom: Platform.OS === 'web' ? visualKeyboardHeight : 0,
-        },
-      ]}
+    <Animated.View
+      style={[styles.wrapper, { paddingHorizontal: spacing[16] }, liftStyle]}
+      onLayout={onLayout}
+      pointerEvents="box-none"
     >
-      <View style={styles.inputInnerRow}>
-        <View
+      <LiquidGlassView
+        variant="hero"
+        borderRadius={radii.lg}
+        style={[styles.capsule, { gap: spacing[8], padding: spacing[8], paddingLeft: spacing[16] }]}
+      >
+        <TextInput
           style={[
-            styles.textInputPill,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderRadius: radii.lg,
-            },
+            styles.textInput,
+            { color: colors.textPrimary, ...typography.font.regular },
+            Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null,
           ]}
-        >
-          <TextInput
-            style={[styles.textInput, { color: colors.textPrimary, fontFamily: typography.fontFamily.regular }]}
-            placeholder="Escreva um recado com carinho..."
-            placeholderTextColor={colors.textSecondary}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={1000}
-            textAlignVertical="center"
-          />
-        </View>
+          placeholder="Escreva um recado com carinho..."
+          placeholderTextColor={colors.textMuted}
+          value={inputText}
+          onChangeText={setInputText}
+          multiline
+          maxLength={1000}
+          textAlignVertical="center"
+          accessibilityLabel="Escrever recado"
+        />
 
         <PressableScale
-          style={[
-            styles.sendButton,
-            { borderRadius: radii.pill },
-            (!inputText.trim() || sending) && { opacity: 0.6 },
-          ]}
+          style={[styles.sendButton, !canSend && styles.sendDisabled]}
           onPress={onSend}
-          disabled={!inputText.trim() || sending}
-          accessibilityLabel="Enviar bilhete"
+          onPressIn={() => setSendPulse((value) => value + 1)}
+          disabled={!canSend}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar recado"
+          accessibilityState={{ disabled: !canSend }}
         >
           <LinearGradient
-            colors={
-              !inputText.trim() || sending
-                ? [colors.primarySoft, colors.primarySoft]
-                : [colors.primary, colors.accent]
-            }
+            colors={canSend ? [colors.glow, colors.primary] : [colors.primarySoft, colors.primarySoft]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.sendButtonGradient}
+            style={styles.sendGradient}
           >
             {sending ? (
-              <ActivityIndicator color={(!inputText.trim() || sending) ? colors.textSecondary : '#FFF'} size="small" />
+              <ActivityIndicator color={colors.textSecondary} size="small" />
             ) : (
-              <Feather
+              <AnimatedIcon
                 name="send"
                 size={18}
-                color={(!inputText.trim() || sending) ? colors.primary : '#FFF'}
-                style={{ marginLeft: -2, marginTop: 2 }}
+                color={canSend ? colors.onPrimary : colors.textSecondary}
+                pulseKey={canSend ? sendPulse : 0}
+                style={styles.sendIcon}
               />
             )}
           </LinearGradient>
         </PressableScale>
-      </View>
-    </View>
+      </LiquidGlassView>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  inputContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+  wrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
   },
-  inputInnerRow: {
+  capsule: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 10,
   },
-  textInputPill: {
+  textInput: {
     flex: 1,
     minHeight: 46,
     maxHeight: 120,
-    borderWidth: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  textInput: {
     fontSize: 16,
     lineHeight: 22,
-    maxHeight: 100,
+    paddingVertical: 12,
   },
   sendButton: {
     width: 46,
     height: 46,
+    borderRadius: 23,
     overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  sendButtonGradient: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
+  sendDisabled: {
+    opacity: 0.7,
+  },
+  sendGradient: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendIcon: {
+    marginRight: 2,
+    marginTop: 1,
   },
 });

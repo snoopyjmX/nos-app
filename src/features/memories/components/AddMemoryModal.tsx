@@ -1,9 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, KeyboardAvoidingView, ScrollView, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, Modal, KeyboardAvoidingView, ScrollView, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
-import { Button, IconButton, WebDatePicker } from '@/components/ui';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button, IconButton, PressableScale, WebDatePicker } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
+import { useReducedMotion } from '@/lib/hooks/useAccessibility';
 import { useTheme } from '@/theme';
 import { formatFullDatePTBR } from '../utils/formatting';
 
@@ -34,27 +38,35 @@ export function AddMemoryModal({
   uploading,
   onSave,
 }: AddMemoryModalProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={() => !uploading && onClose()}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.modalOverlay}
       >
-        <View
-          style={[
-            styles.modalCard,
-            {
-              backgroundColor: colors.surface,
-              ...shadows.medium,
-            },
-          ]}
+        {/* Fundo: scrim de vidro que desfoca suavemente a interface */}
+        <LiquidGlassView variant="scrim" borderRadius={0} style={StyleSheet.absoluteFill} />
+
+        <Animated.View
+          entering={reducedMotion ? FadeIn.duration(150) : SlideInDown.springify().damping(20).stiffness(180)}
+          style={styles.sheetAnchor}
+        >
+        <LiquidGlassView
+          variant="hero"
+          readable
+          borderRadius={0}
+          corners={{ borderTopLeftRadius: radii.lg + 8, borderTopRightRadius: radii.lg + 8 }}
+          style={[styles.modalCard, { paddingBottom: insets.bottom + spacing[24], maxHeight: windowHeight * 0.9 }]}
         >
           <View style={styles.headerRow}>
             <View style={{ width: 44 }} />
@@ -65,12 +77,12 @@ export function AddMemoryModal({
               ]}
             />
             <View style={{ width: 44, alignItems: 'flex-end' }}>
-              <IconButton icon="x" onPress={onClose} disabled={uploading} variant="ghost" />
+              <IconButton icon="x" onPress={onClose} disabled={uploading} variant="ghost" accessibilityLabel="Fechar" />
             </View>
           </View>
 
-          <Text style={[styles.modalTitle, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>Nova Memória</Text>
-          <Text style={[styles.modalSubtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+          <Text accessibilityRole="header" style={[styles.modalTitle, { color: colors.textPrimary, ...typography.font.bold }]}>Nova Memória</Text>
+          <Text style={[styles.modalSubtitle, { color: colors.textSecondary, ...typography.font.regular }]}>
             Guarde este momento com um título e a data em que aconteceu.
           </Text>
 
@@ -88,7 +100,7 @@ export function AddMemoryModal({
             )}
 
             <View style={styles.inputWrapper}>
-              <Text style={[styles.inputLabel, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>Título da Memória</Text>
+              <Text style={[styles.inputLabel, { color: colors.textPrimary, ...typography.font.bold }]}>Título da Memória</Text>
               <TextInput
                 style={[
                   styles.textInput,
@@ -97,11 +109,12 @@ export function AddMemoryModal({
                     borderColor: 'transparent',
                     color: colors.textPrimary,
                     borderRadius: radii.md,
-                    fontFamily: typography.fontFamily.regular,
+                    ...typography.font.regular,
                   },
                 ]}
                 placeholder="Ex: Nosso primeiro piquenique..."
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textMuted}
+                accessibilityLabel="Título da memória"
                 value={memoryTitle}
                 onChangeText={setMemoryTitle}
                 maxLength={100}
@@ -109,23 +122,25 @@ export function AddMemoryModal({
             </View>
 
             <View style={styles.inputWrapper}>
-              <Text style={[styles.inputLabel, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>Quando aconteceu?</Text>
-              <View
-                style={[
-                  styles.dateSelectorButton,
-                  {
-                    backgroundColor: colors.primarySoft,
-                    borderRadius: radii.md,
-                  },
-                ]}
-                onTouchEnd={() => setShowDatePicker(true)}
+              <Text style={[styles.inputLabel, { color: colors.textPrimary, ...typography.font.bold }]}>Quando aconteceu?</Text>
+              <PressableScale
+                onPress={() => setShowDatePicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel={`Data da memória: ${formatFullDatePTBR(memoryDate.toISOString())}. Toque para alterar`}
               >
-                <Feather name="calendar" size={18} color={colors.primary} />
-                <Text style={[styles.dateSelectorText, { color: colors.textPrimary, fontFamily: typography.fontFamily.regular }]}>
-                  {formatFullDatePTBR(memoryDate.toISOString())}
-                </Text>
-                <Feather name="chevron-down" size={16} color={colors.textSecondary} />
-              </View>
+                <View
+                  style={[
+                    styles.dateSelectorButton,
+                    { backgroundColor: colors.primarySoft, borderRadius: radii.md },
+                  ]}
+                >
+                  <Feather name="calendar" size={18} color={colors.primaryText} />
+                  <Text style={[styles.dateSelectorText, { color: colors.textPrimary, ...typography.font.regular }]}>
+                    {formatFullDatePTBR(memoryDate.toISOString())}
+                  </Text>
+                  <Feather name="chevron-down" size={16} color={colors.textSecondary} />
+                </View>
+              </PressableScale>
             </View>
 
             {Platform.OS !== 'web' && (showDatePicker || Platform.OS === 'ios') && (
@@ -163,7 +178,8 @@ export function AddMemoryModal({
               </View>
             </View>
           </ScrollView>
-        </View>
+        </LiquidGlassView>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -172,16 +188,12 @@ export function AddMemoryModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'flex-end',
   },
+  sheetAnchor: {},
   modalCard: {
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
     paddingTop: 14,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
     paddingHorizontal: 20,
-    maxHeight: '90%',
   },
   headerRow: {
     flexDirection: 'row',

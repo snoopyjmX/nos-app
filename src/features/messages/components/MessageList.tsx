@@ -1,21 +1,24 @@
 import React from 'react';
 import { View, FlatList, ActivityIndicator, StyleSheet, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { EmptyState } from '@/components/ui';
 import { useTheme } from '@/theme';
 import { MessageBubble } from './MessageBubble';
+import { PinnedNote } from './PinnedNote';
 import { isSameDay, formatDaySeparator } from '../utils/dateFormatting';
 import { Message, UserProfile } from '../types';
 
 interface MessageListProps {
   messages: Message[];
+  pinnedNote: { label: string; content: string; meta: string } | null;
   user: any;
   profileMap: Map<string, UserProfile>;
   loadingOlder: boolean;
   isInitialLoadDoneRef: React.MutableRefObject<boolean>;
   initialMessageIdsRef: React.MutableRefObject<Set<string>>;
   reducedMotion: boolean;
-  insets: any;
-  dockInset: number;
+  topInset: number;
+  bottomInset: number;
   flatListRef: React.RefObject<any>;
   handleScroll: (event: any) => void;
   handleContentSizeChange: (w: number, h: number) => void;
@@ -23,41 +26,32 @@ interface MessageListProps {
 
 export function MessageList({
   messages,
+  pinnedNote,
   user,
   profileMap,
   loadingOlder,
   isInitialLoadDoneRef,
   initialMessageIdsRef,
   reducedMotion,
-  insets,
-  dockInset,
+  topInset,
+  bottomInset,
   flatListRef,
   handleScroll,
   handleContentSizeChange,
 }: MessageListProps) {
-  const { colors, radii, shadows } = useTheme();
+  const { colors, radii } = useTheme();
 
   if (messages.length === 0) {
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={[styles.centerContainer, { paddingTop: insets.top + 80 }]}>
-          <View
-            style={[
-              styles.emptyCard,
-              {
-                backgroundColor: colors.surface,
-                borderRadius: radii.md,
-                borderWidth: 0,
-                ...shadows.soft,
-              },
-            ]}
-          >
+        <View style={[styles.centerContainer, { paddingTop: topInset + 24, paddingBottom: bottomInset }]}>
+          <LiquidGlassView variant="card" readable borderRadius={radii.md} style={styles.emptyCard}>
             <EmptyState
               icon="mail"
-              title="Nenhum bilhete ainda"
+              title="Nenhum recado ainda"
               description="Surpreenda seu amor deixando o primeiro recado carinhoso aqui. Cada mensagem fica guardada com carinho."
             />
-          </View>
+          </LiquidGlassView>
         </View>
       </TouchableWithoutFeedback>
     );
@@ -100,14 +94,21 @@ export function MessageList({
     );
   };
 
-  const renderHeaderComponent = () => {
-    if (!loadingOlder) return null;
-    return (
-      <View style={styles.loadingOlderBox}>
-        <ActivityIndicator color={colors.primary} size="small" />
-      </View>
-    );
-  };
+  // O bilhete abre a conversa e rola junto com ela, sem ocupar o topo da tela.
+  const renderHeaderComponent = () => (
+    <View>
+      {loadingOlder ? (
+        <View style={styles.loadingOlderBox}>
+          <ActivityIndicator color={colors.primary} size="small" />
+        </View>
+      ) : null}
+      {pinnedNote ? (
+        <View style={styles.pinnedNote}>
+          <PinnedNote {...pinnedNote} />
+        </View>
+      ) : null}
+    </View>
+  );
 
   return (
     <FlatList
@@ -118,8 +119,8 @@ export function MessageList({
       contentContainerStyle={[
         styles.scrollContent,
         {
-          paddingTop: insets.top + (Platform.OS === 'ios' ? 70 : 66),
-          paddingBottom: dockInset + 60,
+          paddingTop: topInset + 12,
+          paddingBottom: bottomInset,
         },
       ]}
       keyboardShouldPersistTaps="handled"
@@ -147,12 +148,14 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     width: '100%',
-    padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scrollContent: {
     paddingHorizontal: 16,
+  },
+  pinnedNote: {
+    marginBottom: 12,
   },
   loadingOlderBox: {
     paddingVertical: 12,

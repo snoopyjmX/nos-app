@@ -75,10 +75,10 @@ export function UpdateBanner() {
         </View>
 
         <View style={styles.textColumn}>
-          <Text style={[styles.title, { color: colors.textPrimary, fontFamily: typography.fontFamily.bold }]}>
+          <Text style={[styles.title, { color: colors.textPrimary, ...typography.font.bold }]}>
             Nova versão disponível
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary, fontFamily: typography.fontFamily.regular }]}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary, ...typography.font.regular }]}>
             Atualize para carregar as melhorias
           </Text>
         </View>
@@ -87,7 +87,7 @@ export function UpdateBanner() {
           style={[styles.reloadButton, { backgroundColor: colors.primary, borderRadius: radii.sm }]}
           onPress={handleReload}
         >
-          <Text style={[styles.reloadText, { fontFamily: typography.fontFamily.bold, color: colors.surface }]}>
+          <Text style={[styles.reloadText, { ...typography.font.bold, color: colors.surface }]}>
             Recarregar
           </Text>
         </PressableScale>

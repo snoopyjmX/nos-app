@@ -8,6 +8,22 @@ export const motion = {
   easing: {
     // Valores para Easing.bezier do react-native-reanimated
     easeOut: [0.25, 1, 0.5, 1], // Aproximação de ease-out
+    // Dock: indicador e ícones deslizam com este spring
+    springDock: {
+      damping: 18,
+      stiffness: 180,
+    },
+    // Toque elástico: desce firme, solta com leve repique
+    springPressIn: {
+      damping: 18,
+      stiffness: 200,
+      mass: 0.5,
+    },
+    springPressOut: {
+      damping: 15,
+      stiffness: 150,
+      mass: 0.6,
+    },
     springShort: {
       damping: 15,
       stiffness: 200,

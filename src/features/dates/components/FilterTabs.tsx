@@ -1,78 +1,77 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { useTheme } from '@/theme';
 
+type Tab = 'upcoming' | 'past';
+
 interface FilterTabsProps {
-  activeTab: 'upcoming' | 'past';
-  setActiveTab: (tab: 'upcoming' | 'past') => void;
+  activeTab: Tab;
+  setActiveTab: (tab: Tab) => void;
   upcomingCount: number;
   pastCount: number;
 }
 
 export function FilterTabs({ activeTab, setActiveTab, upcomingCount, pastCount }: FilterTabsProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+  const { colors, typography, radii, spacing } = useTheme();
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'upcoming', label: `Próximas (${upcomingCount})` },
+    { key: 'past', label: `Passadas (${pastCount})` },
+  ];
 
   return (
-    <View style={[styles.segmentedControl, { backgroundColor: colors.primarySoft, borderRadius: radii.md }]}>
-      <PressableScale
-        style={[
-          styles.segmentButton,
-          { borderRadius: radii.md - 4 },
-          activeTab === 'upcoming' && [
-            { backgroundColor: colors.surface },
-            shadows.soft,
-          ],
-        ]}
-        onPress={() => setActiveTab('upcoming')}
-      >
-        <Text
-          style={[
-            styles.segmentText,
-            { color: colors.textSecondary, fontFamily: typography.fontFamily.bold },
-            activeTab === 'upcoming' && { color: colors.primary },
-          ]}
-        >
-          Próximas ({upcomingCount})
-        </Text>
-      </PressableScale>
-      <PressableScale
-        style={[
-          styles.segmentButton,
-          { borderRadius: radii.md - 4 },
-          activeTab === 'past' && [
-            { backgroundColor: colors.surface },
-            shadows.soft,
-          ],
-        ]}
-        onPress={() => setActiveTab('past')}
-      >
-        <Text
-          style={[
-            styles.segmentText,
-            { color: colors.textSecondary, fontFamily: typography.fontFamily.bold },
-            activeTab === 'past' && { color: colors.primary },
-          ]}
-        >
-          Histórico ({pastCount})
-        </Text>
-      </PressableScale>
-    </View>
+    <LiquidGlassView
+      variant="control"
+      borderRadius={radii.pill}
+      style={[styles.control, { padding: spacing[4], gap: spacing[4], marginBottom: spacing[20] }]}
+      accessibilityRole="tablist"
+    >
+      {tabs.map((tab) => {
+        const selected = activeTab === tab.key;
+        return (
+          <PressableScale
+            key={tab.key}
+            style={styles.segment}
+            onPress={() => setActiveTab(tab.key)}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected }}
+          >
+            {selected ? (
+              <LiquidGlassView variant="pill" readable borderRadius={radii.pill} style={styles.segmentInner}>
+                <Text style={[styles.text, { color: colors.primaryText, ...typography.font.bold }]}>{tab.label}</Text>
+              </LiquidGlassView>
+            ) : (
+              <View style={styles.segmentInner}>
+                <Text style={[styles.text, { color: colors.textSecondary, ...typography.font.medium }]}>
+                  {tab.label}
+                </Text>
+              </View>
+            )}
+          </PressableScale>
+        );
+      })}
+    </LiquidGlassView>
   );
 }
 
 const styles = StyleSheet.create({
-  segmentedControl: {
+  control: {
     flexDirection: 'row',
-    padding: 4,
-    marginBottom: 20,
   },
-  segmentButton: {
+  segment: {
     flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
   },
-  segmentText: {
+  segmentInner: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
     fontSize: 14,
+    textAlign: 'center',
   },
 });

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { PressableScale } from '@/components/ui';
+import { AnimatedIcon, PressableScale } from '@/components/ui';
+import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { useTheme } from '@/theme';
 
 interface ShortcutsRowProps {
@@ -12,86 +13,100 @@ interface ShortcutsRowProps {
   shouldAnimateCascade: boolean;
 }
 
+interface Shortcut {
+  key: string;
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  accessibilityLabel: string;
+  onPress: () => void;
+}
+
+function ShortcutPill({ shortcut }: { shortcut: Shortcut }) {
+  const { colors, typography, radii, spacing } = useTheme();
+  const [pulse, setPulse] = useState(0);
+
+  return (
+    <PressableScale
+      style={styles.item}
+      onPress={shortcut.onPress}
+      onPressIn={() => setPulse((value) => value + 1)}
+      accessibilityRole="button"
+      accessibilityLabel={shortcut.accessibilityLabel}
+    >
+      <LiquidGlassView
+        variant="control"
+        readable
+        borderRadius={radii.pill}
+        style={[styles.pill, { gap: spacing[8], paddingHorizontal: spacing[12] }]}
+      >
+        <AnimatedIcon name={shortcut.icon} size={18} color={colors.primaryText} pulseKey={pulse} />
+        <Text style={[styles.label, { color: colors.primaryText, ...typography.font.bold }]} numberOfLines={1}>
+          {shortcut.label}
+        </Text>
+      </LiquidGlassView>
+    </PressableScale>
+  );
+}
+
 export function ShortcutsRow({
   handleOpenMessages,
   handleOpenMemories,
   handleOpenDates,
   shouldAnimateCascade,
 }: ShortcutsRowProps) {
-  const { colors, typography, radii, shadows } = useTheme();
+  const { spacing } = useTheme();
+
+  const shortcuts: Shortcut[] = [
+    {
+      key: 'messages',
+      icon: 'message-circle',
+      label: 'Recado',
+      accessibilityLabel: 'Deixar novo recado',
+      onPress: handleOpenMessages,
+    },
+    {
+      key: 'memories',
+      icon: 'camera',
+      label: 'Foto',
+      accessibilityLabel: 'Adicionar nova foto ou memória',
+      onPress: handleOpenMemories,
+    },
+    {
+      key: 'dates',
+      icon: 'calendar',
+      label: 'Datas',
+      accessibilityLabel: 'Ver ou adicionar datas importantes',
+      onPress: handleOpenDates,
+    },
+  ];
 
   return (
     <Animated.View
       entering={shouldAnimateCascade ? FadeInDown.duration(350).delay(60) : undefined}
-      style={styles.shortcutsRow}
+      style={[styles.row, { gap: spacing[8], marginBottom: spacing[16] }]}
     >
-      <PressableScale
-        style={[
-          styles.shortcutCard,
-          {
-            backgroundColor: colors.surface,
-            borderRadius: radii.md,
-            borderWidth: 0,
-            ...shadows.soft,
-          },
-        ]}
-        onPress={handleOpenMessages}
-      >
-        <Feather name="message-circle" size={17} color={colors.primary} />
-        <Text style={[styles.shortcutText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Recado</Text>
-      </PressableScale>
-
-      <PressableScale
-        style={[
-          styles.shortcutCard,
-          {
-            backgroundColor: colors.surface,
-            borderRadius: radii.md,
-            borderWidth: 0,
-            ...shadows.soft,
-          },
-        ]}
-        onPress={handleOpenMemories}
-      >
-        <Feather name="camera" size={18} color={colors.primary} />
-        <Text style={[styles.shortcutText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Memória</Text>
-      </PressableScale>
-
-      <PressableScale
-        style={[
-          styles.shortcutCard,
-          {
-            backgroundColor: colors.surface,
-            borderRadius: radii.md,
-            borderWidth: 0,
-            ...shadows.soft,
-          },
-        ]}
-        onPress={handleOpenDates}
-      >
-        <Feather name="calendar" size={17} color={colors.primary} />
-        <Text style={[styles.shortcutText, { color: colors.primary, fontFamily: typography.fontFamily.bold }]}>Datas</Text>
-      </PressableScale>
+      {shortcuts.map((shortcut) => (
+        <ShortcutPill key={shortcut.key} shortcut={shortcut} />
+      ))}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  shortcutsRow: {
+  row: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
   },
-  shortcutCard: {
+  item: {
     flex: 1,
-    height: 52,
-    borderWidth: 1,
+  },
+  pill: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
   },
-  shortcutText: {
-    fontSize: 13,
+  label: {
+    fontSize: 14,
+    flexShrink: 1,
   },
 });
