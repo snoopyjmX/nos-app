@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Text, StyleSheet } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Text, StyleSheet, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { supabase } from '@/lib/core/supabase';
 import { useTheme } from '@/theme';
 import { AuthScreen, Button, GlassField } from '@/components/ui';
 import { useToast } from '@/lib/context/ToastContext';
+
+const MIN_PASSWORD = 8;
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -16,22 +18,21 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   const handleTerms = () => router.push('/terms');
   const handlePrivacy = () => router.push('/privacy');
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      showToast({ message: 'Por favor, preencha todos os campos.', type: 'error' });
-      return;
-    }
-
-    if (password.length < 6) {
-      showToast({ message: 'A senha deve ter pelo menos 6 caracteres.', type: 'error' });
-      return;
-    }
+    const next: typeof errors = {};
+    if (!name.trim()) next.name = 'Diga como podemos te chamar.';
+    if (!email.trim()) next.email = 'Informe seu e-mail.';
+    else if (!/^\S+@\S+\.\S+$/.test(email.trim())) next.email = 'Digite um e-mail válido.';
+    if (password.length < MIN_PASSWORD) next.password = `A senha deve ter pelo menos ${MIN_PASSWORD} caracteres.`;
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
 
     setLoading(true);
     const { error } = await supabase.auth.signUp({
@@ -67,7 +68,11 @@ export default function RegisterScreen() {
         autoComplete="name"
         textContentType="name"
         value={name}
-        onChangeText={setName}
+        onChangeText={(v) => { setName(v); if (errors.name) setErrors((e) => ({ ...e, name: undefined })); }}
+        error={errors.name}
+        returnKeyType="next"
+        onSubmitEditing={() => emailRef.current?.focus()}
+        blurOnSubmit={false}
       />
 
       <GlassField
@@ -79,29 +84,38 @@ export default function RegisterScreen() {
         autoCorrect={false}
         autoComplete="email"
         textContentType="emailAddress"
+        ref={emailRef}
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(v) => { setEmail(v); if (errors.email) setErrors((e) => ({ ...e, email: undefined })); }}
+        error={errors.email}
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
+        blurOnSubmit={false}
       />
 
       <GlassField
         label="Senha"
         icon="lock"
-        placeholder="Mínimo de 6 caracteres"
+        placeholder={`Mínimo de ${MIN_PASSWORD} caracteres`}
         secureTextEntry
         autoCapitalize="none"
         autoComplete="new-password"
         textContentType="newPassword"
+        ref={passwordRef}
         value={password}
-        onChangeText={setPassword}
+        onChangeText={(v) => { setPassword(v); if (errors.password) setErrors((e) => ({ ...e, password: undefined })); }}
+        error={errors.password}
+        returnKeyType="go"
+        onSubmitEditing={handleRegister}
       />
 
       <Text style={[styles.terms, { color: colors.textSecondary, ...typography.font.regular }]}>
         Ao criar sua conta, você concorda com nossos{' '}
-        <Text onPress={handleTerms} accessibilityRole="link" style={{ color: colors.primaryText, ...typography.font.bold }}>
+        <Text onPress={handleTerms} accessibilityRole="link" style={[styles.link, { color: colors.primaryText, ...typography.font.bold }]}>
           Termos
         </Text>{' '}
         e{' '}
-        <Text onPress={handlePrivacy} accessibilityRole="link" style={{ color: colors.primaryText, ...typography.font.bold }}>
+        <Text onPress={handlePrivacy} accessibilityRole="link" style={[styles.link, { color: colors.primaryText, ...typography.font.bold }]}>
           Política de Privacidade
         </Text>
         .
@@ -119,5 +133,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     textAlign: 'center',
+  },
+  link: {
+    textDecorationLine: 'underline',
   },
 });

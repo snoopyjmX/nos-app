@@ -30,6 +30,7 @@ export function Skeleton({ width = '100%', height = 20, borderRadius, style }: S
       -1,
       true
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared value estável, animação roda só no mount
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

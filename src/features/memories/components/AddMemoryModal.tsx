@@ -51,6 +51,7 @@ export function AddMemoryModal({
       onRequestClose={() => !uploading && onClose()}
     >
       <KeyboardAvoidingView
+        accessibilityViewIsModal
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.modalOverlay}
       >

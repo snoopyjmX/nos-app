@@ -8,10 +8,12 @@ import { PressableScale } from './PressableScale';
 interface ButtonProps {
   children: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   disabled?: boolean;
   loading?: boolean;
   fullWidth?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export function Button({
@@ -21,6 +23,8 @@ export function Button({
   disabled = false,
   loading = false,
   fullWidth = true,
+  accessibilityLabel,
+  accessibilityHint,
 }: ButtonProps) {
   const { colors, radii, spacing, typography } = useTheme();
 
@@ -31,6 +35,8 @@ export function Button({
         return 'transparent'; // o gradiente lavanda é desenhado atrás do texto
       case 'secondary':
         return colors.primarySoft;
+      case 'danger':
+        return colors.accentGlass;
       case 'ghost':
         return 'transparent';
       default:
@@ -43,6 +49,8 @@ export function Button({
     switch (variant) {
       case 'primary':
         return colors.onPrimary; // texto escuro sobre lavanda
+      case 'danger':
+        return colors.dangerText;
       case 'secondary':
       case 'ghost':
         return colors.primaryText;
@@ -55,6 +63,10 @@ export function Button({
     <PressableScale
       onPress={onPress}
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? children}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       style={[
         styles.button,
         {
@@ -77,7 +89,7 @@ export function Button({
         />
       ) : null}
       {loading ? (
-        <ActivityIndicator color={getTextColor()} />
+        <ActivityIndicator color={variant === 'primary' ? colors.onPrimary : getTextColor()} />
       ) : (
         <Text
           style={[
@@ -100,7 +112,7 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48, // Tap target mínimo 44px
+    minHeight: 48, // Alvo de toque acima do mínimo de 44px
     flexDirection: 'row',
     gap: 8,
   },

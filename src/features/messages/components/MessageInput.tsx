@@ -58,6 +58,7 @@ export function MessageInput({
     lift.value = reducedMotion
       ? withTiming(offset, { duration: 120, easing: Easing.out(Easing.cubic) })
       : withSpring(offset, motion.easing.springDock);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset, reducedMotion]);
 
   const liftStyle = useAnimatedStyle(() => ({

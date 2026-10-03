@@ -87,6 +87,7 @@ export const CountdownDigits = React.memo(function CountdownDigits({ targetDate,
     progress.value = reducedMotion
       ? cycle
       : withTiming(cycle, { duration: PROGRESS_MS, easing: Easing.out(Easing.cubic) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cycle, reducedMotion]);
 
   // transform em vez de width: a barra desliza para dentro da trilha recortada
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   digitLabel: {
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.8,
     marginTop: 2,
   },

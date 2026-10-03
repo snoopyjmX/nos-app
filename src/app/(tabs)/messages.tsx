@@ -124,6 +124,7 @@ export default function MessagesScreen() {
         loadOlderMessages();
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [hasMoreOlder, loading, loadingOlder, loadOlderMessages]
   );
 
@@ -141,6 +142,7 @@ export default function MessagesScreen() {
       }
       previousScrollHeightRef.current = newHeight;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 

@@ -12,15 +12,9 @@ interface ScreenProps {
 export function Screen({
   children,
   style,
-  withBottomTabBar = true,
 }: ScreenProps) {
   const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
-  
-  // A tab bar no App é flutuante. O Bottom Tab Navigator do Expo Router 
-  // pode ter altura. O AGENTS.md recomenda usar paddingBottom para não cobrir o conteúdo.
-  // Assumimos 80px para a tab bar flutuante + safe area
-  const tabBarHeight = withBottomTabBar ? 80 + insets.bottom : insets.bottom;
 
   return (
     <View

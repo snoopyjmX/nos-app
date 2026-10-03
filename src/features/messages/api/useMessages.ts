@@ -126,6 +126,7 @@ export function useMessages(coupleId: string | null, user: any) {
     } catch (err) {
       logger.warn('Erro ao carregar perfis de mensagens:', err);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coupleId, user]);
 
   const loadInitialMessages = useCallback(async (flatListRef: React.RefObject<any>) => {

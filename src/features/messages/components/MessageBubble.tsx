@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   time: {
-    fontSize: 11,
+    fontSize: 12,
     alignSelf: 'flex-end',
     marginTop: 4,
   },

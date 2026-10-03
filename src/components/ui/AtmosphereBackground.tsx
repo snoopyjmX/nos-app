@@ -5,7 +5,7 @@ import { useAppTheme } from '@/lib/context/ThemeContext';
 import { getThemeColors } from '@/theme';
 
 export function AtmosphereBackground() {
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const { isDark } = useAppTheme();
 
   const themeTokens = getThemeColors(isDark);

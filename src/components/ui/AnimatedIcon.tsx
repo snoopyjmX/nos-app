@@ -51,12 +51,14 @@ export function AnimatedIcon({ name, size, color, active = false, pulseKey = 0, 
     scale.value = withSpring(active ? ACTIVE_SCALE : 1, SCALE_SPRING);
     if (active && !isFirstRender.current) wiggle();
     isFirstRender.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values e wiggle são estáveis
   }, [active, reducedMotion]);
 
   useEffect(() => {
     if (reducedMotion || pulseKey === 0) return;
     scale.value = withSequence(withSpring(ACTIVE_SCALE, SCALE_SPRING), withSpring(active ? ACTIVE_SCALE : 1, SCALE_SPRING));
     wiggle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reage só ao pulseKey
   }, [pulseKey]);
 
   const animatedStyle = useAnimatedStyle(() => ({

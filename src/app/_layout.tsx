@@ -10,6 +10,7 @@ import { ThemeProvider } from '@/lib/context/ThemeContext';
 import { ToastProvider } from '@/lib/context/ToastContext';
 import { Toast } from '@/components/ui/Toast';
 import { UpdateBanner } from '@/components/ui/UpdateBanner';
+import { DialogHost } from '@/components/ui/DialogHost';
 
 LogBox.ignoreAllLogs(true);
 
@@ -17,9 +18,9 @@ LogBox.ignoreAllLogs(true);
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <View style={styles.errorContainer}>
-      <Text style={styles.errorTitle}>Ops! Algo deu errado.</Text>
+      <Text accessibilityRole="header" style={styles.errorTitle}>Ops! Algo deu errado.</Text>
       <Text style={styles.errorMessage}>{error.message}</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={retry}>
+      <TouchableOpacity style={styles.retryButton} onPress={retry} accessibilityRole="button">
         <Text style={styles.retryText}>Tentar Novamente</Text>
       </TouchableOpacity>
     </View>
@@ -50,6 +51,7 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }} />
       <UpdateBanner />
       <Toast />
+      <DialogHost />
     </>
   );
 }
@@ -93,9 +95,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#7C6FE0',
+    backgroundColor: '#5B4FC7', // contraste AA com texto branco
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    minHeight: 44,
     borderRadius: 8,
   },
   retryText: {

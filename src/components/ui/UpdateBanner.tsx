@@ -33,7 +33,7 @@ export function UpdateBanner() {
           }
         });
       });
-    }).catch((err) => {
+    }).catch(() => {
       // Falha silenciosa de registro de Service Worker em desenvolvimento
     });
 

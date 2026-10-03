@@ -13,3 +13,4 @@ export * from './ScreenTitleBar';
 export * from './GlassField';
 export * from './GlassButton';
 export * from './AuthScreen';
+export * from './DialogHost';
