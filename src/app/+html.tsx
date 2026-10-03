@@ -26,6 +26,14 @@ export default function Root({ children }: PropsWithChildren) {
           However, body scrolling is often nice to have for web. If you want to enable it, remove this line.
         */}
         <ScrollViewStyleReset />
+
+        {/* PWA iOS: garante que a raiz cubra a viewport inteira, inclusive sob o indicador de início */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              'html,body{height:100%;min-height:-webkit-fill-available}#root{height:100%;min-height:100dvh}',
+          }}
+        />
       </head>
       <body>{children}</body>
     </html>

@@ -27,6 +27,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme';
 import { MAX_CONTENT_WIDTH } from '@/theme/spacing';
 import { motion } from '@/theme/motion';
+import { WEB_DOCK_GAP } from '@/lib/hooks/useDockInset';
 import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { AnimatedIcon } from '@/components/ui/AnimatedIcon';
 import { useReducedMotion } from '@/lib/hooks/useAccessibility';
@@ -365,7 +366,8 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
 
   if (keyboardVisible) return null;
 
-  const bottomPosition = Platform.OS === 'web' ? 'calc(env(safe-area-inset-bottom, 0px) + 20px)' : (insets.bottom > 0 ? insets.bottom + 4 : 20);
+  const isWeb = Platform.OS === 'web';
+  const bottomPosition = isWeb ? `calc(env(safe-area-inset-bottom, 0px) + ${WEB_DOCK_GAP}px)` : (insets.bottom > 0 ? insets.bottom + 4 : 20);
 
   return (
     <>
@@ -374,8 +376,9 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
         colors={theme.colors.dockFade}
         style={[
           styles.dockFadeGradient,
+          isWeb && styles.webFixed,
           {
-            height: (Platform.OS === 'web' ? `calc(env(safe-area-inset-bottom, 0px) + ${DOCK_HEIGHT + 36}px)` : DOCK_HEIGHT + (bottomPosition as number) + 16) as any,
+            height: (isWeb ? `calc(env(safe-area-inset-bottom, 0px) + ${DOCK_HEIGHT + WEB_DOCK_GAP + 28}px)` : DOCK_HEIGHT + (bottomPosition as number) + 16) as any,
           },
         ]}
         pointerEvents="none"
@@ -384,7 +387,9 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
       <Animated.View
         style={[
           styles.dockContainer,
-          { bottom: bottomPosition as any, left: DOCK_MARGIN, right: DOCK_MARGIN },
+          isWeb
+            ? [styles.webFixed, styles.webDock, { bottom: bottomPosition as any }]
+            : { bottom: bottomPosition as any, left: DOCK_MARGIN, right: DOCK_MARGIN },
           containerAnimatedStyle,
         ]}
       >
@@ -447,6 +452,16 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
 export default TabBar;
 
 const styles = StyleSheet.create({
+  // Web/PWA: ancora na viewport (não na coluna do app), para a dock nunca depender da altura do contêiner
+  webFixed: {
+    position: 'fixed' as 'absolute',
+  },
+  webDock: {
+    left: 0,
+    right: 0,
+    marginHorizontal: 'auto',
+    width: `min(calc(100% - ${DOCK_MARGIN * 2}px), ${MAX_CONTENT_WIDTH - DOCK_MARGIN * 2}px)` as unknown as number,
+  },
   dockFadeGradient: {
     position: 'absolute',
     left: 0,
