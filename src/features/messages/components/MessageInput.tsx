@@ -84,8 +84,8 @@ export function MessageInput({
             { color: colors.textPrimary, ...typography.font.regular },
             Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null,
           ]}
-          placeholder="Escreva um recado com carinho..."
-          placeholderTextColor={colors.textMuted}
+          placeholder="Digite sua mensagem..."
+          placeholderTextColor={colors.textSecondary}
           value={inputText}
           onChangeText={setInputText}
           multiline

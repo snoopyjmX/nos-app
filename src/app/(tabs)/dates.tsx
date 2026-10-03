@@ -272,7 +272,7 @@ export default function DatesScreen() {
         showDatePicker={showDatePicker}
         setShowDatePicker={setShowDatePicker}
         selectedTime={selectedTime}
-        onTimeChange={(_e, d) => d && setSelectedTime(d)}
+        onTimeChange={(_e, d) => setSelectedTime(d || null)}
         showTimePicker={showTimePicker}
         setShowTimePicker={setShowTimePicker}
         submitting={submitting}

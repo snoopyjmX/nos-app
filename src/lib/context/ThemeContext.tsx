@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme as useDeviceColorScheme, Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
+import { colors } from '@/theme/colors';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -94,7 +95,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      const bg = isDark ? '#0F0D18' : '#F8F9FC';
+      const bg = isDark ? colors.dark.background : colors.light.background;
       if (document.documentElement) {
         document.documentElement.style.backgroundColor = bg;
         document.documentElement.classList.toggle('dark', isDark);

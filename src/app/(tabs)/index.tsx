@@ -110,7 +110,7 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: dockInset }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(dockInset, 160) }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

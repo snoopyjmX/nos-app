@@ -33,7 +33,7 @@ interface AddDateModalProps {
   showDatePicker: boolean;
   setShowDatePicker: (val: boolean) => void;
   selectedTime: Date | null;
-  onTimeChange: (event: any, date?: Date) => void;
+  onTimeChange: (event: any, date?: Date | null) => void;
   showTimePicker: boolean;
   setShowTimePicker: (val: boolean) => void;
   submitting: boolean;
@@ -275,12 +275,14 @@ export function AddDateModal({
               {selectedTime && (
                 <PressableScale
                   style={styles.clearTimeButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remover horário do evento"
                   onPress={() => {
-                    onTimeChange(null, undefined);
+                    onTimeChange(null, null);
                     setShowTimePicker(false);
                   }}
                 >
-                  <Text style={[styles.clearTimeText, { color: colors.danger, ...typography.font.regular }]}>
+                  <Text style={[styles.clearTimeText, { color: colors.dangerText, ...typography.font.bold }]}>
                     Remover Horário
                   </Text>
                 </PressableScale>
@@ -408,7 +410,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 8,
     paddingHorizontal: 4,
-    paddingVertical: 4,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   clearTimeText: {
     fontSize: 13,

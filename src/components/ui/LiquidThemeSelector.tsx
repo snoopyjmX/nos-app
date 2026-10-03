@@ -23,7 +23,9 @@ interface LiquidThemeSelectorProps {
   onChangeMode: (mode: Mode) => void;
 }
 
-const PADDING = 4;
+const PADDING = 3;
+const ICON_SIZE = 16;
+const TEXT_LINE_HEIGHT = 20;
 
 const OPTIONS: { mode: Mode; label: string; icon: 'sun' | 'moon' }[] = [
   { mode: 'light', label: 'Claro', icon: 'sun' },
@@ -36,7 +38,8 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
   const [containerWidth, setContainerWidth] = useState(0);
 
   const progress = useSharedValue(currentMode === 'light' ? 0 : 1);
-  const pillWidth = containerWidth > 0 ? (containerWidth - PADDING * 2) / 2 : 0;
+  // Deslocamento = metade da largura do container menos o recuo (metade da trilha interna)
+  const travel = containerWidth > 0 ? containerWidth / 2 - PADDING : 0;
 
   useEffect(() => {
     const target = currentMode === 'light' ? 0 : 1;
@@ -46,7 +49,7 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
   }, [currentMode, reducedMotion, progress, motion.easing.springDock]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: progress.value * pillWidth }],
+    transform: [{ translateX: progress.value * travel }],
   }));
 
   const handleSelect = (mode: Mode) => {
@@ -64,8 +67,9 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
       onLayout={(event: LayoutChangeEvent) => setContainerWidth(event.nativeEvent.layout.width)}
       accessibilityRole="radiogroup"
     >
-      {pillWidth > 0 && (
-        <Animated.View style={[styles.indicator, { width: pillWidth, borderRadius: radii.pill }, indicatorStyle]}>
+      {/* Trilha interna com o mesmo recuo do container: o indicador ocupa exatamente metade dela */}
+      <View style={styles.track} pointerEvents="none">
+        <Animated.View style={[styles.indicator, { borderRadius: radii.pill }, indicatorStyle]}>
           <LinearGradient
             colors={[colors.glow, colors.primary]}
             start={{ x: 0, y: 0 }}
@@ -73,7 +77,7 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
             style={StyleSheet.absoluteFill}
           />
         </Animated.View>
-      )}
+      </View>
 
       {OPTIONS.map((option) => {
         const selected = currentMode === option.mode;
@@ -88,7 +92,7 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
             accessibilityState={{ selected }}
           >
             <View style={styles.optionContent}>
-              <AnimatedIcon name={option.icon} size={16} color={color} active={selected} />
+              <AnimatedIcon name={option.icon} size={ICON_SIZE} color={color} active={selected} />
               <Text style={[styles.optionText, { color, ...(selected ? typography.font.bold : typography.font.medium) }]}>
                 {option.label}
               </Text>
@@ -102,21 +106,29 @@ export function LiquidThemeSelector({ currentMode, onChangeMode }: LiquidThemeSe
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 52,
+    height: 48,
+    padding: PADDING,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: PADDING,
+  },
+  track: {
+    position: 'absolute',
+    top: PADDING,
+    bottom: PADDING,
+    left: PADDING,
+    right: PADDING,
   },
   indicator: {
     position: 'absolute',
-    top: PADDING,
-    left: PADDING,
-    bottom: PADDING,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: '50%',
     overflow: 'hidden',
   },
   option: {
     flex: 1,
-    minHeight: 44,
+    height: '100%',
     justifyContent: 'center',
   },
   optionContent: {
@@ -127,5 +139,8 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 14,
+    lineHeight: TEXT_LINE_HEIGHT,
+    // Mesma altura de linha nos dois pesos, para o texto não "dançar" ao trocar de estado
+    includeFontPadding: false,
   },
 });
