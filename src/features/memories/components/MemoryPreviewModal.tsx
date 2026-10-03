@@ -37,7 +37,7 @@ export function MemoryPreviewModal({
 
   return (
     <Modal visible={!!previewMemory} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={[styles.root, { backgroundColor: colors.overlayDark }]}>
+      <View accessibilityViewIsModal style={[styles.root, { backgroundColor: colors.overlayDark }]}>
         {/* Desfoque suave da interface atrás da foto */}
         <LiquidGlassView variant="scrim" borderRadius={0} style={StyleSheet.absoluteFill} />
 

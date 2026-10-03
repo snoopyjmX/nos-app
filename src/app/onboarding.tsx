@@ -1,6 +1,7 @@
 import { logger } from '@/lib/core/logger';
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ActivityIndicator, Alert, Platform, Share } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, Platform, Share } from 'react-native';
+import { showAlert } from '@/lib/core/dialog';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '@/lib/core/supabase';
@@ -72,7 +73,7 @@ export default function OnboardingScreen() {
       // Atualiza o estado global no CoupleContext
       await refreshCoupleStatus();
     } catch (err: any) {
-      Alert.alert('Erro ao criar casal', err.message || 'Ocorreu um erro ao criar o casal.');
+      showAlert('Erro ao criar casal', err.message || 'Ocorreu um erro ao criar o casal.');
     } finally {
       setLoading(false);
     }
@@ -83,7 +84,7 @@ export default function OnboardingScreen() {
     const formattedCode = inputCode.trim().toUpperCase().replace(/-/g, "");
 
     if (!formattedCode) {
-      Alert.alert('Atenção', 'Por favor, digite o código de convite.');
+      showAlert('Atenção', 'Por favor, digite o código de convite.');
       return;
     }
 
@@ -101,14 +102,14 @@ export default function OnboardingScreen() {
       // Atualiza o estado global de casal
       await refreshCoupleStatus();
 
-      Alert.alert('Conectados com sucesso!', 'Bem-vindos ao espaço de vocês no NÓS!', [
+      showAlert('Conectados com sucesso!', 'Bem-vindos ao espaço de vocês no NÓS!', [
         {
           text: 'Começar',
           onPress: () => router.replace('/(tabs)'),
         },
       ]);
-    } catch (err: any) {
-      Alert.alert(
+    } catch {
+      showAlert(
         'Código inválido',
         'Código inválido ou expirado'
       );

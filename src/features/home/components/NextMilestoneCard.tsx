@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.8,
     marginBottom: 2,
   },

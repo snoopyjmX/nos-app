@@ -71,10 +71,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   categoryChipText: {
-    fontSize: 11,
+    fontSize: 12,
   },
   tag: {
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.8,
   },
   title: {

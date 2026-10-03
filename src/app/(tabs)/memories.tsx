@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, StyleSheet, Platform, Alert } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import { showAlert } from '@/lib/core/dialog';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDockInset, useDockTop } from '@/lib/hooks/useDockInset';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -46,9 +47,10 @@ export default function MemoriesScreen() {
 
   const pendingDeleteRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   useEffect(() => {
+    const pendingDelete = pendingDeleteRef.current;
     return () => {
-      pendingDeleteRef.current.forEach((timer) => clearTimeout(timer));
-      pendingDeleteRef.current.clear();
+      pendingDelete.forEach((timer) => clearTimeout(timer));
+      pendingDelete.clear();
     };
   }, []);
 
@@ -91,26 +93,16 @@ export default function MemoriesScreen() {
           if (error) throw error;
 
           showToast({ message: `"${item.title}" removida` });
-        } catch (err: any) {
+        } catch {
           loadMemories(true);
           showToast({ message: 'Erro ao apagar. Tente novamente.', type: 'error' });
         }
       };
 
-      if (Platform.OS === 'web') {
-        if (window.confirm(`Tem certeza que deseja excluir "${item.title}"?`)) {
-          proceedDelete();
-        }
-      } else {
-        Alert.alert(
-          'Remover memória',
-          `Tem certeza que deseja excluir "${item.title}"?`,
-          [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'Excluir', style: 'destructive', onPress: proceedDelete },
-          ]
-        );
-      }
+      showAlert('Remover memória', `Tem certeza que deseja excluir "${item.title}"?`, [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: proceedDelete },
+      ]);
     },
     [showToast, loadMemories, setMemories]
   );
@@ -120,7 +112,7 @@ export default function MemoriesScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
+        showAlert(
           'Permissão necessária',
           'Precisamos de acesso às suas fotos para guardar os momentos especiais de vocês.'
         );
@@ -140,14 +132,14 @@ export default function MemoriesScreen() {
         setIsAddModalVisible(true);
       }
     } catch (err: any) {
-      Alert.alert('Erro ao selecionar foto', err.message || 'Tente novamente.');
+      showAlert('Erro ao selecionar foto', err.message || 'Tente novamente.');
     }
   };
 
   const handleSaveMemory = async () => {
     if (uploading) return;
     if (!memoryTitle.trim()) {
-      Alert.alert('Atenção', 'Por favor, dê um título carinhoso para esta memória.');
+      showAlert('Atenção', 'Por favor, dê um título carinhoso para esta memória.');
       return;
     }
     if (!selectedImageUri || !coupleId || !user?.id) return;
@@ -240,7 +232,7 @@ export default function MemoriesScreen() {
 
       await loadMemories(true);
     } catch (err: any) {
-      Alert.alert('Não conseguimos salvar agora', err.message || 'Tenta de novo?');
+      showAlert('Não conseguimos salvar agora', err.message || 'Tenta de novo?');
     } finally {
       setUploading(false);
     }

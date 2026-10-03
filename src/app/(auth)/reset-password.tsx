@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Text, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Text, StyleSheet, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
@@ -7,6 +7,7 @@ import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/core/supabase';
 import { useTheme } from '@/theme';
 import { AuthScreen, Button, GlassField } from '@/components/ui';
+import { showAlert } from '@/lib/core/dialog';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -17,7 +18,9 @@ export default function ResetPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  
+  const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({});
+  const confirmRef = useRef<TextInput>(null);
+
   // Trata os deep links / query params no mount
   useEffect(() => {
     const handleUrl = async (urlStr: string | null) => {
@@ -43,7 +46,7 @@ export default function ResetPasswordScreen() {
             if (error) setIsError(true);
           }
         }
-      } catch (err) {
+      } catch {
         // Ignora erros de parsing
       }
     };
@@ -69,21 +72,18 @@ export default function ResetPasswordScreen() {
   }
 
   const handleSave = async () => {
-    if (password.length < 8) {
-      Alert.alert('Atenção', 'A senha deve ter no mínimo 8 caracteres.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert('Atenção', 'As senhas não coincidem.');
-      return;
-    }
+    const next: typeof errors = {};
+    if (password.length < 8) next.password = 'A senha deve ter no mínimo 8 caracteres.';
+    if (password !== confirmPassword) next.confirm = 'As senhas não coincidem.';
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
 
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     
     if (error) {
       setLoading(false);
-      Alert.alert('Atenção', 'Não foi possível alterar a senha. Tente novamente.');
+      showAlert('Atenção', 'Não foi possível alterar a senha. Tente novamente.');
       return;
     }
 
@@ -91,7 +91,7 @@ export default function ResetPasswordScreen() {
     await supabase.auth.signOut({ scope: 'others' });
     setLoading(false);
     
-    Alert.alert('Sucesso', 'Senha alterada com sucesso.', [
+    showAlert('Sucesso', 'Senha alterada com sucesso.', [
       { text: 'Entrar no app', onPress: () => router.replace('/') }
     ]);
   };
@@ -111,7 +111,11 @@ export default function ResetPasswordScreen() {
         autoComplete="new-password"
         textContentType="newPassword"
         value={password}
-        onChangeText={setPassword}
+        onChangeText={(v) => { setPassword(v); if (errors.password) setErrors((e) => ({ ...e, password: undefined })); }}
+        error={errors.password}
+        returnKeyType="next"
+        onSubmitEditing={() => confirmRef.current?.focus()}
+        blurOnSubmit={false}
       />
 
       <GlassField
@@ -122,8 +126,12 @@ export default function ResetPasswordScreen() {
         autoCapitalize="none"
         autoComplete="new-password"
         textContentType="newPassword"
+        ref={confirmRef}
         value={confirmPassword}
-        onChangeText={setConfirmPassword}
+        onChangeText={(v) => { setConfirmPassword(v); if (errors.confirm) setErrors((e) => ({ ...e, confirm: undefined })); }}
+        error={errors.confirm}
+        returnKeyType="go"
+        onSubmitEditing={handleSave}
       />
 
       <Button onPress={handleSave} loading={loading} variant="primary">

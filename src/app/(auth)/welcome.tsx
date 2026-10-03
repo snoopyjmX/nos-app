@@ -73,7 +73,7 @@ export default function WelcomeScreen() {
             <Text
               onPress={() => router.push('/terms')}
               accessibilityRole="link"
-              style={{ color: colors.primaryText, ...typography.font.bold }}
+              style={{ color: colors.primaryText, textDecorationLine: 'underline', ...typography.font.bold }}
             >
               Termos
             </Text>{' '}
@@ -81,7 +81,7 @@ export default function WelcomeScreen() {
             <Text
               onPress={() => router.push('/privacy')}
               accessibilityRole="link"
-              style={{ color: colors.primaryText, ...typography.font.bold }}
+              style={{ color: colors.primaryText, textDecorationLine: 'underline', ...typography.font.bold }}
             >
               Política de Privacidade
             </Text>

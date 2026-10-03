@@ -57,7 +57,7 @@ export function AnniversaryModal({
       animationType="fade"
       onRequestClose={() => !savingDate && onClose()}
     >
-      <View style={styles.overlay}>
+      <View accessibilityViewIsModal style={styles.overlay}>
         {/* Fundo: scrim de vidro que desfoca suavemente a interface */}
         <LiquidGlassView variant="scrim" borderRadius={0} style={StyleSheet.absoluteFill} />
 

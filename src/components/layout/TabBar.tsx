@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   View,
+  Pressable,
   Platform,
   Keyboard,
   useWindowDimensions,
@@ -69,9 +70,10 @@ interface TabIconProps {
   isCurrent: boolean;
   reducedMotion: boolean;
   avatarUrl?: string | null;
+  onSelect: (index: number) => void;
 }
 
-function TabIcon({ routeName, index, activeIndex, isCurrent, reducedMotion, avatarUrl }: TabIconProps) {
+function TabIcon({ routeName, index, activeIndex, isCurrent, reducedMotion, avatarUrl, onSelect }: TabIconProps) {
   const config = TAB_CONFIG[routeName] || {
     label: routeName,
     icon: 'circle' as const,
@@ -122,7 +124,17 @@ function TabIcon({ routeName, index, activeIndex, isCurrent, reducedMotion, avat
   const isProfile = routeName === 'profile';
 
   return (
-    <View style={styles.tabButton} pointerEvents="none">
+    // O toque/arrasto é tratado pelo gesto da dock; este Pressable existe para teclado e leitor de tela.
+    <Pressable
+      style={styles.tabButton}
+      pointerEvents="none"
+      focusable
+      accessibilityRole="tab"
+      accessibilityLabel={config.label}
+      accessibilityState={{ selected: isCurrent }}
+      onPress={() => onSelect(index)}
+      onAccessibilityTap={() => onSelect(index)}
+    >
       <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
         {isProfile && avatarUrl ? (
           <Image
@@ -152,10 +164,11 @@ function TabIcon({ routeName, index, activeIndex, isCurrent, reducedMotion, avat
           animatedColorStyle,
         ]}
         numberOfLines={1}
+        maxFontSizeMultiplier={1.3}
       >
         {config.label}
       </Animated.Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -165,7 +178,7 @@ interface TabBarProps {
   navigation: any;
 }
 
-export function TabBar({ state, descriptors, navigation }: TabBarProps) {
+export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const theme = useTheme();
@@ -253,6 +266,7 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
       showSub.remove();
       hideSub.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -260,6 +274,7 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
       indicatorX.value = settle(state.index * tabItemWidth, reducedMotion);
       activeIndex.value = settle(state.index, reducedMotion);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.index, tabItemWidth, reducedMotion]);
 
   const fireHaptic = useCallback(() => {
@@ -429,7 +444,7 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
 
       {/* Abas com detector de gestos */}
       <GestureDetector gesture={composedGesture}>
-        <Animated.View style={styles.tabsRow}>
+        <Animated.View style={styles.tabsRow} accessibilityRole="tablist">
           {state.routes.map((route: any, index: number) => (
             <TabIcon
               key={route.key}
@@ -439,6 +454,7 @@ export function TabBar({ state, descriptors, navigation }: TabBarProps) {
               isCurrent={state.index === index}
               reducedMotion={reducedMotion}
               avatarUrl={route.name === 'profile' ? profileAvatar : undefined}
+              onSelect={navigateToTab}
             />
           ))}
         </Animated.View>
@@ -525,7 +541,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: -0.1,
     fontWeight: '500',
   },

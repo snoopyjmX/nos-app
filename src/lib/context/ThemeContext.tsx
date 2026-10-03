@@ -33,7 +33,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const [themeMode, setThemeModeState] = useState<ThemeMode>(getInitialTheme);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [hasUserPreference, setHasUserPreference] = useState(false);
 
   useEffect(() => {
@@ -50,8 +49,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
       } catch {
         setThemeModeState(getInitialTheme());
-      } finally {
-        setIsLoaded(true);
       }
     }
     loadStoredTheme();

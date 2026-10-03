@@ -48,7 +48,7 @@ export function ThemeSection({ mode, setMode }: ThemeSectionProps) {
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1.2,
     paddingHorizontal: 4,
   },

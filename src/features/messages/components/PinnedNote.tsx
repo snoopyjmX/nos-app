@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   label: {
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.8,
     marginBottom: 2,
   },

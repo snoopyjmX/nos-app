@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { showAlert } from '@/lib/core/dialog';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDockInset } from '@/lib/hooks/useDockInset';
 import * as Haptics from 'expo-haptics';
@@ -57,15 +58,16 @@ export default function DatesScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    const pendingDelete = pendingDeleteRef.current;
     return () => {
-      pendingDeleteRef.current.forEach((timer) => clearTimeout(timer));
-      pendingDeleteRef.current.clear();
+      pendingDelete.forEach((timer) => clearTimeout(timer));
+      pendingDelete.clear();
     };
   }, []);
 
   const handleSaveDate = async () => {
     if (!newTitle.trim()) {
-      Alert.alert('Título obrigatório', 'Dê um nome para esta data especial.');
+      showAlert('Título obrigatório', 'Dê um nome para esta data especial.');
       return;
     }
 

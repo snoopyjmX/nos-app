@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Platform, RefreshControl, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Platform, RefreshControl } from 'react-native';
+import { showAlert } from '@/lib/core/dialog';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDockInset } from '@/lib/hooks/useDockInset';
 import { useRouter } from 'expo-router';
@@ -58,7 +59,7 @@ export default function ProfileScreen() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert(
+        showAlert(
           'Permissão necessária',
           'Precisamos de permissão para acessar sua galeria de fotos.'
         );
@@ -112,9 +113,9 @@ export default function ProfileScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await loadProfileData();
-      Alert.alert('Avatar atualizado!', 'Sua nova foto já está visível para vocês dois.');
+      showAlert('Avatar atualizado!', 'Sua nova foto já está visível para vocês dois.');
     } catch (err: any) {
-      Alert.alert('Não conseguimos salvar sua foto agora', 'Tenta de novo? ' + (err.message || ''));
+      showAlert('Não conseguimos salvar sua foto agora', 'Tenta de novo? ' + (err.message || ''));
     } finally {
       setUploadingAvatar(false);
     }
@@ -143,12 +144,12 @@ export default function ProfileScreen() {
       setIsDateModalVisible(false);
       await loadProfileData();
 
-      Alert.alert(
+      showAlert(
         'Data atualizada!',
         `A data de início do relacionamento foi ajustada para ${day}/${month}/${year}.`
       );
     } catch (err: any) {
-      Alert.alert('Erro ao atualizar data', err.message || 'Tente novamente.');
+      showAlert('Erro ao atualizar data', err.message || 'Tente novamente.');
     } finally {
       setSavingDate(false);
     }
@@ -187,16 +188,10 @@ export default function ProfileScreen() {
       router.replace('/(auth)/login');
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm('Tem certeza de que deseja sair da sua conta?')) {
-        doSignOut();
-      }
-    } else {
-      Alert.alert('Encerrar sessão', 'Tem certeza de que deseja sair da sua conta?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Encerrar', style: 'destructive', onPress: doSignOut },
-      ]);
-    }
+    showAlert('Encerrar sessão', 'Tem certeza de que deseja sair da sua conta?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Encerrar', style: 'destructive', onPress: doSignOut },
+    ]);
   };
 
   const myName = myProfile?.display_name || user?.user_metadata?.display_name || 'Você';

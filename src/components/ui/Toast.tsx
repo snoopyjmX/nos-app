@@ -15,7 +15,7 @@ import { PressableScale } from './PressableScale';
 
 export function Toast() {
   const { toast, hideToast } = useToast();
-  const { colors, typography, spacing, radii, shadows, isDark } = useTheme();
+  const { colors, typography, radii, shadows } = useTheme();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
 
@@ -57,6 +57,8 @@ export function Toast() {
       pointerEvents="box-none"
     >
       <View
+        accessibilityRole="alert"
+        accessibilityLiveRegion={toast.type === 'error' ? 'assertive' : 'polite'}
         style={[
           styles.toastCard,
           {
@@ -78,7 +80,6 @@ export function Toast() {
               fontSize: typography.fontSize.sm,
             }
           ]}
-          numberOfLines={2}
         >
           {toast.message}
         </Text>
@@ -93,13 +94,14 @@ export function Toast() {
                 borderRadius: radii.sm,
               },
             ]}
+            accessibilityRole="button"
             accessibilityLabel={toast.actionLabel}
           >
             <Text 
               style={[
                 styles.actionButtonText, 
                 { 
-                  color: colors.accent,
+                  color: colors.accentText,
                   ...typography.font.bold,
                 }
               ]}
@@ -113,6 +115,7 @@ export function Toast() {
           onPress={() => hideToast(toast.id)}
           style={styles.closeButton}
           hitSlop={12}
+          accessibilityRole="button"
           accessibilityLabel="Fechar notificação"
         >
           <Feather name="x" size={18} color={colors.textSecondary} />
@@ -150,6 +153,7 @@ const styles = StyleSheet.create({
   actionButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
+    minHeight: 44,
     marginLeft: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -158,7 +162,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   closeButton: {
-    paddingLeft: 12,
+    minWidth: 44,
+    minHeight: 44,
+    marginRight: -12,
     alignItems: 'center',
     justifyContent: 'center',
   },

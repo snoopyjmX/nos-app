@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Text, StyleSheet, Alert, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Text, StyleSheet, Platform, ActivityIndicator, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 
@@ -7,6 +7,7 @@ import { supabase } from '@/lib/core/supabase';
 import { useTheme } from '@/theme';
 import { AuthScreen, Button, GlassField, PressableScale } from '@/components/ui';
 import { useToast } from '@/lib/context/ToastContext';
+import { showAlert } from '@/lib/core/dialog';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [loadingReset, setLoadingReset] = useState(false);
   const [resetCooldown, setResetCooldown] = useState(0);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const passwordRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (resetCooldown > 0) {
@@ -27,10 +30,11 @@ export default function LoginScreen() {
   }, [resetCooldown]);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      showToast({ message: 'Por favor, preencha o e-mail e a senha.', type: 'error' });
-      return;
-    }
+    const next: typeof errors = {};
+    if (!email.trim()) next.email = 'Informe seu e-mail.';
+    if (!password.trim()) next.password = 'Informe sua senha.';
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
 
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
@@ -48,7 +52,7 @@ export default function LoginScreen() {
 
     const handleForgotPassword = async () => {
     if (!email.trim() || !email.includes('@')) {
-      Alert.alert('Atenção', 'Digite seu e-mail');
+      setErrors((e) => ({ ...e, email: 'Digite seu e-mail para recuperar a senha.' }));
       return;
     }
     if (resetCooldown > 0) return;
@@ -64,7 +68,7 @@ export default function LoginScreen() {
 
     setLoadingReset(false);
     setResetCooldown(60);
-    Alert.alert('Recuperar Senha', 'Se esse e-mail tiver uma conta, enviaremos um link para criar uma nova senha.');
+    showAlert('Recuperar Senha', 'Se esse e-mail tiver uma conta, enviaremos um link para criar uma nova senha.');
   };
 
   return (
@@ -79,7 +83,11 @@ export default function LoginScreen() {
         autoComplete="email"
         textContentType="emailAddress"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(v) => { setEmail(v); if (errors.email) setErrors((e) => ({ ...e, email: undefined })); }}
+        error={errors.email}
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
+        blurOnSubmit={false}
       />
 
       <GlassField
@@ -90,15 +98,20 @@ export default function LoginScreen() {
         autoCapitalize="none"
         autoComplete="password"
         textContentType="password"
+        ref={passwordRef}
         value={password}
-        onChangeText={setPassword}
+        onChangeText={(v) => { setPassword(v); if (errors.password) setErrors((e) => ({ ...e, password: undefined })); }}
+        error={errors.password}
+        returnKeyType="go"
+        onSubmitEditing={handleLogin}
       />
 
       <PressableScale
         onPress={handleForgotPassword}
         style={styles.forgotButton}
         accessibilityRole="button"
-        accessibilityLabel="Esqueci a senha"
+        accessibilityLabel={resetCooldown > 0 ? `Esqueci a senha, aguarde ${resetCooldown} segundos` : 'Esqueci a senha'}
+        accessibilityState={{ disabled: resetCooldown > 0, busy: loadingReset }}
         disabled={resetCooldown > 0}
       >
         {loadingReset ? (

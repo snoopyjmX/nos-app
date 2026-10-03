@@ -31,7 +31,9 @@ export default function Root({ children }: PropsWithChildren) {
         <style
           dangerouslySetInnerHTML={{
             __html:
-              'html,body{height:100%;min-height:-webkit-fill-available}#root{height:100%;min-height:100dvh}',
+              'html,body{height:100%;min-height:-webkit-fill-available}#root{height:100%;min-height:100dvh}' +
+              '[tabindex]:focus-visible,a:focus-visible,button:focus-visible{outline:2px solid #7C6FE0;outline-offset:2px;box-shadow:0 0 0 5px rgba(255,255,255,.75)}' +
+              '@media (prefers-color-scheme:dark){[tabindex]:focus-visible,a:focus-visible,button:focus-visible{outline-color:#B3A7F5;box-shadow:0 0 0 5px rgba(21,18,42,.8)}}',
           }}
         />
       </head>

@@ -13,7 +13,8 @@ interface IconButtonProps {
   size?: number;
   disabled?: boolean;
   loading?: boolean;
-  accessibilityLabel?: string;
+  /** Obrigatório: botão só com ícone precisa de nome para leitores de tela. */
+  accessibilityLabel: string;
 }
 
 export function IconButton({
@@ -62,6 +63,7 @@ export function IconButton({
       ]}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
     >
       {loading ? (
         <ActivityIndicator color={getIconColor()} size="small" />
