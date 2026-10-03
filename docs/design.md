@@ -97,7 +97,7 @@ spacing:
 
 # NÓS — DESIGN.md
 
-Este arquivo descreve **a aparência**. Regras de comportamento, acessibilidade, performance e engenharia estão no `AGENTS.md`. Os valores reais vivem no arquivo de tokens do código; se algo aqui divergir dele, o código vence e este arquivo deve ser atualizado.
+Este arquivo descreve **a aparência**. Regras operacionais e de comportamento do agente estão no `CLAUDE.md`; arquitetura, design system, UX, motion, segurança e acessibilidade estão em `docs/` (`ARCHITECTURE.md`, `DESIGN_SYSTEM.md`, `UI_UX_GUIDELINES.md`, `MOTION_DESIGN.md`, `SECURITY.md`). Os valores reais vivem no arquivo de tokens do código; se algo aqui divergir dele, o código vence e este arquivo deve ser atualizado.
 
 ## Marca e estilo
 
@@ -132,7 +132,7 @@ Fundo ambiente: um gradiente radial lavanda muito suave no topo (`rgba(139, 92, 
 
 Mobile first, margem lateral de `1.25rem` e respiro vertical generoso entre seções. Em telas maiores, a coluna central fica limitada a 520px (feeds) ou 768px (painéis) para preservar a intimidade.
 
-A **dock flutuante** mede 64px e fica a 20px da base (mais a safe area do aparelho). O espaço reservado no rodapé de qualquer tela rolável é calculado a partir disso (ver `AGENTS.md`, mínimo de 140px), nunca um número solto.
+A **dock flutuante** mede 64px e fica a 20px da base (mais a safe area do aparelho). O espaço reservado no rodapé de qualquer tela rolável é calculado a partir disso (ver `CLAUDE.md` §6 e `docs/UI_UX_GUIDELINES.md`, mínimo de 140px), nunca um número solto.
 
 Cabeçalhos de seção nunca quebram em coluna estreita: título e ação ficam na mesma linha com `flexShrink` no título; se faltar espaço, a ação desce para baixo do título, nunca esmaga o texto.
 
@@ -182,4 +182,4 @@ Cápsulas e cantos generosos, como vidro polido.
 
 ## Movimento (visual)
 
-Calmo e físico: transições de 200 a 350ms, easing suave, sem repique exagerado. Entradas com fade e leve deslocamento; indicador da dock desliza; números podem fazer uma transição discreta ao mudar. Nada pulsa em loop. Todo movimento respeita Reduce Motion (detalhes no `AGENTS.md`).
+Calmo e físico: transições de 200 a 350ms, easing suave, sem repique exagerado. Entradas com fade e leve deslocamento; indicador da dock desliza; números podem fazer uma transição discreta ao mudar. Nada pulsa em loop. Todo movimento respeita Reduce Motion (detalhes em `docs/MOTION_DESIGN.md`).
