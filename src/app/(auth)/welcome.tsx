@@ -37,10 +37,10 @@ export default function WelcomeScreen() {
           </LiquidGlassView>
 
           <Image
-            source={require('../../../assets/icone-anel-transparente.png')}
+            source={require('../../../assets/images/logo.png')}
             style={styles.logo}
             resizeMode="contain"
-            accessibilityLabel="Logotipo do nós., dois anéis entrelaçados"
+            accessibilityLabel="Logotipo do nós., um símbolo de infinito em vidro lilás"
           />
 
           <View style={styles.brand}>
@@ -120,8 +120,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   logo: {
-    width: 128,
-    height: 128,
+    width: 144,
+    height: 144,
   },
   brand: {
     alignItems: 'center',
