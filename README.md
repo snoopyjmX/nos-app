@@ -1,7 +1,7 @@
 # 💜 nós. — Um Espaço Só Nosso
 
 <p align="center">
-  <img src="docs/redesign/refs/logo app.png" width="128" height="128" alt="nós. icon" style="border-radius: 32px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12);" />
+  <img src="assets/images/logo.png" width="128" height="128" alt="nós. icon" style="border-radius: 32px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12);" />
 </p>
 
 <p align="center">
