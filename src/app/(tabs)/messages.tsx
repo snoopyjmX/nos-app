@@ -24,8 +24,7 @@ export default function MessagesScreen() {
   const { user } = useAuth();
   const { coupleId } = useCouple();
   const insets = useSafeAreaInsets();
-  // PWA iOS: insets.top pode vir 0 e colar o header na barra de status; a web ganha um piso de 47 (notch do iPhone 12).
-  const safeTop = Math.max(insets.top, Platform.OS === 'web' ? 47 : 0);
+  const safeTop = insets.top > 0 ? insets.top : Platform.OS === 'web' ? 12 : 8;
   const dockInset = useDockInset();
   const dockTop = useDockTop();
   const { colors, spacing } = useTheme();

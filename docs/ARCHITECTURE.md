@@ -85,7 +85,7 @@ Constantes: `PAGE_SIZE = 20` em `useMemories`; `PAGE_SIZE` também em `useMessag
 ## 6. Storage (FATO)
 
 - Buckets usados no código: `memories` (privado: lido via `createSignedUrls`/`createSignedUrl`, 3600s) e `avatars` (lido com `createSignedUrl` 86400s **e fallback `getPublicUrl`**).
-- Upload de memória: `<coupleId>/<timestamp>.jpg` + `<coupleId>/<timestamp>_thumb.jpg`, após compressão (`imageManipulation`: 1080px/0.8 e 400px/0.75). O corpo do upload é `Blob` na web (`fetch(uri).blob()`) e `FormData` com `{ uri, name, type }` no nativo; no navegador esse objeto viraria o texto `"[object Object]"` (corrigido em 2026-10-04). Upload de avatar: `<userId>/<timestamp>.jpg`.
+- Upload de memória: `<coupleId>/<timestamp>.jpg` + `<coupleId>/<timestamp>_thumb.jpg`, após compressão (`imageManipulation`: 1080px/0.8 e 400px/0.75). O corpo do upload é sempre `Blob` (`fetch(uri).blob()`): `FormData` com `{ uri, name, type }` falha no nativo ("Unsupported FormDataPart implementation") e vira `"[object Object]"` no navegador. Upload de avatar: `<userId>/<timestamp>.jpg`.
 - **PROBLEMA — duplicação:** o parsing de path (`split('/memories/')`, `split('/avatars/')`) aparece em `memories/utils/storage.ts` (`sanitizeStoragePath`), `useHomeData`, `useMessages`, `useProfile` e `TabBar`. (`removeMemory` reutiliza `sanitizeStoragePath`.) O módulo morto `lib/core/storage.ts` foi removido em 2026-10-04; o cache de signed URL vive só em `features/memories/utils/storage.ts`.
 - `useHomeData` usa `getPublicUrl` como fallback para imagens de memória, mesmo o bucket sendo lido por URL assinada nos demais pontos (INFERÊNCIA: só funciona se o bucket for público — verificar).
 

@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Platform } from 'react-native';
 import { supabase } from '@/lib/core/supabase';
 import { logger } from '@/lib/core/logger';
 import { normalizeAndCompressImage } from '@/lib/core/imageManipulation';
@@ -16,16 +15,10 @@ interface NewMemoryInput {
 const PAGE_SIZE = 20;
 let cachedMemories: MemoryItem[] | null = null;
 
-// No nativo, o FormData do Expo aceita { uri, name, type }. No navegador esse objeto
-// vira o texto "[object Object]", então lá a imagem segue como Blob.
-const toUploadBody = async (uri: string, name: string): Promise<Blob | FormData> => {
-  if (Platform.OS === 'web') {
-    const response = await fetch(uri);
-    return response.blob();
-  }
-  const formData = new FormData();
-  formData.append('file', { uri, name, type: 'image/jpeg' } as any);
-  return formData;
+// O Supabase no React Native não aceita FormData com { uri, name, type }; Blob serve em todas as plataformas.
+const toUploadBody = async (uri: string): Promise<Blob> => {
+  const response = await fetch(uri);
+  return response.blob();
 };
 
 export function clearMemoriesCache() {
@@ -210,8 +203,8 @@ export function useMemories(coupleId?: string | null, user?: any) {
     const mainManipulatedUri = await normalizeAndCompressImage(imageUri, 1080, 0.8);
     const thumbManipulatedUri = await normalizeAndCompressImage(imageUri, 400, 0.75);
 
-    const mainBody = await toUploadBody(mainManipulatedUri, 'image.jpg');
-    const thumbBody = await toUploadBody(thumbManipulatedUri, 'thumb.jpg');
+    const mainBody = await toUploadBody(mainManipulatedUri);
+    const thumbBody = await toUploadBody(thumbManipulatedUri);
 
     const { error: mainUploadError } = await supabase.storage.from('memories').upload(fileName, mainBody, { upsert: false });
     if (mainUploadError) throw new Error(mainUploadError.message);

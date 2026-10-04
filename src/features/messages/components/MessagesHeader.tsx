@@ -60,7 +60,7 @@ export function MessagesHeader({
 
   return (
     <View
-      style={{ paddingTop: topInset + spacing[8], paddingHorizontal: spacing[16] }}
+      style={{ paddingTop: topInset + spacing[4], paddingHorizontal: spacing[16] }}
     >
       <TopBlurFade />
       <LiquidGlassView
