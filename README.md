@@ -9,6 +9,9 @@
 </p>
 
 <p align="center">
+  <a href="https://nos-app-v1.vercel.app" target="_blank">
+    <img src="https://img.shields.io/badge/Demo_Online-nos--app--v1.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+  </a>
   <img src="https://img.shields.io/badge/Expo-SDK_57-000020?style=for-the-badge&logo=expo" alt="Expo SDK 57" />
   <img src="https://img.shields.io/badge/React_Native-0.86-61DAFB?style=for-the-badge&logo=react" alt="React Native" />
   <img src="https://img.shields.io/badge/Supabase-Auth_%26_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase" alt="Supabase" />
@@ -30,7 +33,7 @@ O projeto segue um pilar estético rigoroso inspirado no **Apple Liquid Glass** 
 ## 🚀 Funcionalidades
 
 - **⏳ Início (Nossa Jornada)**: Contagem acumulada de tempo juntos em cápsulas de vidro com física fluida, status de conexão em tempo real e ações rápidas.
-- **💬 Recados (Mensagens)**: Chat em tempo real via **Supabase Realtime**. Balões de mensagem assimétricos (vidro para recebidas, lavanda para enviadas) e teclado inteligente (`KeyboardAvoidingView`).
+- **💬 Recados (Mensagens)**: Chat em tempo real via **Supabase Realtime**. Balões de mensagem assimétricos (vidro para recebidas, lavanda para enviadas), bilhetes especiais do dia fixados no topo e teclado inteligente (`KeyboardAvoidingView`).
 - **📸 Memórias (Galeria Privada)**: Upload seguro para o Supabase Storage. Visualização editorial de fotografias com cache otimizado.
 - **🗓️ Datas & Celebrações**: Hero com contagem regressiva em displays independentes. Barra de progresso do ciclo anual e timeline de marcos do relacionamento.
 - **👤 Perfil do Casal**: Avatares integrados e geração de código de convite único seguro para o pareamento de contas.
@@ -63,7 +66,7 @@ A aplicação foi projetada do zero pensando na privacidade do casal (duas pesso
 
 ### 2. Instalação
 ```bash
-git clone https://github.com/SEU-USUARIO/nos-app.git
+git clone https://github.com/snoopyjmX/nos-app.git
 cd nos-app
 npm install
 ```
@@ -82,6 +85,14 @@ npx expo start -c
 - Pressione `i` para abrir no Simulador iOS do Mac.
 - Pressione `w` para abrir no Navegador (Web/PWA).
 - Use o app **Expo Go** para ler o QR Code no seu celular físico.
+
+---
+
+## 👨‍💻 Desenvolvido por
+
+**João Marcelo Garcês**
+- GitHub: [@snoopyjmX](https://github.com/snoopyjmX)
+- Contato: joaomgyn2013@gmail.com
 
 ---
 
