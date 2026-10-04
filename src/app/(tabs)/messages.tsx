@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDockInset, useDockTop } from '@/lib/hooks/useDockInset';
+import { useWebKeyboard } from '@/lib/hooks/useWebKeyboard';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useCouple } from '@/lib/context/CoupleContext';
@@ -30,9 +31,12 @@ export default function MessagesScreen() {
   const { colors, spacing } = useTheme();
   const reducedMotion = useReducedMotion();
 
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const [visualKeyboardHeight, setVisualKeyboardHeight] = useState(0);
+  const [nativeKeyboardVisible, setNativeKeyboardVisible] = useState(false);
   const [nativeKeyboardHeight, setNativeKeyboardHeight] = useState(0);
+  const webKeyboard = useWebKeyboard();
+  const isKeyboardVisible = Platform.OS === 'web' ? webKeyboard.visible : nativeKeyboardVisible;
+  // Na web é só o quanto o teclado cobre do layout atual (0 se o navegador já encolheu o layout).
+  const keyboardHeight = Platform.OS === 'web' ? webKeyboard.inset : nativeKeyboardHeight;
   const [topOverlayHeight, setTopOverlayHeight] = useState(0);
   const [inputHeight, setInputHeight] = useState(0);
   const [isNoteMode, setIsNoteMode] = useState(false);
@@ -72,7 +76,7 @@ export default function MessagesScreen() {
 
     const showSub = Keyboard.addListener(showEvent, (event) => {
       setNativeKeyboardHeight(event.endCoordinates.height);
-      setIsKeyboardVisible(true);
+      setNativeKeyboardVisible(true);
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -80,7 +84,7 @@ export default function MessagesScreen() {
 
     const hideSub = Keyboard.addListener(hideEvent, () => {
       setNativeKeyboardHeight(0);
-      setIsKeyboardVisible(false);
+      setNativeKeyboardVisible(false);
     });
 
     return () => {
@@ -90,33 +94,12 @@ export default function MessagesScreen() {
   }, []);
 
   useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.visualViewport) {
-      return;
-    }
-
-    const vv = window.visualViewport;
-    const handleViewportChange = () => {
-      if (!vv) return;
-      const offset = Math.max(0, window.innerHeight - vv.height);
-      setVisualKeyboardHeight(offset);
-      if (offset > 120) {
-        setIsKeyboardVisible(true);
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      } else {
-        setIsKeyboardVisible(false);
-      }
-    };
-
-    vv.addEventListener('resize', handleViewportChange);
-    vv.addEventListener('scroll', handleViewportChange);
-
-    return () => {
-      vv.removeEventListener('resize', handleViewportChange);
-      vv.removeEventListener('scroll', handleViewportChange);
-    };
-  }, []);
+    if (!webKeyboard.visible) return;
+    const timer = setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [webKeyboard.visible, webKeyboard.inset]);
 
   const handleScroll = useCallback(
     (event: any) => {
@@ -199,10 +182,11 @@ export default function MessagesScreen() {
     if (!delivered && wasNote) setIsNoteMode(true);
   };
 
-  const keyboardHeight = Platform.OS === 'web' ? visualKeyboardHeight : nativeKeyboardHeight;
   const inputOffset = getInputOffset(isKeyboardVisible, keyboardHeight, dockTop);
   // A última mensagem fica sempre acima do input flutuante (e da dock, com o teclado fechado).
-  const listBottomInset = Math.max(dockInset, inputOffset + inputHeight + spacing[8]);
+  // Com o teclado aberto a dock some: a reserva dela não vale (no Android web o layout já encolhe).
+  const inputClearance = inputOffset + inputHeight + spacing[8];
+  const listBottomInset = isKeyboardVisible ? inputClearance : Math.max(dockInset, inputClearance);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

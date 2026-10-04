@@ -78,14 +78,8 @@
         -webkit-text-fill-color: #16151E;
       }
 
-      /* Dark mode: texto e números brancos/claros e nítidos */
-      @media (prefers-color-scheme: dark) {
-        input, select, textarea {
-          color: #F7F5FF !important;
-          -webkit-text-fill-color: #F7F5FF !important;
-        }
-      }
-
+      /* Dark mode: segue o tema do app (classe .dark), não o do sistema. Com o aparelho escuro e o app
+         claro, a regra do sistema pintava o texto de branco sobre o vidro claro. */
       html.dark input,
       html.dark select,
       html.dark textarea,
@@ -101,9 +95,9 @@
 
       input::placeholder,
       textarea::placeholder {
-        color: #8A879A !important;
+        color: #6F6B85 !important;
         opacity: 1 !important;
-        -webkit-text-fill-color: #8A879A !important;
+        -webkit-text-fill-color: #6F6B85 !important;
       }
 
       html.dark input::placeholder,

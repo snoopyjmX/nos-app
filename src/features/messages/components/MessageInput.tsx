@@ -117,7 +117,18 @@ export function MessageInput({
           style={[
             styles.textInput,
             { color: colors.textPrimary, ...typography.font.regular },
-            Platform.OS === 'web' ? [styles.textInputWeb, { backgroundColor: colors.transparent }] : null,
+            Platform.OS === 'web'
+              ? [
+                  styles.textInputWeb,
+                  {
+                    backgroundColor: colors.transparent,
+                    color: colors.textPrimary,
+                    // O index.html fixa -webkit-text-fill-color nos campos; sem repeti-lo com a cor do tema, `color` não pinta o texto.
+                    WebkitTextFillColor: colors.textPrimary,
+                    caretColor: colors.primary,
+                  } as object,
+                ]
+              : null,
           ]}
           // react-native-web deixa o <textarea> com 2 linhas por padrão; 1 linha só na web
           // (no Android, numberOfLines limitaria o campo a uma linha mesmo com texto longo).
@@ -173,7 +184,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 20,
+    zIndex: 120,
   },
   capsule: {
     flexDirection: 'row',
@@ -191,6 +202,9 @@ const styles = StyleSheet.create({
   textInputWeb: {
     ...({ outlineStyle: 'none', resize: 'none' } as object),
     borderWidth: 0,
+    // O <textarea> é static e pinta abaixo das camadas absolutas do vidro (tinta e reflexo), que
+    // apagam o texto no tema claro. Posicionado, ele entra na ordem de pintura e fica por cima.
+    position: 'relative',
   },
   noteButton: {
     width: 44,

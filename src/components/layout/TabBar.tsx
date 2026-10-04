@@ -31,6 +31,7 @@ import { motion } from '@/theme/motion';
 import { DOCK_HEIGHT, WEB_DOCK_GAP } from '@/lib/hooks/useDockInset';
 import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { useReducedMotion } from '@/lib/hooks/useAccessibility';
+import { useWebKeyboard } from '@/lib/hooks/useWebKeyboard';
 import { Image } from 'expo-image';
 import { useAuth } from '@/lib/context/AuthContext';
 import { supabase } from '@/lib/core/supabase';
@@ -277,26 +278,30 @@ export function TabBar({ state, navigation }: TabBarProps) {
   const indicatorScaleX = useSharedValue(1);
   const lift = useSharedValue(0);
   const opacityVal = useSharedValue(1);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [nativeKeyboardVisible, setNativeKeyboardVisible] = useState(false);
+  const webKeyboardVisible = useWebKeyboard().visible;
+  const keyboardVisible = IS_WEB ? webKeyboardVisible : nativeKeyboardVisible;
 
+  // No web o Keyboard do React Native não dispara; lá o teclado vem da visualViewport.
   useEffect(() => {
+    if (IS_WEB) return;
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const showSub = Keyboard.addListener(showEvent, () => {
-      setKeyboardVisible(true);
-      opacityVal.value = withTiming(0, { duration: motion.duration.micro, easing: FADE_EASING });
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      setKeyboardVisible(false);
-      opacityVal.value = withTiming(1, { duration: motion.duration.micro, easing: FADE_EASING });
-    });
+    const showSub = Keyboard.addListener(showEvent, () => setNativeKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setNativeKeyboardVisible(false));
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    opacityVal.value = withTiming(keyboardVisible ? 0 : 1, {
+      duration: motion.duration.micro,
+      easing: FADE_EASING,
+    });
+  }, [keyboardVisible, opacityVal]);
 
   useEffect(() => {
     selectedIndex.value = state.index;

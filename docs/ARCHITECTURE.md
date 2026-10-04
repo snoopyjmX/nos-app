@@ -27,7 +27,7 @@ src/
   lib/
     context/ AuthContext, CoupleContext, ThemeContext, ToastContext
     core/    supabase, logger, dialog, pushNotifications, imageManipulation
-    hooks/   useAccessibility, useCopyToClipboard, useDockInset
+    hooks/   useAccessibility, useCopyToClipboard, useDockInset, useWebKeyboard
     milestones.ts
   theme/     colors, typography, spacing (+radii, MAX_CONTENT_WIDTH), shadows, motion, index (useTheme)
   constants/legal/  privacy.ts, terms.ts

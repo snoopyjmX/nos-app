@@ -22,11 +22,12 @@ Origem das regras: versão anterior do `CLAUDE.md` e um contrato local anterior 
 
 ## 3. Tab bar / Dock
 
-- **FATO:** `TabBar.tsx` — altura 64, margem lateral 16 (`DOCK_MARGIN`), indicador ("lente" de vidro) que desliza por spring (`springDock`) e pode ser arrastado com o centro sob o dedo (aba escolhida = aba sob o dedo; a geometria está em `components/layout/dockGeometry.ts`), ícone/rótulo/anel do avatar mudam de estado conforme a distância ao indicador, largura limitada por `MAX_CONTENT_WIDTH`, avatar do usuário carregado na própria TabBar, Haptics no toque e a cada aba cruzada no arrasto. Contraste medido sobre pixels renderizados no PWA (Início e Memórias, claro e escuro): rótulo inativo `textSecondary` opaco 5,6–6,7:1; rótulo ativo `textPrimary` 7,2–11,1:1; ícone ativo `primaryText`. Abaixo de 62px por aba (viewport ≲ 334px) o rótulo passa a 11px para "Mensagens" e "Memórias" não se tocarem. Na web as abas expõem `aria-selected`.
+- **FATO:** `TabBar.tsx` — altura 76 (`DOCK_HEIGHT`, exportado por `lib/hooks/useDockInset.ts`), margem lateral 16 (`DOCK_MARGIN`), indicador ("lente" de vidro) que desliza por spring (`springDock`) e pode ser arrastado com o centro sob o dedo (aba escolhida = aba sob o dedo; a geometria está em `components/layout/dockGeometry.ts`), ícone/rótulo/anel do avatar mudam de estado conforme a distância ao indicador, largura limitada por `MAX_CONTENT_WIDTH`, avatar do usuário carregado na própria TabBar, Haptics no toque e a cada aba cruzada no arrasto. Contraste medido sobre pixels renderizados no PWA (Início e Memórias, claro e escuro): rótulo inativo `textSecondary` opaco 5,6–6,7:1; rótulo ativo `textPrimary` 7,2–11,1:1; ícone ativo `primaryText`. Rótulos com mais de 7 caracteres ("Mensagens", "Memórias") usam 11px em qualquer largura e o indicador não tem folga lateral (`INDICATOR_INSET_X = 0`), para o rótulo caber dentro da curva da lente. Na web as abas expõem `aria-selected`.
 - **FATO:** posição: nativo `insets.bottom + 4` (ou 20 sem inset); web `insets.bottom + 8` (`useDockTop`).
 - **REGRA:** alvo ≥ 48×48 por item; indicador desliza (não teleporta); ícone + rótulo (cor não é único indicador).
 - **REGRA:** toda tela rolável usa `useDockInset()` (FATO: retorna ≥ 150 hoje). Telas com input fixo somam a altura do input + 8px.
 - **REGRA:** a dock nunca cobre texto, botão ou foto; FAB e inputs ficam **acima** dela.
+- **FATO:** com o teclado aberto a dock some (`TabBar` retorna `null`). Nativo: eventos do `Keyboard`. Web: `useWebKeyboard` (`visualViewport`), porque o `Keyboard` do React Native não dispara no navegador.
 
 ## 4. Gestos
 
@@ -60,6 +61,8 @@ Toda tela com dados implementa **loading, vazio e erro**.
 
 - **FATO:** `GlassField`, `WebDatePicker`, `@react-native-community/datetimepicker`. Telas de auth em `AuthScreen`.
 - **REGRA:** label/placeholder em pt-BR; placeholder de uma linha (`numberOfLines={1}`, `flex: 1`); erro junto ao campo; botão de envio com estado `loading` e bloqueio contra duplo toque (FATO: `memories.tsx` usa `if (uploading) return`); teclado não cobre o campo ativo (FATO: `AddDateModal`, `AddMemoryModal` e `AuthScreen` usam `KeyboardAvoidingView`; o input do chat calcula o deslocamento manualmente por `getInputOffset(isKeyboardVisible, keyboardHeight, dockTop)` em `MessageInput.tsx`. O README afirma "KeyboardAvoidingView" no chat — impreciso).
+- **FATO (web):** o CSS global de `public/index.html` define a cor do texto e do placeholder de `input`/`textarea` com `!important`, que vence estilo inline. O escuro segue o tema do app (`html.dark`), não o do sistema; antes uma regra por `prefers-color-scheme` deixava o texto branco sobre o vidro claro quando o aparelho estava escuro e o app, claro (contraste medido 1,05:1). Placeholder claro `#6F6B85` (= `colors.light.textMuted`, 4,9:1 sobre o vidro claro). RECOMENDAÇÃO: o placeholder escuro (`rgba(247,245,255,.45)`) mede 4,0:1; subir o alpha para ≥ 4,5:1.
+- **REGRA (web):** `<textarea>`/`<input>` dentro de vidro precisa de `position: relative`; sem isso pinta **abaixo** das camadas absolutas do vidro (tinta e reflexo) e o texto some no tema claro (FATO em `MessageInput`, pixel de maior contraste 212 → 26). `GlassField` foi medido sem o problema (17,4:1).
 - **REGRA:** validar antes de enviar e dizer o que corrigir (FATO: `onboarding` mostra "Código inválido ou expirado" para qualquer erro do RPC — mensagem genérica).
 
 ## 9. Acessibilidade (WCAG 2.1 AA)
@@ -80,6 +83,7 @@ Toda tela com dados implementa **loading, vazio e erro**.
 ## 11. Comportamento PWA
 
 - **FATO:** `display: standalone`, `viewport-fit=cover`, status bar `black-translucent`, dock fixa na viewport (commit "fixa a dock na viewport do PWA"), service worker com banner de atualização.
+- **FATO:** teclado virtual no web: `useWebKeyboard` lê a `visualViewport` e cobre os dois comportamentos do navegador (iOS e Chrome Android `resizes-visual`: só a viewport visual encolhe; Android `resizes-content`: o layout inteiro encolhe). Teclado = viewport visual ≥ 120px menor que a maior altura de layout vista **e** campo de texto em foco (a guarda evita zoom por pinça e redimensionar a janela no desktop). `inset` é medido contra o layout atual: no `resizes-content` vale 0, então o campo não sobe em dobro. Verificado no Chrome emulando os dois modos; **não** verificado em iPhone nem Android reais.
 - **FATO:** `manifest.json` usa `theme_color`/`background_color` **claros** (`#F8F6FE`) enquanto a identidade é noturna. PROBLEMA de coerência (INFERÊNCIA: possível flash claro no splash do PWA — não testado). ROADMAP P2-06.
 - **REGRA:** Safari/iOS exige `-webkit-backdrop-filter` (já em `glassWeb.ts`); não depender de hover; sem `alert()`/`window.confirm` do navegador (FATO: na web `showAlert` abre o `DialogHost`).
 - **REGRA:** mudanças que afetam o service worker (`sw.js`, nome do cache) exigem validar o fluxo de atualização.

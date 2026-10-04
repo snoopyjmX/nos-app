@@ -228,8 +228,8 @@ Dependências usam os IDs deste arquivo. Ordem sugerida: P0 → P1 → P2 → P3
 ## P3 — Manutenção
 
 ### P3-01 Supressões de `react-hooks/exhaustive-deps`
-- **Problema:** `npm run lint` hoje não emite warnings (eram 30). Parte saiu por correção (ex.: `isLoaded` removido de `ThemeContext.tsx`); existem 8 `eslint-disable-next-line react-hooks/exhaustive-deps` no código, alguns sem justificativa escrita. O que foi corrigido e o que foi suprimido não foi auditado caso a caso.
-- **Evidência:** `grep -rn "eslint-disable" src` → `messages.tsx` (2), `MessageInput.tsx:69`, `useMessages.ts:131`, `AnimatedIcon.tsx` (2), `TabBar.tsx` (2).
+- **Problema:** `npm run lint` hoje não emite warnings (eram 30). Parte saiu por correção (ex.: `isLoaded` removido de `ThemeContext.tsx`); existem 7 `eslint-disable-next-line react-hooks/exhaustive-deps` no código, alguns sem justificativa escrita. O que foi corrigido e o que foi suprimido não foi auditado caso a caso.
+- **Evidência:** `grep -rn "eslint-disable" src` → `messages.tsx` (2), `MessageInput.tsx:69`, `useMessages.ts:131`, `AnimatedIcon.tsx` (2), `TabBar.tsx` (1).
 - **Impacto (INFERÊNCIA):** closures possivelmente desatualizadas ficam escondidas (ex.: `profileMap` em `useMessages.ts:129`).
 - **Solução proposta:** revisar cada supressão: corrigir ou justificar por escrito.
 - **Dependências:** nenhuma.
