@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>nós. — Um espaço só nosso</title>
+    <meta name="description" content="Um espaço íntimo e afetuoso para guardar memórias, recados e datas do casal." />
+    <meta name="application-name" content="nós." />
+
+    <!-- iOS Safari PWA Standalone -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="nós." />
+
+    <!-- Cor da barra de status sincronizada com o fundo do app (claro e escuro) -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F8F6FE" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15122A" />
+    <meta name="theme-color" content="#F8F6FE" />
+
+    <!-- Ícones para iOS Add to Home Screen e PWA -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <style id="expo-reset">
+      :root {
+        --app-bg: #F8F6FE;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --app-bg: #15122A;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html,
+      body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: var(--app-bg);
+        overflow: hidden;
+      }
+
+      #root {
+        display: flex;
+        height: 100%;
+        width: 100%;
+        flex: 1;
+        background-color: var(--app-bg);
+      }
+
+      html, body, #root {
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        overscroll-behavior-y: none;
+      }
+
+      /* Garante contraste e previne zoom acidental no Safari iOS ao focar campos */
+      input, select, textarea {
+        user-select: auto;
+        -webkit-user-select: auto;
+        font-size: 16px !important;
+        color: #16151E;
+        -webkit-text-fill-color: #16151E;
+      }
+
+      /* Dark mode: texto e números brancos/claros e nítidos */
+      @media (prefers-color-scheme: dark) {
+        input, select, textarea {
+          color: #F7F5FF !important;
+          -webkit-text-fill-color: #F7F5FF !important;
+        }
+      }
+
+      html.dark input,
+      html.dark select,
+      html.dark textarea,
+      body.dark input,
+      body.dark select,
+      body.dark textarea,
+      [data-theme="dark"] input,
+      [data-theme="dark"] select,
+      [data-theme="dark"] textarea {
+        color: #F7F5FF !important;
+        -webkit-text-fill-color: #F7F5FF !important;
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: #8A879A !important;
+        opacity: 1 !important;
+        -webkit-text-fill-color: #8A879A !important;
+      }
+
+      html.dark input::placeholder,
+      html.dark textarea::placeholder,
+      body.dark input::placeholder,
+      body.dark textarea::placeholder,
+      [data-theme="dark"] input::placeholder,
+      [data-theme="dark"] textarea::placeholder {
+        color: rgba(247, 245, 255, 0.45) !important;
+        -webkit-text-fill-color: rgba(247, 245, 255, 0.45) !important;
+      }
+
+      /* Autofill no Chrome/Safari: impede fundo amarelo e texto preto */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus,
+      input:-webkit-autofill:active {
+        -webkit-text-fill-color: #16151E !important;
+        transition: background-color 5000s ease-in-out 0s;
+      }
+
+      html.dark input:-webkit-autofill,
+      html.dark input:-webkit-autofill:hover, 
+      html.dark input:-webkit-autofill:focus,
+      html.dark input:-webkit-autofill:active,
+      body.dark input:-webkit-autofill,
+      body.dark input:-webkit-autofill:hover, 
+      body.dark input:-webkit-autofill:focus,
+      body.dark input:-webkit-autofill:active,
+      [data-theme="dark"] input:-webkit-autofill,
+      [data-theme="dark"] input:-webkit-autofill:hover, 
+      [data-theme="dark"] input:-webkit-autofill:focus,
+      [data-theme="dark"] input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 1000px rgba(30, 28, 42, 0.95) inset !important;
+        -webkit-text-fill-color: #F7F5FF !important;
+        caret-color: #A797FF !important;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>
+      Você precisa ativar o JavaScript para executar este aplicativo.
+    </noscript>
+    <div id="root"></div>
+  </body>
+</html>

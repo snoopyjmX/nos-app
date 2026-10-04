@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Expo & Web build
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Vercel
+.vercel/
+
+# Native builds & credentials
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+/ios
+/android
+
+# Metro cache
+.metro-health-check*
+
+# Logs & debugging
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# macOS
+.DS_Store
+*.pem
+
+# Environment variables & secrets (do not commit)
+.env
+.env*.local
+.env*
+!.env.example
+
+# Private prompts, internal instructions & agent configs
+CLAUDE.md
+gemini.md
+GEMINI.md
+.claude/
+AGENTS.md
+.agents/
+skills-lock.json
+scratch/
+
+# IDE
+.idea/
+.vscode/
+
+# TypeScript
+*.tsbuildinfo
+
