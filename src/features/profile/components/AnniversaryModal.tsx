@@ -35,7 +35,7 @@ export function AnniversaryModal({
   onSave,
   onClose,
 }: AnniversaryModalProps) {
-  const { colors, typography, radii, spacing } = useTheme();
+  const { colors, typography, radii, spacing, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
@@ -125,16 +125,22 @@ export function AnniversaryModal({
               )}
 
               {Platform.OS === 'ios' && (
-                <Animated.View entering={reducedMotion ? undefined : FadeIn.duration(200)} style={styles.pickerBox}>
+                // Sem animação de entrada: a roda nativa mede o próprio tamanho e piscava ao ser animada.
+                <View style={styles.pickerBox}>
                   <DateTimePicker
                     value={tempDate}
                     mode="date"
                     display="spinner"
+                    locale="pt-BR"
+                    themeVariant={isDark ? 'dark' : 'light'}
                     maximumDate={new Date()}
-                    onValueChange={(_event, selectedDate) => onDateChange(selectedDate)}
+                    onValueChange={(_event, selectedDate) => {
+                      if (selectedDate) onDateChange(selectedDate);
+                    }}
                     textColor={colors.textPrimary}
+                    style={styles.iosPicker}
                   />
-                </Animated.View>
+                </View>
               )}
 
               {Platform.OS === 'web' && (
@@ -219,6 +225,11 @@ const styles = StyleSheet.create({
   },
   pickerBox: {
     alignItems: 'center',
+  },
+  // A roda do iOS precisa de largura e altura definidas, senão colapsa ou estoura o ScrollView.
+  iosPicker: {
+    width: '100%',
+    height: 216,
   },
   actions: {
     flexDirection: 'row',
