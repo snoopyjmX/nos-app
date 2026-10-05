@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Platform, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { showAlert } from '@/lib/core/dialog';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDockInset } from '@/lib/hooks/useDockInset';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
-import { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 
 import { ScreenTitleBar, Skeleton } from '@/components/ui';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -50,7 +49,6 @@ export default function ProfileScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isDateModalVisible, setIsDateModalVisible] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(new Date());
-  const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [savingDate, setSavingDate] = useState(false);
 
   const handlePickAvatar = async () => {
@@ -169,15 +167,6 @@ export default function ProfileScreen() {
     setIsDateModalVisible(true);
   };
 
-  const onDateChange = (_event: DateTimePickerChangeEvent, selected?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowAndroidPicker(false);
-    }
-    if (selected) {
-      setTempDate(selected);
-    }
-  };
-
   const handleSignOut = () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -259,9 +248,7 @@ export default function ProfileScreen() {
         visible={isDateModalVisible}
         tempDate={tempDate}
         savingDate={savingDate}
-        showAndroidPicker={showAndroidPicker}
-        setShowAndroidPicker={setShowAndroidPicker}
-        onDateChange={onDateChange}
+        onDateChange={setTempDate}
         onSave={handleSaveAnniversary}
         onClose={() => setIsDateModalVisible(false)}
       />

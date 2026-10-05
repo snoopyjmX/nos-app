@@ -11,7 +11,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import Animated, { Easing, FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Button, PressableScale } from '@/components/ui';
 import { LiquidGlassView } from '@/components/ui/LiquidGlassView';
 import { WebDatePicker } from '@/components/ui/WebDatePicker';
@@ -22,9 +22,7 @@ interface AnniversaryModalProps {
   visible: boolean;
   tempDate: Date;
   savingDate: boolean;
-  showAndroidPicker: boolean;
-  setShowAndroidPicker: (show: boolean) => void;
-  onDateChange: (event: DateTimePickerChangeEvent, selected?: Date) => void;
+  onDateChange: (date: Date) => void;
   onSave: () => void;
   onClose: () => void;
 }
@@ -33,8 +31,6 @@ export function AnniversaryModal({
   visible,
   tempDate,
   savingDate,
-  showAndroidPicker,
-  setShowAndroidPicker,
   onDateChange,
   onSave,
   onClose,
@@ -49,6 +45,16 @@ export function AnniversaryModal({
     month: 'long',
     year: 'numeric',
   });
+
+  // No Android o seletor é um diálogo do sistema: abri-lo como JSX dentro do Modal colide as janelas.
+  const openAndroidPicker = () => {
+    DateTimePickerAndroid.open({
+      value: tempDate,
+      mode: 'date',
+      maximumDate: new Date(),
+      onValueChange: (_event, selectedDate) => onDateChange(selectedDate),
+    });
+  };
 
   return (
     <Modal
@@ -80,7 +86,12 @@ export function AnniversaryModal({
           >
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: spacing[16] }}>
+            {/* Só o conteúdo rola; as ações ficam num rodapé fixo, sempre visível (o spinner do iOS é alto). */}
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ gap: spacing[16] }}
+            >
               <View style={[styles.headerRow, { gap: spacing[12] }]}>
                 <View style={[styles.iconBadge, { backgroundColor: colors.primarySoft }]}>
                   <Feather name="calendar" size={22} color={colors.primaryText} />
@@ -100,7 +111,7 @@ export function AnniversaryModal({
 
               {Platform.OS === 'android' && (
                 <PressableScale
-                  onPress={() => setShowAndroidPicker(true)}
+                  onPress={openAndroidPicker}
                   accessibilityRole="button"
                   accessibilityLabel={`Data de início: ${formattedDate}. Toque para alterar`}
                 >
@@ -113,14 +124,14 @@ export function AnniversaryModal({
                 </PressableScale>
               )}
 
-              {Platform.OS !== 'web' && (Platform.OS === 'ios' || showAndroidPicker) && (
+              {Platform.OS === 'ios' && (
                 <Animated.View entering={reducedMotion ? undefined : FadeIn.duration(200)} style={styles.pickerBox}>
                   <DateTimePicker
                     value={tempDate}
                     mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    display="spinner"
                     maximumDate={new Date()}
-                    onChange={onDateChange}
+                    onValueChange={(_event, selectedDate) => onDateChange(selectedDate)}
                     textColor={colors.textPrimary}
                   />
                 </Animated.View>
@@ -129,26 +140,24 @@ export function AnniversaryModal({
               {Platform.OS === 'web' && (
                 <WebDatePicker
                   value={tempDate}
-                  onChange={(date) =>
-                    onDateChange({ type: 'set', nativeEvent: { timestamp: date.getTime() } } as any, date)
-                  }
+                  onChange={onDateChange}
                   mode="date"
                 />
               )}
-
-              <View style={[styles.actions, { gap: spacing[12] }]}>
-                <View style={styles.actionCancel}>
-                  <Button variant="secondary" onPress={onClose} disabled={savingDate}>
-                    Cancelar
-                  </Button>
-                </View>
-                <View style={styles.actionSave}>
-                  <Button variant="primary" onPress={onSave} loading={savingDate}>
-                    Salvar data
-                  </Button>
-                </View>
-              </View>
             </ScrollView>
+
+            <View style={[styles.actions, { gap: spacing[12], marginTop: spacing[16] }]}>
+              <View style={styles.actionCancel}>
+                <Button variant="secondary" onPress={onClose} disabled={savingDate}>
+                  Cancelar
+                </Button>
+              </View>
+              <View style={styles.actionSave}>
+                <Button variant="primary" onPress={onSave} loading={savingDate}>
+                  Salvar data
+                </Button>
+              </View>
+            </View>
           </LiquidGlassView>
         </Animated.View>
       </View>
@@ -170,6 +179,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 16,
+  },
+  content: {
+    flexShrink: 1,
   },
   headerRow: {
     flexDirection: 'row',
